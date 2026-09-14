@@ -41,6 +41,10 @@ that scores risk and explains it in plain English.
   pipeline is testable without burning API calls on every test run.
 - Log every LLM call's cost/token usage somewhere you can see it while
   developing.
+- Claim tasks in `brain/15_MICROTASKS.md` by setting status to `IN_PROGRESS: Agent 2`.
+- On completion, mark `DONE` in `brain/15_MICROTASKS.md`, append to `brain/16_CHANGELOG.md`.
+- Follow `brain/10_SECURITY.md` for handling secrets (API keys via env only).
+- Follow `brain/19_CODING_STANDARDS.md` for code style.
 
 ## Don't
 
@@ -49,6 +53,7 @@ that scores risk and explains it in plain English.
 - Don't call the LLM synchronously inside the webhook request — the webhook
   handler should return fast; do the LLM call in a background task.
 - Don't touch `frontend/`, the WebSocket gateway, or Agent 1's auth code.
+- Don't guess missing specs — add `[NEEDS INPUT]` to `STATUS.md` and stop.
 
 ## Definition of done
 
@@ -59,6 +64,8 @@ that scores risk and explains it in plain English.
 - [ ] Unit tests pass without live network/LLM calls.
 - [ ] `STATUS.md` entry: what the analysis output actually looks like, so
       Agent 4 can build the graph against real shapes instead of guesses.
+- [ ] `brain/16_CHANGELOG.md` updated under "Unreleased".
+- [ ] Any decisions logged in `brain/17_DECISIONS.md`.
 
 ## First 3 steps
 

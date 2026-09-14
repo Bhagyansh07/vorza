@@ -36,6 +36,10 @@ comments, and AI-review updates to everyone watching a repo, in real time.
   this done — one-user testing hides the actual point of this feature.
 - Document the exact hook interface (`useRepoSocket` return shape) in
   `STATUS.md` so Agent 4 can consume it without reading your backend code.
+- Claim tasks in `brain/15_MICROTASKS.md` by setting status to `IN_PROGRESS: Agent 5`.
+- On completion, mark `DONE` in `brain/15_MICROTASKS.md`, append to `brain/16_CHANGELOG.md`.
+- Follow `brain/19_CODING_STANDARDS.md` for code style.
+- Follow `brain/10_SECURITY.md` for WebSocket auth (verify JWT on connect).
 
 ## Don't
 
@@ -45,6 +49,7 @@ comments, and AI-review updates to everyone watching a repo, in real time.
   you broadcast events, Agents 1/2 own producing the data.
 - Don't touch the graph's rendering code — you expose events, Agent 4
   consumes and renders them.
+- Don't guess missing specs — add `[NEEDS INPUT]` to `STATUS.md` and stop.
 
 ## Definition of done
 
@@ -56,6 +61,8 @@ comments, and AI-review updates to everyone watching a repo, in real time.
       data.
 - [ ] `STATUS.md` entry with the final event shapes and the frontend hook
       interface.
+- [ ] `brain/16_CHANGELOG.md` updated under "Unreleased".
+- [ ] Any decisions logged in `brain/17_DECISIONS.md`.
 
 ## First 3 steps
 

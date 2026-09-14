@@ -32,6 +32,9 @@ client, and the pages that aren't the graph itself (that's Agent 4's).
   file so Agent 4's visualization can reuse the same palette.
 - Write a couple of Vitest + React Testing Library tests for the auth flow
   and the dashboard list.
+- Claim tasks in `brain/15_MICROTASKS.md` by setting status to `IN_PROGRESS: Agent 3`.
+- On completion, mark `DONE` in `brain/15_MICROTASKS.md`, append to `brain/16_CHANGELOG.md`.
+- Follow `brain/19_CODING_STANDARDS.md` for code style.
 
 ## Don't
 
@@ -41,6 +44,7 @@ client, and the pages that aren't the graph itself (that's Agent 4's).
 - Don't touch `backend/` at all.
 - Don't invent your own design system from scratch — shadcn/ui components +
   Tailwind, per the reference repo.
+- Don't guess missing specs — add `[NEEDS INPUT]` to `STATUS.md` and stop.
 
 ## Definition of done
 
@@ -52,6 +56,8 @@ client, and the pages that aren't the graph itself (that's Agent 4's).
 - [ ] `STATUS.md` entry noting the exact prop/route contract Agent 4 should
       mount against (e.g. "GraphView component should accept `repoId: string`
       and render inside the `<div id='graph-slot'>` in RepoPage").
+- [ ] `brain/16_CHANGELOG.md` updated under "Unreleased".
+- [ ] Any decisions logged in `brain/17_DECISIONS.md`.
 
 ## First 3 steps
 

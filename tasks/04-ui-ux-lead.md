@@ -38,6 +38,10 @@ the demo. Make it beautiful and make it clear.
   different app.
 - Keep the graph performant at a few hundred nodes — test with a
   medium-sized real repo, not just a 5-file toy example.
+- Claim tasks in `brain/15_MICROTASKS.md` by setting status to `IN_PROGRESS: Agent 4`.
+- On completion, mark `DONE` in `brain/15_MICROTASKS.md`, append to `brain/16_CHANGELOG.md`.
+- Follow `brain/19_CODING_STANDARDS.md` for code style.
+- Follow `brain/08_UI_SPEC.md` for design specifications.
 
 ## Don't
 
@@ -48,6 +52,7 @@ the demo. Make it beautiful and make it clear.
   expose (coordinate the hook's name/shape via `STATUS.md`).
 - Don't let a single ugly default force-graph theme ship — this component is
   the whole point of the demo, spend real time on visual polish.
+- Don't guess missing specs — add `[NEEDS INPUT]` to `STATUS.md` and stop.
 
 ## Definition of done
 
@@ -60,6 +65,8 @@ the demo. Make it beautiful and make it clear.
       clearly documented mocks if Agent 5 isn't ready yet).
 - [ ] `STATUS.md` entry describing exactly what event/data shapes you ended
       up consuming, flagging any drift from `CONTRACTS.md`.
+- [ ] `brain/16_CHANGELOG.md` updated under "Unreleased".
+- [ ] Any decisions logged in `brain/17_DECISIONS.md`.
 
 ## First 3 steps
 

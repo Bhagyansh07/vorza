@@ -15,18 +15,22 @@ through files in this repo.
 
 Before writing any code, in this order:
 1. Read AGENTS.md in the repo root.
-2. Read CONTRACTS.md — the shared API/data contracts. You OWN the core data
+2. Read brain/00_MASTER_RULES.md — the project constitution. Then skim
+   brain/01_PRD.md, brain/02_TRD.md, brain/03_ARCHITECTURE.md.
+3. Read CONTRACTS.md — the shared API/data contracts. You OWN the core data
    models and REST API surface described there. Build exactly to that shape
    unless you have a strong reason to change it — if you do, edit
    CONTRACTS.md in the same commit and explain why in STATUS.md.
-3. Read STATUS.md to see what's already happened.
-4. Read tasks/01-backend-lead.md — this is your full job description.
-5. Skim docs/REFERENCE_REPOS.md — use fastapi/full-stack-fastapi-template as
+4. Read STATUS.md to see what's already happened.
+5. Read brain/15_MICROTASKS.md — find your next TODO task.
+6. Read tasks/01-backend-lead.md — this is your full job description.
+7. Skim docs/REFERENCE_REPOS.md — use fastapi/full-stack-fastapi-template as
    your starting skeleton for auth, DB session handling, and Docker Compose.
 
 Work only inside backend/. Commit in small chunks on this branch
 (agent-1-backend). After each meaningful chunk, append an entry to STATUS.md,
-then continue to the next item in your task file. Do not merge to main.
+update brain/16_CHANGELOG.md, then continue to the next item in your task file.
+Do not merge to main.
 
 Start now with step 1 of your task file.
 ```
@@ -42,16 +46,19 @@ through files in this repo.
 
 Before writing any code, in this order:
 1. Read AGENTS.md in the repo root.
-2. Read CONTRACTS.md — you OWN the "AI review output shape" section, and you
+2. Read brain/00_MASTER_RULES.md — the project constitution. Then skim
+   brain/01_PRD.md, brain/02_TRD.md, brain/03_ARCHITECTURE.md.
+3. Read CONTRACTS.md — you OWN the "AI review output shape" section, and you
    are the main consumer of Agent 1's data models. If Agent 1's models don't
    have what you need yet, check STATUS.md first — they may already be
    building it — and log what you need if not.
-3. Read STATUS.md to see what's already happened.
-4. Read tasks/02-ai-data-lead.md — this is your full job description.
+4. Read STATUS.md to see what's already happened.
+5. Read brain/15_MICROTASKS.md — find your next TODO task.
+6. Read tasks/02-ai-data-lead.md — this is your full job description.
 
 Work only inside backend/app/services/ (the analysis + AI review pipeline).
 Commit in small chunks on this branch (agent-2-ai). After each meaningful
-chunk, append an entry to STATUS.md. Do not merge to main.
+chunk, append an entry to STATUS.md, update brain/16_CHANGELOG.md. Do not merge to main.
 
 Start now with step 1 of your task file.
 ```
@@ -67,11 +74,14 @@ through files in this repo.
 
 Before writing any code, in this order:
 1. Read AGENTS.md in the repo root.
-2. Read CONTRACTS.md — you consume Agent 1's REST API and own the frontend
+2. Read brain/00_MASTER_RULES.md — the project constitution. Then skim
+   brain/01_PRD.md, brain/02_TRD.md, brain/03_ARCHITECTURE.md, brain/08_UI_SPEC.md.
+3. Read CONTRACTS.md — you consume Agent 1's REST API and own the frontend
    route map section.
-3. Read STATUS.md.
-4. Read tasks/03-frontend-lead.md — your full job description.
-5. Skim docs/REFERENCE_REPOS.md — mirror bulletproof-react's feature-folder
+4. Read STATUS.md.
+5. Read brain/15_MICROTASKS.md — find your next TODO task.
+6. Read tasks/03-frontend-lead.md — your full job description.
+7. Skim docs/REFERENCE_REPOS.md — mirror bulletproof-react's feature-folder
    structure under frontend/src/features/.
 
 Build the app shell, routing, auth pages, and API client. Leave
@@ -93,11 +103,14 @@ through files in this repo.
 
 Before writing any code, in this order:
 1. Read AGENTS.md in the repo root.
-2. Read CONTRACTS.md — pay close attention to AnalysisSnapshot/FileNode
+2. Read brain/00_MASTER_RULES.md — the project constitution. Then skim
+   brain/01_PRD.md, brain/02_TRD.md, brain/03_ARCHITECTURE.md, brain/08_UI_SPEC.md.
+3. Read CONTRACTS.md — pay close attention to AnalysisSnapshot/FileNode
    (from Agent 1/2) and the WebSocket events section (from Agent 5) — your
    visualization consumes both.
-3. Read STATUS.md.
-4. Read tasks/04-ui-ux-lead.md — your full job description.
+4. Read STATUS.md.
+5. Read brain/15_MICROTASKS.md — find your next TODO task.
+6. Read tasks/04-ui-ux-lead.md — your full job description.
 
 Build the force-directed graph, trend charts, and comment-pin UI inside
 frontend/src/features/graph/, following the same folder convention Agent 3
@@ -119,11 +132,14 @@ through files in this repo.
 
 Before writing any code, in this order:
 1. Read AGENTS.md in the repo root.
-2. Read CONTRACTS.md — you OWN the WebSocket events section. Build exactly to
+2. Read brain/00_MASTER_RULES.md — the project constitution. Then skim
+   brain/01_PRD.md, brain/02_TRD.md, brain/03_ARCHITECTURE.md.
+3. Read CONTRACTS.md — you OWN the WebSocket events section. Build exactly to
    that shape; if you need to change it, update CONTRACTS.md and log why in
    STATUS.md.
-3. Read STATUS.md.
-4. Read tasks/05-realtime-integration-lead.md — your full job description.
+4. Read STATUS.md.
+5. Read brain/15_MICROTASKS.md — find your next TODO task.
+6. Read tasks/05-realtime-integration-lead.md — your full job description.
 
 Build the WebSocket gateway and Redis pub/sub inside backend/app/ws/, and
 wire the frontend socket client that Agent 4's components will subscribe to.
@@ -143,9 +159,12 @@ through files in this repo.
 
 Before writing any code, in this order:
 1. Read AGENTS.md in the repo root.
-2. Read CONTRACTS.md and STATUS.md in full — you're the integrator, you need
+2. Read brain/00_MASTER_RULES.md — the project constitution. Then skim
+   brain/01_PRD.md, brain/02_TRD.md, brain/03_ARCHITECTURE.md, brain/12_CICD_GITHUB_ACTIONS.md, brain/13_TESTING.md, brain/14_PRODUCTION_CHECKLIST.md.
+3. Read CONTRACTS.md and STATUS.md in full — you're the integrator, you need
    the whole picture.
-3. Read tasks/06-devops-qa-lead.md — your full job description.
+4. Read brain/15_MICROTASKS.md — find your next TODO task.
+5. Read tasks/06-devops-qa-lead.md — your full job description.
 
 You own docker-compose.yml, CI, seed data, and are the one who reviews and
 merges the other five agents' PRs into main (the human gives final sign-off).

@@ -42,6 +42,11 @@ demos.
   tiny doc change.
 - Be the one who actually runs `docker-compose up` from a totally clean
   clone regularly — that's the test that catches "works on my machine."
+- Claim tasks in `brain/15_MICROTASKS.md` by setting status to `IN_PROGRESS: Agent 6`.
+- On completion, mark `DONE` in `brain/15_MICROTASKS.md`, append to `brain/16_CHANGELOG.md`.
+- Follow `brain/12_CICD_GITHUB_ACTIONS.md` for CI configuration.
+- Follow `brain/13_TESTING.md` for testing strategy.
+- Follow `brain/14_PRODUCTION_CHECKLIST.md` for production readiness.
 
 ## Don't
 
@@ -52,6 +57,7 @@ demos.
   first.
 - Don't skip E2E tests to save time — this is the project's actual quality
   bar.
+- Don't guess missing specs — add `[NEEDS INPUT]` to `STATUS.md` and stop.
 
 ## Definition of done
 
@@ -61,6 +67,8 @@ demos.
 - [ ] Playwright E2E suite covers the full demo script from `docs/IDEA.md`.
 - [ ] `docs/DEPLOYMENT.md` is accurate — you followed it yourself once.
 - [ ] `STATUS.md` reflects the true final state of the project.
+- [ ] `brain/16_CHANGELOG.md` updated under "Unreleased".
+- [ ] Any decisions logged in `brain/17_DECISIONS.md`.
 
 ## First 3 steps
 

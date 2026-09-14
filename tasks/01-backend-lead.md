@@ -33,6 +33,8 @@ blocked.
 - Write a migration (Alembic, from the template) for every model change.
 - Add basic Pytest tests for auth and the CRUD endpoints as you go.
 - Seed a `.env.example` with every variable your code reads.
+- Claim tasks in `brain/15_MICROTASKS.md` by setting status to `IN_PROGRESS: Agent 1`.
+- On completion, mark `DONE` in `brain/15_MICROTASKS.md`, append to `brain/16_CHANGELOG.md`.
 
 ## Don't
 
@@ -41,6 +43,7 @@ blocked.
   for them.
 - Don't touch `frontend/` at all.
 - Don't invent a custom auth scheme — use the template's JWT pattern.
+- Don't guess missing specs — add `[NEEDS INPUT]` to `STATUS.md` and stop.
 
 ## Definition of done
 
@@ -50,6 +53,8 @@ blocked.
 - [ ] Pytest suite passes.
 - [ ] `CONTRACTS.md` matches what you actually built (fix any drift).
 - [ ] `STATUS.md` has an entry describing what's ready for Agents 2, 3, 5.
+- [ ] `brain/16_CHANGELOG.md` updated under "Unreleased".
+- [ ] Any decisions logged in `brain/17_DECISIONS.md`.
 
 ## First 3 steps
 
