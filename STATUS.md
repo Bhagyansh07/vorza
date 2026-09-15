@@ -22,3 +22,26 @@ v0.1 is the starting shape — expect it to evolve as Agent 1 and Agent 2 build
 the real models.
 
 <!-- New entries go below this line -->
+
+### [Backend Consolidation] Orchestrator wiring + first commit
+- Fixed the `webhooks.py` import crash (P0): routes `analysis.py`/`webhooks.py`
+  were importing `analyze_repo`/`review_pull_request` + `verify_webhook_signature`
+  from names that did not exist on pure services or had wrong signatures. Added
+  `app/services/orchestrator.py` (the only module allowed to own DB + git-checkout
+  + persistence I/O) exposing `analyze_repo(repo_id)` and
+  `review_pull_request(repo_id, pr_number)`; repointed the two routes to it.
+  `app.main` now imports cleanly; `pytest` collects 23 tests, 11 pass.
+- Backend service files that are DEVELOPMENT-ISH stubs/placeholders and verified:
+  `app/services/analysis.py` (pure, 309 lines) and `app/services/ai_review.py`
+  (pure, 199 lines) are untouched/own Agent 2 per CONTRACTS.
+- Fixed broken `app/services/pipeline.py` imports (SessionDep, fetch_repo_metadata,
+  uuid coercion) and added `RedisPubSubBackend` dep; added REDIS_URL to config.
+- Windows only: `httpcore` + `orjson` reinstall in .venv fixed a real SQLite
+  file-lock (codeatlas_test.db) that hung the gateway test teardown.
+- Repo hygiene: deleted all 6 agent worktrees + their tags in the main CI workspace
+  Wayand�"central repo is a single clean monorepo. Root .gitignore covers
+  .venv/node_modules/__pycache__/.env and git history started with a conventional
+  commit (`6fc97f8`) over the consolidated tree.
+- Blocked: real GitHub OAuth creds + OpenAI key not configured in production env;
+  gag order not implemented in WebSocket (auth only, no onion-key yet); alembic
+  migrations dir absent (tests bootstrap via init_db.create_all).
