@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * CodeAtlas design tokens (CSS variables). Keep these in ONE place — the
+ * Tailwind theme maps onto them (see tailwind.config.ts). Agent 4: use the
+ * theme colors (health.*, complexity.*, etc.), not raw hex values.
+ */
+@layer base {
+  :root {
+    --background: 224 30% 7%;
+    --foreground: 210 40% 96%;
+    --card: 224 28% 11%;
+    --card-foreground: 210 40% 96%;
+    --popover: 224 28% 11%;
+    --popover-foreground: 210 40% 96%;
+    --primary: 258 90% 70%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 224 22% 16%;
+    --secondary-foreground: 210 40% 96%;
+    --muted: 224 22% 16%;
+    --muted-foreground: 217 20% 65%;
+    --accent: 224 22% 18%;
+    --accent-foreground: 210 40% 96%;
+    --destructive: 0 72% 56%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 224 22% 18%;
+    --input: 224 22% 22%;
+    --ring: 258 90% 70%;
+
+    /* health score ramp: FileNode.health_score 0–100 */
+    --health-good: 152 62% 52%;
+    --health-medium: 38 88% 56%;
+    --health-bad: 0 72% 56%;
+
+    /* complexity ramp: FileNode.complexity_score */
+    --complexity-low: 210 60% 60%;
+    --complexity-medium: 38 88% 56%;
+    --complexity-high: 0 72% 56%;
+
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}

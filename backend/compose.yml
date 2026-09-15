@@ -1,0 +1,49 @@
+# Local backend stack — Postgres + the FastAPI app.
+# Agent 6 (DevOps & QA) owns the top-level compose that adds redis, the
+# frontend and CI; this file exists so Agent 1's "definition of done"
+# (`docker-compose up` brings up Postgres + backend cleanly) works in a
+# self-contained backend-only folder.
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codeatlas}
+      POSTGRES_DB: app
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d app"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    volumes:
+      - app-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      FASTAPI_ENV: ${FASTAPI_ENV:-development}
+      PROJECT_NAME: ${PROJECT_NAME:-CodeAtlas}
+      SECRET_KEY: ${SECRET_KEY:-changethis}
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-codeatlas}@db:5432/app
+      FRONTEND_HOST: ${FRONTEND_HOST:-http://localhost:5173}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_OAUTH_SCOPES: "read:user repo"
+      GITHUB_OAUTH_CALLBACK_URL: ${GITHUB_OAUTH_CALLBACK_URL:-http://localhost:5173/auth/callback}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET:-changethis}
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+
+  # Redis arrives with Agent 5 (realtime/websockets + pub/sub).
+  # redis:
+  #   image: redis:7
+
+volumes:
+  app-db-data:

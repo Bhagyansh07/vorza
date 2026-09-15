@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+
+# Env & secrets — never commit real credentials
+.env
+.env.*
+!.env.example
+
+# Local data / extracted checkouts
+data/
+checkouts/
+tmp/
+
+# Editor & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
