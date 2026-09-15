@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     # Route prefix for the API. Kept empty so endpoints match CONTRACTS.md
     # verbatim (e.g. `/repos`, `/me`).
     API_V1_STR: str = ""
-    PROJECT_NAME: str = "CodeAtlas"
+    PROJECT_NAME: str = "Vorza"
     SECRET_KEY: str
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8

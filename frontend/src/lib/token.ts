@@ -1,4 +1,4 @@
-const TOKEN_KEY = 'codeatlas.access_token';
+const TOKEN_KEY = 'Vorza.access_token';
 
 export function getAccessToken(): string | null {
   return window.localStorage.getItem(TOKEN_KEY);

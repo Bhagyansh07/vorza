@@ -78,7 +78,7 @@ export function GraphEmptyState({ onRetry }: CommonProps) {
       <div className="max-w-[46ch]">
         <p className="text-sm font-medium text-ink">Nothing to map yet</p>
         <p className="mt-1.5 text-xs leading-relaxed text-ink-dim">
-          Connect a GitHub repo and run a first analysis. CodeAtlas will turn its
+          Connect a GitHub repo and run a first analysis. Vorza will turn its
           files into a live map sized by complexity and colored by health.
         </p>
       </div>

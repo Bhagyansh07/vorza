@@ -9,8 +9,8 @@ const API = 'http://localhost:8000';
 
 const user = {
   id: 'u_1',
-  email: 'dev@codeatlas.dev',
-  github_username: 'codeatlas-dev',
+  email: 'dev@Vorza.dev',
+  github_username: 'Vorza-dev',
   created_at: '2026-01-01T00:00:00Z',
 };
 
@@ -90,14 +90,14 @@ afterEach(() => {
 afterAll(() => server.close());
 
 beforeEach(() => {
-  window.localStorage.setItem('codeatlas.access_token', 'jwt-123');
+  window.localStorage.setItem('Vorza.access_token', 'jwt-123');
 });
 
 describe('httpApiClient (Agent 1 contract endpoints)', () => {
   it('POST /auth/github/callback exchanges a code for a session', async () => {
     const result = await httpApiClient.loginWithGitHubCode({ code: 'abc' });
     expect(result.access_token).toBe('jwt-123');
-    expect(result.user.github_username).toBe('codeatlas-dev');
+    expect(result.user.github_username).toBe('Vorza-dev');
   });
 
   it('GET /me sends the bearer token and returns the current user', async () => {
@@ -105,7 +105,7 @@ describe('httpApiClient (Agent 1 contract endpoints)', () => {
   });
 
   it('GET /me with a bad token rejects with ApiError and clears the session', async () => {
-    window.localStorage.setItem('codeatlas.access_token', 'expired');
+    window.localStorage.setItem('Vorza.access_token', 'expired');
     let unauthorizedFired = false;
     const listener = () => {
       unauthorizedFired = true;
@@ -117,7 +117,7 @@ describe('httpApiClient (Agent 1 contract endpoints)', () => {
       status: 401,
     } satisfies Partial<ApiError>);
 
-    expect(window.localStorage.getItem('codeatlas.access_token')).toBeNull();
+    expect(window.localStorage.getItem('Vorza.access_token')).toBeNull();
     expect(unauthorizedFired).toBe(true);
     window.removeEventListener(UNAUTHORIZED_EVENT, listener);
   });

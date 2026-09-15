@@ -44,7 +44,7 @@ export function Dashboard() {
           <GitFork className="h-10 w-10 text-muted-foreground" />
           <p className="font-medium">No repos connected yet</p>
           <p className="max-w-sm text-sm text-muted-foreground">
-            Connect your first GitHub repository and CodeAtlas will analyze its
+            Connect your first GitHub repository and Vorza will analyze its
             shape and health.
           </p>
           <ConnectRepoDialog />

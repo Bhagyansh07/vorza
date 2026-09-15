@@ -23,7 +23,7 @@ export function Navbar() {
             <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/20">
               <MapIcon className="h-4 w-4 text-primary" />
             </span>
-            CodeAtlas
+            Vorza
           </Link>
           <nav className="hidden items-center gap-1 sm:flex">
             <Link

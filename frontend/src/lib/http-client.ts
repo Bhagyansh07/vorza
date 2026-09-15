@@ -17,7 +17,7 @@ import type {
 import { ApiError } from '@/lib/errors';
 import { clearAccessToken, getAccessToken } from '@/lib/token';
 
-export const UNAUTHORIZED_EVENT = 'codeatlas:unauthorized';
+export const UNAUTHORIZED_EVENT = 'Vorza:unauthorized';
 
 const API_BASE_URL: string =
   import.meta.env.VITE_API_URL ?? 'http://localhost:8000';

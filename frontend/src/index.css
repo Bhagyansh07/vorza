@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /*
- * CodeAtlas design tokens (CSS variables). Keep these in ONE place — the
+ * Vorza design tokens (CSS variables). Keep these in ONE place — the
  * Tailwind theme maps onto them (see tailwind.config.ts). Agent 4: use the
  * theme colors (health.*, complexity.*, etc.), not raw hex values.
  */

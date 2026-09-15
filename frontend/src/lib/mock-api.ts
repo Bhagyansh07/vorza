@@ -30,8 +30,8 @@ const delay = (ms = 350): Promise<void> =>
 
 export const mockUser: User = {
   id: 'u_1',
-  email: 'dev@codeatlas.dev',
-  github_username: 'codeatlas-dev',
+  email: 'dev@Vorza.dev',
+  github_username: 'Vorza-dev',
   created_at: new Date().toISOString(),
 };
 

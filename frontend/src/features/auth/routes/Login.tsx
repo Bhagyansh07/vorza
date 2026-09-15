@@ -107,7 +107,7 @@ export function LoginPage() {
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-md bg-primary/20">
             <MapIcon className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl">CodeAtlas</CardTitle>
+          <CardTitle className="text-2xl">Vorza</CardTitle>
           <CardDescription>
             The living, AI-reviewed map of your codebase. Sign in with GitHub to
             see your repos.
@@ -150,7 +150,7 @@ export function LoginPage() {
         </CardContent>
         <CardFooter className="justify-center">
           <p className="text-xs text-muted-foreground">
-            By continuing you grant CodeAtlas read access to your GitHub repos.
+            By continuing you grant Vorza read access to your GitHub repos.
           </p>
         </CardFooter>
       </Card>

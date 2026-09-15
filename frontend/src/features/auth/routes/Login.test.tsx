@@ -15,8 +15,8 @@ vi.mock('@/lib/config', async (importOriginal) => {
 
 const mockUser = {
   id: 'u_1',
-  email: 'dev@codeatlas.dev',
-  github_username: 'codeatlas-dev',
+  email: 'dev@Vorza.dev',
+  github_username: 'Vorza-dev',
   created_at: '2026-01-01T00:00:00Z',
 };
 
@@ -78,6 +78,6 @@ describe('LoginPage', () => {
 
     expect(await screen.findByText('dashboard-page')).toBeInTheDocument();
     expect(useAuthStore.getState().status).toBe('authenticated');
-    expect(useAuthStore.getState().user?.github_username).toBe('codeatlas-dev');
+    expect(useAuthStore.getState().user?.github_username).toBe('Vorza-dev');
   });
 });

@@ -31,8 +31,8 @@ describe('ProtectedRoute', () => {
     useAuthStore.setState({
       user: {
         id: 'u_1',
-        email: 'dev@codeatlas.dev',
-        github_username: 'codeatlas-dev',
+        email: 'dev@Vorza.dev',
+        github_username: 'Vorza-dev',
         created_at: '',
       },
       status: 'authenticated',
