@@ -6,6 +6,13 @@ engine_kwargs: dict = {"pool_pre_ping": True}
 if str(settings.DATABASE_URL).startswith("sqlite"):
     engine_kwargs["connect_args"] = {"check_same_thread": False}
 
+# SQLite needs its parent directory to exist before the file is created;
+# SQLAlchemy won't create folders for us people.
+if str(settings.DATABASE_URL).startswith("sqlite://"):
+    Path(str(settings.DATABASE_URL).replace("sqlite:///", "")).parent.mkdir(
+        parents=True, exist_ok=True
+    )
+
 engine = create_engine(str(settings.DATABASE_URL), **engine_kwargs)
 
 
