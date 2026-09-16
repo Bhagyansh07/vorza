@@ -51,3 +51,5 @@ the real models.
 - Blocked: real GitHub OAuth creds + OpenAI key not configured in production env;
   gag order not implemented in WebSocket (auth only, no onion-key yet); alembic
   migrations dir absent (tests bootstrap via init_db.create_all).
+
+[2026-09-16] OAuth live: Render FRONTEND_HOST + GitHub callback fixed. Vercel project update: framework=vite, rootDirectory=frontend. Check backend bundle contains codeatlas-qr0e after this build.
