@@ -25,7 +25,13 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Any, Protocol, TypeAlias
 
-import redis.asyncio as aioredis
+try:
+    import redis.asyncio as aioredis
+except ImportError:  # pragma: no cover - Render free tier has no managed Redis
+    aioredis = None  # type: ignore[assignment]
+
+    class _FakeAsyncRedis:  # minimal stand-in so type hints don't break
+        pass
 
 from app.ws.events import encode
 
