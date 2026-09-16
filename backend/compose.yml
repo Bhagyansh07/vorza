@@ -8,7 +8,7 @@ services:
   db:
     image: postgres:17
     environment:
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codeatlas}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vorza}
       POSTGRES_DB: app
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d app"]
@@ -28,9 +28,9 @@ services:
         condition: service_healthy
     environment:
       FASTAPI_ENV: ${FASTAPI_ENV:-development}
-      PROJECT_NAME: ${PROJECT_NAME:-CodeAtlas}
+      PROJECT_NAME: ${PROJECT_NAME:-Vorza}
       SECRET_KEY: ${SECRET_KEY:-changethis}
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-codeatlas}@db:5432/app
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-vorza}@db:5432/app
       FRONTEND_HOST: ${FRONTEND_HOST:-http://localhost:5173}
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}

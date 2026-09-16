@@ -1,8 +1,7 @@
 import type {
   AnalysisSnapshot,
-  Comment,
-  PresenceCursor,
   RealtimeScope,
+  RealtimeSource,
   ReviewResult,
 } from "../types";
 import { generateMockSnapshot, generateMockComments } from "./seed";
@@ -151,7 +150,7 @@ export class MockRealtimeSource implements RealtimeSource {
       cursorT += 1;
       for (const w of wanderers) {
         const { x, y } = w.gen.tick();
-        const jitter = cursorT % 3 === w.user_id ? 0.004 : 0;
+        const jitter = cursorT % 3 === w.gen.user_id ? 0.004 : 0;
         scope.onCursor({
           user_id: w.user.user_id,
           x: clamp(x + jitter, 0.02, 0.98),

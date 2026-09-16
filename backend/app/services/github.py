@@ -8,6 +8,7 @@ repos) and, later, uses the stored token to fetch repo metadata.
 
 import hashlib
 import hmac
+import secrets
 from pathlib import Path
 
 import httpx
@@ -35,18 +36,45 @@ class GitHubCheckoutError(Exception):
     """Raised when a repo checkout cannot be cloned/refreshed on disk."""
 
 
-def build_authorize_url() -> str:
-    """URL the frontend redirects the browser to for GitHub login."""
+def build_authorize_url() -> tuple[str, str]:
+    """Return ``(authorize_url, state)`` for GitHub login.
+
+    The ``state`` value is opaque, single-use, and HMAC-signed with the
+    backend ``SECRET_KEY`` so the callback can verify it without server-side
+    session storage. The frontend must echo it back in the callback request.
+    """
     if not settings.GITHUB_CLIENT_ID:
         raise GithubOAuthError("GITHUB_CLIENT_ID is not configured")
+    state = _new_oauth_state()
     params = httpx.QueryParams(
         {
             "client_id": settings.GITHUB_CLIENT_ID,
             "redirect_uri": settings.GITHUB_OAUTH_CALLBACK_URL,
             "scope": "read:user repo",
+            "state": state,
         }
     )
-    return f"{GITHUB_OAUTH_AUTHORIZE_URL}?{params}"
+    return f"{GITHUB_OAUTH_AUTHORIZE_URL}?{params}", state
+
+
+def _new_oauth_state() -> str:
+    nonce = secrets.token_urlsafe(24)
+    digest = hmac.new(
+        settings.SECRET_KEY.encode(), nonce.encode(), hashlib.sha256
+    ).hexdigest()[:24]
+    return f"{nonce}.{digest}"
+
+
+def verify_oauth_state(state: str) -> bool:
+    """``True`` only for a state we signed via ``_new_oauth_state``."""
+    try:
+        nonce, digest = state.rsplit(".", 1)
+    except ValueError:
+        return False
+    expected = hmac.new(
+        settings.SECRET_KEY.encode(), nonce.encode(), hashlib.sha256
+    ).hexdigest()[:24]
+    return hmac.compare_digest(digest, expected)
 
 
 # ---------------------------------------------------------------------------

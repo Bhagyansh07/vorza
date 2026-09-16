@@ -1,7 +1,7 @@
 [project]
-name = "codeatlas-backend"
+name = "vorza-backend"
 version = "0.1.0"
-description = "CodeAtlas backend: FastAPI + SQLModel + PostgreSQL, GitHub OAuth, analysis snapshots, PR webhooks."
+description = "Vorza backend: FastAPI + SQLModel + PostgreSQL, GitHub OAuth, analysis snapshots, PR webhooks."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi[standard]>=0.141.1,<1.0.0",
@@ -19,6 +19,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest<10.0.0,>=7.4.3",
+    "pytest-asyncio<1.0.0,>=0.26.0",
     "mypy<3.0.0,>=1.8.0",
     "ruff<1.0.0,>=0.2.2",
     "coverage<8.0.0,>=7.4.3",

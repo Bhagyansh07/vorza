@@ -2,7 +2,7 @@ import type { Config } from 'tailwindcss';
 import animate from 'tailwindcss-animate';
 
 /**
- * CodeAtlas design tokens — single source of truth for the frontend palette.
+ * Vorza design tokens — single source of truth for the frontend palette.
  * Agent 4's visualization (src/features/graph) MUST reuse these colors so the
  * graph stays on-brand. Exposed extras beyond vanilla shadcn/ui:
  *

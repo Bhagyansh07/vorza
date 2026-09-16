@@ -1,6 +1,6 @@
 import * as d3 from "d3-force";
 import { select } from "d3-selection";
-import { zoomIdentity, zoom as d3Zoom } from "d3-zoom";
+import { zoomIdentity, zoom as d3Zoom, type ZoomTransform } from "d3-zoom";
 import {
   forwardRef,
   useCallback,
@@ -22,6 +22,7 @@ interface Props {
 }
 
 interface SimNode extends FileNode {
+  id: string;
   index?: number;
   r: number;
   x: number;
@@ -39,6 +40,7 @@ const BOUNDING = 120000;
 export interface ForceGraphHandle {
   fit: () => void;
   nodeScreenPoint: (path: string) => { x: number; y: number } | null;
+  nodeNearestScreenPoint: (x: number, y: number) => string | null;
   canvasSize: () => { width: number; height: number };
 }
 
@@ -110,7 +112,7 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
   }, []);
 
   const applyTransform = useCallback(
-    (t: d3.ZoomTransform) => {
+    (t: ZoomTransform) => {
       if (worldRef.current) {
         worldRef.current.setAttribute(
           "transform",
@@ -177,6 +179,7 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
       const prev = positionsRef.current.get(f.path);
       return {
         ...f,
+        id: f.path,
         index: i,
         r: nodeRadius(f.complexity_score, f.loc),
         x: Number.isFinite(prev?.x) ? (prev?.x as number) : (Math.random() - 0.5) * 700,
@@ -280,6 +283,24 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
         if (!node) return null;
         const { x, y, k } = zoomRef.current;
         return { x: node.x * k + x, y: node.y * k + y };
+      },
+      nodeNearestScreenPoint: (screenX: number, screenY: number) => {
+        const sim = simRef.current;
+        if (!sim) return null;
+        const { x, y, k } = zoomRef.current;
+        const wx = (screenX - x) / k;
+        const wy = (screenY - y) / k;
+        let best: SimNode | null = null;
+        let bestDist = Infinity;
+        for (const n of sim.nodes()) {
+          const d = Math.hypot(n.x - wx, n.y - wy);
+          if (d < bestDist) {
+            bestDist = d;
+            best = n;
+          }
+        }
+        const threshold = best ? Math.max(best.r + 24, 28) : 0;
+        return best && bestDist <= threshold ? best.id : null;
       },
       canvasSize: () => sizeRef.current,
     }),

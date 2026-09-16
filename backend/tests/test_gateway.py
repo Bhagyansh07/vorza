@@ -8,6 +8,7 @@ browser connections" load test from the task file.
 
 from __future__ import annotations
 
+from datetime import timedelta
 from typing import Any
 
 import pytest
@@ -15,6 +16,7 @@ from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 import app.ws.gateway as gateway_module
+from app.core.security import create_access_token
 from app.ws import publish_snapshot_updated
 from app.ws.comment_store import DummyCommentStore
 from app.ws.pubsub import configure_hub, reset_hub
@@ -37,19 +39,25 @@ def hub():
     reset_hub()
 
 
-def until(ws: Any, wanted: str) -> dict[str, Any]:
-    """Read events until the wanted type arrives (skipping join/roster echoes)."""
+def until(ws: Any, wanted: str, *, where: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Read events until the wanted type arrives, optionally matching payload fields."""
     for _ in range(30):
         event = ws.receive_json()
-        if event["type"] == wanted:
+        if event["type"] != wanted:
+            continue
+        if where is None:
             return event
-    raise AssertionError(f"never received a {wanted} event")
+        if all(event["payload"].get(k) == v for k, v in where.items()):
+            return event
+    raise AssertionError(f"never received a {wanted} event matching {where}")
 
 
 def join(ws: Any, repo_id: str, user_id: str) -> dict[str, Any]:
-    ws.send_json({"type": "presence:join", "payload": {"repo_id": repo_id, "user_id": user_id}})
+    token = create_access_token(user_id, expires_delta=timedelta(hours=1))
+    ws.send_json({"type": "presence:join", "payload": {"repo_id": repo_id, "token": token}})
     roster = until(ws, "presence:roster")
     assert roster["payload"]["repo_id"] == repo_id
+    until(ws, "presence:join")  # drain the self-echo broadcast before the next read
     return roster
 
 
@@ -78,7 +86,7 @@ def test_two_clients_see_each_others_join_and_leave(hub) -> None:
 
             with client.websocket_connect(f"/ws/repos/{REPO}") as ws2:
                 join(ws2, REPO, "u2")
-                join_event = until(ws1, "presence:join")
+                join_event = until(ws1, "presence:join", where={"user_id": "u2"})
                 assert join_event["payload"]["user_id"] == "u2"
 
             # ws2's socket closed → ws1 hears the leave

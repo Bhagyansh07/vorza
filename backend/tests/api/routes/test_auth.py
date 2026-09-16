@@ -4,8 +4,14 @@ from fastapi.testclient import TestClient
 
 from app.api.routes import auth as auth_routes
 from app.core.config import settings
-from app.services.github import GithubOAuthError
+from app.services.github import GithubOAuthError, build_authorize_url
 from tests.utils.user import authentication_token
+
+
+def _signed_state(monkeypatch) -> str:
+    monkeypatch.setattr(settings, "GITHUB_CLIENT_ID", "github-client-abc")
+    _, state = build_authorize_url()
+    return state
 
 
 def test_github_login_returns_authorize_url(client: TestClient, monkeypatch):
@@ -38,7 +44,10 @@ def test_github_callback_creates_user(client: TestClient, monkeypatch):
     monkeypatch.setattr(auth_routes, "exchange_code_for_token", fake_exchange)
     monkeypatch.setattr(auth_routes, "fetch_github_user", fake_profile)
 
-    response = client.post("/auth/github/callback", json={"code": "one-time-code"})
+    response = client.post(
+        "/auth/github/callback",
+        json={"code": "one-time-code", "state": _signed_state(monkeypatch)},
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["token_type"] == "bearer"
@@ -55,7 +64,10 @@ def test_github_callback_invalid_code(client: TestClient, monkeypatch):
         raise GithubOAuthError("bad_verification_code")
 
     monkeypatch.setattr(auth_routes, "exchange_code_for_token", fake_exchange)
-    response = client.post("/auth/github/callback", json={"code": "bad-code"})
+    response = client.post(
+        "/auth/github/callback",
+        json={"code": "bad-code", "state": _signed_state(monkeypatch)},
+    )
     assert response.status_code == 400
 
 

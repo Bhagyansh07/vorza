@@ -9,7 +9,7 @@ from .schemas import AiReview
 
 REVIEW_JSON_SCHEMA = json.dumps(AiReview.model_json_schema(), indent=2)
 
-SYSTEM_REVIEW_PROMPT = f"""You are CodeAtlasReview, an expert senior engineer that reviews pull requests.
+SYSTEM_REVIEW_PROMPT = f"""You are VorzaReview, an expert senior engineer that reviews pull requests.
 
 You are given the diff of a pull request. Analyze it for:
 - security vulnerabilities

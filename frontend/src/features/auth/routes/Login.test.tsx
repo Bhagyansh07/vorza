@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -41,6 +41,10 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
 describe('LoginPage', () => {
   it('shows the GitHub OAuth entry point when signed out', () => {
     renderLogin();
@@ -58,9 +62,17 @@ describe('LoginPage', () => {
     expect(await screen.findByText('dashboard-page')).toBeInTheDocument();
   });
 
-  it('redirects to the browser when the user clicks Continue with GitHub', async () => {
-    const redirect = vi.mocked(
-      (await import('@/lib/config')).oauthRedirect
+  it('redirects to GitHub via the backend authorize URL', async () => {
+    const redirect = vi.mocked((await import('@/lib/config')).oauthRedirect);
+    const backendUrl = 'https://github.com/login/oauth/authorize?client_id=abc&state=xyz';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Promise.resolve({
+          ok: true,
+          json: async () => ({ message: backendUrl }),
+        })
+      ) as unknown as typeof fetch
     );
     const user = userEvent.setup();
     renderLogin();
@@ -70,7 +82,7 @@ describe('LoginPage', () => {
     );
 
     expect(redirect).toHaveBeenCalledOnce();
-    expect(redirect.mock.calls[0][0]).toMatch(/github\.com\/login\/oauth\/authorize/);
+    expect(redirect.mock.calls[0][0]).toBe(backendUrl);
   });
 
   it('exchanges a ?code= from the OAuth callback and lands on the dashboard', async () => {

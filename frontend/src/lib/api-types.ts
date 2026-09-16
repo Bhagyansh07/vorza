@@ -31,6 +31,8 @@ export interface AuthResponse {
 
 export interface LoginWithGitHubCodeInput {
   code: string;
+  /** Signed by the backend via GET /auth/github/login; must be echoed back. */
+  state?: string;
 }
 
 export interface ConnectRepoInput {

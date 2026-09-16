@@ -1,4 +1,5 @@
 interface CommonProps {
+  message?: string;
   onRetry?: () => void;
 }
 

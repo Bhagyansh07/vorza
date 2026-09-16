@@ -25,6 +25,7 @@ import {
 } from '@/features/repos/hooks/use-repos';
 import { toErrorMessage } from '@/lib/errors';
 import { healthBadgeClasses } from '@/lib/health';
+import { GraphView, mockRealtimeSource } from '@/features/graph';
 
 type RepoDetailParams = {
   repoId: string;
@@ -135,29 +136,12 @@ export function RepoDetail() {
         ) : null}
       </div>
 
-      {/*
-       * GRAPH SLOT — owned by Agent 4 (see STATUS.md).
-       * Agent 4: create `src/features/graph/components/GraphView.tsx` accepting
-       * `{ repoId: string }` and render it inside the container below, replacing
-       * this placeholder. Design tokens: tailwind.config.ts (health.*,
-       * complexity.*) + src/lib/health.ts.
-       */}
-      <div
-        id="graph-slot"
-        data-repo-id={repoId}
-        className="h-[560px] rounded-lg border border-border bg-card/40"
-      >
-        <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
-          <ActivityIcon className="h-8 w-8 text-primary/70" />
-          <p className="font-medium text-foreground/80">
-            Graph view coming from Agent 4
-          </p>
-          <p className="max-w-md text-sm text-muted-foreground">
-            <code>GraphView</code> mounts here with{' '}
-            <code className="rounded bg-secondary px-1">repoId={repoId}</code>{' '}
-            and renders the force-directed code map inside this slot.
-          </p>
-        </div>
+      <div className="h-[560px]">
+        <GraphView
+          repoId={repoId}
+          repoName={repo?.github_full_name}
+          realtime={mockRealtimeSource}
+        />
       </div>
     </div>
   );

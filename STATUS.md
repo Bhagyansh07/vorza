@@ -23,6 +23,12 @@ the real models.
 
 <!-- New entries go below this line -->
 
+### [Copilot] 2026-09-15 local full-stack verification
+- Did: Verified backend with `python -m pytest -q` (23 passed), frontend with typecheck, production build, lint, and Vitest (26 passed). Started FastAPI locally with SQLite and Vite locally; both responded successfully over HTTP.
+- Exposed: Backend OpenAPI at `http://127.0.0.1:8000/openapi.json`; frontend at `http://127.0.0.1:5174/` because port 5173 was already occupied by an existing frontend process.
+- Blocked on: Docker/Docker Compose is not installed or available on this Windows environment, so container-stack verification cannot run here. No application failure was reproduced.
+- Next: Install/start Docker Desktop for Compose validation, or use the verified local commands from the backend and frontend directories.
+
 ### [Backend Consolidation] Orchestrator wiring + first commit
 - Fixed the `webhooks.py` import crash (P0): routes `analysis.py`/`webhooks.py`
   were importing `analyze_repo`/`review_pull_request` + `verify_webhook_signature`

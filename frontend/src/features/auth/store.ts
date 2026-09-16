@@ -18,7 +18,7 @@ interface AuthState {
   user: User | null;
   status: AuthStatus;
   initialize: () => Promise<void>;
-  login: (code: string) => Promise<void>;
+  login: (code: string, state?: string) => Promise<void>;
   completeLogin: (token: string) => Promise<void>;
   logout: () => Promise<void>;
   /** Test / 401-recovery hook — sets the session without a network call. */
@@ -46,10 +46,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     }
   },
 
-  login: async (code: string) => {
+  login: async (code: string, state?: string) => {
     set({ status: 'loading' });
-    const { access_token, user } = await loginWithGitHubCode({ code });
+    const { access_token } = await loginWithGitHubCode({ code, state });
     setAccessToken(access_token);
+    const user = await getCurrentUser();
     set({ user, status: 'authenticated' });
   },
 

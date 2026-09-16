@@ -150,7 +150,7 @@ export function TrendChart({ repoId, height = 320 }: Props) {
             />
             <Tooltip
               cursor={{ stroke: "hsl(var(--atlas-line))", strokeDasharray: "3 3" }}
-              content={customTooltip}
+              content={customTooltip as (props: Record<string, unknown>) => React.ReactNode}
             />
             <Area
               type="monotone"
@@ -171,7 +171,7 @@ export function TrendChart({ repoId, height = 320 }: Props) {
 
 function customTooltip(props: {
   active?: boolean;
-  payload?: Array<{ value?: number; payload?: SnapshotHistoryPoint }>;
+  payload?: readonly { value?: number; payload?: SnapshotHistoryPoint }[];
 }) {
   const { active, payload } = props;
   const entry = payload?.[0];

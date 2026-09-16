@@ -19,6 +19,7 @@ from typing import Any, cast
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from app.core.security import decode_access_token
 from app.ws.comment_store import CommentStore, DummyCommentStore
 from app.ws.events import (
     EVENT_COMMENT_NEW,
@@ -31,7 +32,7 @@ from app.ws.events import (
     is_client_event_type,
 )
 from app.ws.manager import ConnectionManager
-from app.ws.pubsub import PubSubHub, get_hub
+from app.ws.pubsub import CHANNEL_PREFIX, CHANNEL_SUFFIX, PubSubHub, get_hub
 from app.ws.throttler import CursorThrottle
 
 logger = logging.getLogger(__name__)
@@ -58,8 +59,16 @@ def init_runtime(comment_store: CommentStore | None = None) -> None:
         _comment_store = comment_store
 
 
-async def _repo_channel_handler(repo_id: str, event: dict[str, Any]) -> None:
-    """Everything on the repo channel becomes a broadcast to local watchers."""
+async def _repo_channel_handler(channel: str, event: dict[str, Any]) -> None:
+    """Everything on the repo channel becomes a broadcast to local watchers.
+
+    The hub routes by full channel (``repo:{id}:events``); strip to the repo id.
+    """
+    prefix, suffix = CHANNEL_PREFIX, CHANNEL_SUFFIX
+    if channel.startswith(prefix) and channel.endswith(suffix):
+        repo_id = channel[len(prefix) : -len(suffix)]
+    else:
+        repo_id = channel
     await _manager.broadcast(repo_id, str(event.get("type", "")), dict(event.get("payload", {})))
 
 
@@ -104,6 +113,8 @@ async def repo_socket(websocket: WebSocket, repo_id: str) -> None:
         flush_task = asyncio.create_task(_cursor_flush_loop(repo_id, cursor))
         try:
             await _handle_client_stream(websocket, repo_id, user_id, cursor)
+        except WebSocketDisconnect:
+            pass
         finally:
             flush_task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
@@ -134,11 +145,16 @@ async def _await_join(websocket: WebSocket, repo_id: str) -> str | None:
         logger.info("ws connect aborted: first message must be presence:join, got %s", event.type)
         return None
     payload: Any = event.payload
-    if not isinstance(payload, dict) or not payload.get("user_id"):
+    if not isinstance(payload, dict) or not payload.get("token"):
+        logger.info("ws connect aborted: presence:join needs a Bearer token")
         return None
     if payload.get("repo_id") not in (None, repo_id):
         return None
-    return str(payload["user_id"])
+    user_id = decode_access_token(str(payload["token"]))
+    if user_id is None:
+        logger.info("ws connect aborted: invalid JWT in presence:join")
+        return None
+    return user_id
 
 
 async def _handle_client_stream(

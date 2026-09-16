@@ -1,4 +1,4 @@
-"""CodeAtlas real-time layer (Agent 5).
+"""Vorza real-time layer (Agent 5).
 
 Public surface:
 

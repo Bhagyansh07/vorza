@@ -13,6 +13,7 @@ import { toErrorMessage } from '@/lib/errors';
 interface QueryState {
   code: string | null;
   token: string | null;
+  state: string | null;
   error: string | null;
 }
 
@@ -21,19 +22,22 @@ function readQuery(search: string): QueryState {
   return {
     code: params.get('code'),
     token: params.get('token'),
+    state: params.get('state'),
     error: params.get('error'),
   };
 }
 
-function buildOAuthUrl(): string {
-  const params = new URLSearchParams({
-    response_type: 'code',
-    client_id: config.githubClientId,
-    redirect_uri: config.githubCallbackUrl,
-    scope: 'read:user user:email',
-    state: Math.random().toString(36).slice(2),
-  });
-  return `${config.githubOAuthUrl}?${params.toString()}`;
+/** Backend owns the OAuth URL (client_id, redirect_uri, signed state). */
+async function fetchAuthorizeUrl(): Promise<string> {
+  const response = await fetch(`${config.apiUrl}/auth/github/login`);
+  if (!response.ok) {
+    throw new Error('GitHub OAuth is not configured on the backend');
+  }
+  const body = (await response.json()) as { message?: string };
+  if (!body.message) {
+    throw new Error('GitHub OAuth is not configured on the backend');
+  }
+  return body.message;
 }
 
 export function LoginPage() {
@@ -67,7 +71,7 @@ export function LoginPage() {
         if (query.token) {
           await completeLogin(query.token);
         } else if (query.code) {
-          await login(query.code);
+          await login(query.code, query.state ?? undefined);
         }
         if (!cancelled) navigate(from, { replace: true });
       } catch (error) {
@@ -82,10 +86,17 @@ export function LoginPage() {
     return () => {
       cancelled = true;
     };
-  }, [query.code, query.token, query.error, completeLogin, login, navigate, from]);
+  }, [query.code, query.token, query.error, query.state, completeLogin, login, navigate, from]);
 
-  const startOAuth = () => {
-    oauthRedirect(buildOAuthUrl());
+  const startOAuth = async () => {
+    setHandling(true);
+    try {
+      const url = await fetchAuthorizeUrl();
+      oauthRedirect(url);
+    } catch (error) {
+      toast.error(toErrorMessage(error));
+      setHandling(false);
+    }
   };
 
   const useDemoAccount = async () => {

@@ -188,7 +188,7 @@ export function generateMockSnapshot(repoId: string, seed: number): AnalysisSnap
   };
 }
 
-export function generateMockHistory(repoId: string, seed: number): SnapshotHistoryPoint[] {
+export function generateMockHistory(_repoId: string, seed: number): SnapshotHistoryPoint[] {
   const rnd = mulberry32(seed + 1);
   const points: SnapshotHistoryPoint[] = [];
   const weeks = 24;
@@ -255,11 +255,6 @@ export function generateMockComments(
       y: 0.62,
     },
   ];
-  const users: Record<string, string> = {
-    priya: "Priya R.",
-    marcus: "Marcus L.",
-    ada: "Ada K.",
-  };
   const now = Date.now();
   return drafts.map((d, i): Comment => {
     const comment: Comment = {

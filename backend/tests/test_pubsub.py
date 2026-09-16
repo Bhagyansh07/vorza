@@ -11,6 +11,7 @@ from app.ws import publish_comment_new, publish_review_new, publish_snapshot_upd
 from app.ws.pubsub import InMemoryPubSubBackend, PubSubHub, channel_for, reset_hub
 
 
+@pytest.mark.asyncio
 async def test_events_reach_subscribers_on_the_repo_channel() -> None:
     hub = PubSubHub(backend=InMemoryPubSubBackend())
     received: list[dict[str, Any]] = []
@@ -28,6 +29,7 @@ async def test_events_reach_subscribers_on_the_repo_channel() -> None:
     await hub.close()
 
 
+@pytest.mark.asyncio
 async def test_publish_before_subscribe_is_lost_like_redis() -> None:
     hub = PubSubHub(backend=InMemoryPubSubBackend())
     received: list[dict[str, Any]] = []
@@ -41,6 +43,7 @@ async def test_publish_before_subscribe_is_lost_like_redis() -> None:
     await hub.close()
 
 
+@pytest.mark.asyncio
 async def test_repos_are_isolated_channels() -> None:
     hub = PubSubHub(backend=InMemoryPubSubBackend())
     other: list[dict[str, Any]] = []
@@ -54,6 +57,7 @@ async def test_repos_are_isolated_channels() -> None:
     await hub.close()
 
 
+@pytest.mark.asyncio
 async def test_unsubscribe_removes_handler() -> None:
     hub = PubSubHub(backend=InMemoryPubSubBackend())
     received: list[dict[str, Any]] = []
@@ -68,6 +72,7 @@ async def test_unsubscribe_removes_handler() -> None:
     await hub.close()
 
 
+@pytest.mark.asyncio
 async def test_configured_helpers_fire_module_hub_after_configure() -> None:
     from app.ws.pubsub import configure_hub
 

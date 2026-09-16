@@ -1,4 +1,4 @@
-"""initial CodeAtlas tables
+"""initial Vorza tables
 
 Revision ID: 0001
 Revises:

@@ -13,6 +13,7 @@ from app.services.github import (
     build_authorize_url,
     exchange_code_for_token,
     fetch_github_user,
+    verify_oauth_state,
 )
 
 router = APIRouter(tags=["auth"])
@@ -20,18 +21,18 @@ router = APIRouter(tags=["auth"])
 
 class GithubCallbackRequest(SQLModel):
     code: str
+    state: str
 
 
 @router.get("/auth/github/login")
 def github_login() -> Message:
     """Return the GitHub authorize URL the frontend should redirect to.
 
-    `POST /auth/github/callback` is the canonical login endpoint in
-    CONTRACTS.md; this helper is a courtesy so the frontend never needs to
-    know the backend's client_id / redirect_uri.
+    The URL includes an ``state`` parameter; the frontend must echo it back
+    unchanged in ``POST /auth/github/callback``.
     """
     try:
-        authorize_url = build_authorize_url()
+        authorize_url, _state = build_authorize_url()
     except GithubOAuthError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -46,6 +47,11 @@ async def github_callback(
     session: SessionDep,
 ) -> Token:
     """Exchange a GitHub OAuth code for a JWT; create the user if needed."""
+    if not verify_oauth_state(body.state):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OAuth state",
+        )
     try:
         github_token = await exchange_code_for_token(body.code)
         profile = await fetch_github_user(github_token)
