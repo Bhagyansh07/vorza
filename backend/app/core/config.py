@@ -71,12 +71,12 @@ class Settings(BaseSettings):
         self._check_default_secret(
             "GITHUB_WEBHOOK_SECRET", self.GITHUB_WEBHOOK_SECRET
         )
-        # Default the OAuth callback to the deployed frontend so production
-        # doesn't redirect to localhost. Set GITHUB_OAUTH_CALLBACK_URL to
-        # override explicitly.
+        # Default the OAuth callback to the deployed frontend's /login route
+        # (where Login.tsx picks up `code`), so production doesn't redirect to
+        # localhost. Set GITHUB_OAUTH_CALLBACK_URL to override explicitly.
         if not self.GITHUB_OAUTH_CALLBACK_URL:
             self.GITHUB_OAUTH_CALLBACK_URL = (
-                f"{self.FRONTEND_HOST.rstrip('/')}/auth/callback"
+                f"{self.FRONTEND_HOST.rstrip('/')}/login"
             )
         return self
 
