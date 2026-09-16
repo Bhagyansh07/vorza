@@ -15,6 +15,14 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Ensure tables exist even when Alembic migrations never ran (Render free
+    # tier falls back to SQLite and has no prestart hook). Idempotent — leaves a
+    # Postgres schema untouched.
+    from sqlmodel import SQLModel
+
+    from app.core.db import engine
+
+    SQLModel.metadata.create_all(engine)
     init_runtime()
     yield
 
