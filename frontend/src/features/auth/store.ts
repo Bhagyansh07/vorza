@@ -2,7 +2,12 @@ import { create } from 'zustand';
 
 import type { User } from '@/types';
 
-import { getCurrentUser, loginWithGitHubCode, logoutRequest } from '@/features/auth/api/auth';
+import {
+  getCurrentUser,
+  loginWithGitHubCode,
+  logoutRequest,
+} from '@/features/auth/api/auth';
+import { ApiError } from '@/lib/errors';
 import { UNAUTHORIZED_EVENT } from '@/lib/http-client';
 import { clearAccessToken, getAccessToken, setAccessToken } from '@/lib/token';
 
@@ -48,10 +53,26 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   login: async (code: string, state?: string) => {
     set({ status: 'loading' });
-    const { access_token } = await loginWithGitHubCode({ code, state });
-    setAccessToken(access_token);
-    const user = await getCurrentUser();
-    set({ user, status: 'authenticated' });
+    // Render free tier sleeps after ~15 min idle; the first call after a long
+    // pause cold-starts the backend (30-60s) and the browser drops it. Retry
+    // once so the second attempt hits a warm server.
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const { access_token } = await loginWithGitHubCode({ code, state });
+        setAccessToken(access_token);
+        const user = await getCurrentUser();
+        set({ user, status: 'authenticated' });
+        return;
+      } catch (error) {
+        lastError = error;
+        const networkError =
+          error instanceof ApiError && (error.status === 0 || !error.status);
+        if (!networkError) throw error;
+        await new Promise((r) => setTimeout(r, 5000 * (attempt + 1)));
+      }
+    }
+    throw lastError;
   },
 
   completeLogin: async (token: string) => {
