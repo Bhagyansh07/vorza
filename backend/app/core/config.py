@@ -41,7 +41,7 @@ class Settings(BaseSettings):
     GITHUB_CLIENT_ID: str | None = None
     GITHUB_CLIENT_SECRET: str | None = None
     GITHUB_OAUTH_SCOPES: str = "read:user repo"
-    GITHUB_OAUTH_CALLBACK_URL: str = "http://localhost:5173/auth/callback"
+    GITHUB_OAUTH_CALLBACK_URL: str = ""  # filled below from FRONTEND_HOST
 
     # GitHub webhook receiver (POST /webhooks/github)
     GITHUB_WEBHOOK_SECRET: str = "vorza-wbhook-58f2b1e0-9c4d-4f7a-a3de-ok"
@@ -71,6 +71,13 @@ class Settings(BaseSettings):
         self._check_default_secret(
             "GITHUB_WEBHOOK_SECRET", self.GITHUB_WEBHOOK_SECRET
         )
+        # Default the OAuth callback to the deployed frontend so production
+        # doesn't redirect to localhost. Set GITHUB_OAUTH_CALLBACK_URL to
+        # override explicitly.
+        if not self.GITHUB_OAUTH_CALLBACK_URL:
+            self.GITHUB_OAUTH_CALLBACK_URL = (
+                f"{self.FRONTEND_HOST.rstrip('/')}/auth/callback"
+            )
         return self
 
 
