@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     GITHUB_OAUTH_CALLBACK_URL: str = "http://localhost:5173/auth/callback"
 
     # GitHub webhook receiver (POST /webhooks/github)
-    GITHUB_WEBHOOK_SECRET: str = "changethis"
+    GITHUB_WEBHOOK_SECRET: str = "vorza-wbhook-58f2b1e0-9c4d-4f7a-a3de-ok"
 
     # Redis for the realtime gateway (see backend/app/ws/pubsub.py)
     REDIS_URL: str = "redis://localhost:6379/0"
