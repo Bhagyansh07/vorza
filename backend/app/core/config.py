@@ -26,9 +26,7 @@ class Settings(BaseSettings):
     # Optional so the free Render/boilerplate tier works without a managed
     # Postgres. Falls back to a local SQLite file next to `data/`. Set
     # DATABASE_URL (postgres://...) in any real deployment.
-    DATABASE_URL: str | None = str(
-        Path(__file__).resolve().parents[2] / "data" / "vorza.db"
-    )
+    DATABASE_URL: str | None = "sqlite:///./data/vorza.db"
 
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
