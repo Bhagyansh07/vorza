@@ -4,6 +4,7 @@ import { ErrorState } from '@/components/errors/ErrorState';
 import { ConnectRepoDialog } from '@/features/repos/components/ConnectRepoDialog';
 import { RepoCard } from '@/features/repos/components/RepoCard';
 import { RepoListSkeleton } from '@/features/repos/components/RepoListSkeleton';
+import { EmptyState } from '@/components/empty/EmptyState';
 import { useRepos } from '@/features/repos/hooks/use-repos';
 import { useDocumentMeta } from '@/lib/seo';
 

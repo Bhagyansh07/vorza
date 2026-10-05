@@ -31,6 +31,7 @@ import { healthBadgeClasses } from '@/lib/health';
 // drags that 356 kB / 103.75 kB gzip chunk into the main bundle no matter
 // who lazy-imports TrendChart. See the comment on the barrel itself.
 import { GraphView } from '@/features/graph/components/GraphView';
+import { EmptyState } from '@/components/empty/EmptyState';
 import { createWebSocketSource } from '@/features/graph/realtime/websocket';
 import { useUser } from '@/features/auth/hooks/use-auth';
 import { useDocumentMeta } from '@/lib/seo';
@@ -94,7 +95,19 @@ export function RepoDetail() {
               default branch{' '}
               <span className="font-mono">{repo.default_branch}</span>
             </p>
-          ) : null}
+          ) : (
+          <div className="sm:col-span-3">
+            <EmptyState
+              icon={<ActivityIcon className="h-10 w-10" />}
+              title="No snapshot yet"
+              body="Run your first analysis to build the file map. The graph appears after the first snapshot is created."
+              primary={{
+                label: 'Run analysis',
+                onClick: runAnalysis,
+              }}
+            />
+          </div>
+        )}
         </div>
         <div className="flex items-center gap-2">
           <Button
