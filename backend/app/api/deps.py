@@ -33,12 +33,20 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
         token_data = TokenPayload(**payload)
-    except (InvalidTokenError, ValidationError):
+        # Inside the try on purpose, and the except is wider than it looks.
+        # `TokenPayload.sub` is `str | None`, so two distinct shapes reached this
+        # line and raised instead of returning a 403:
+        #   sub: "not-a-uuid"  -> uuid.UUID raises ValueError
+        #   no sub claim at all -> uuid.UUID(None) raises TypeError
+        # Both surfaced as a 500 on a request that is simply unauthenticated. A
+        # token the server itself signed is still not a valid credential.
+        user_id = uuid.UUID(token_data.sub)
+    except (InvalidTokenError, TypeError, ValidationError, ValueError):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
-    user = session.get(User, uuid.UUID(token_data.sub))
+    user = session.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
