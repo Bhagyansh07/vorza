@@ -1,10 +1,11 @@
 from pathlib import Path
+from typing import Any
 
 from sqlmodel import Session, create_engine
 
 from app.core.config import settings
 
-engine_kwargs: dict = {"pool_pre_ping": True}
+engine_kwargs: dict[str, Any] = {"pool_pre_ping": True}
 if str(settings.DATABASE_URL).startswith("sqlite"):
     engine_kwargs["connect_args"] = {"check_same_thread": False}
 

@@ -63,8 +63,15 @@ def _ensure_checkout(repo: Repo, access_token: str) -> Path:
     target = _checkout_path(repo.id)
     if (target / ".git").exists():
         try:
-            _git(["git", "-C", str(target), "reset", "--quiet", "--hard", "HEAD"])
-            _git(["git", "-C", str(target), "pull", "--quiet", "--ff-only"])
+            # cwd must be passed explicitly: _git() has no default, and a
+            # missing argument raises TypeError, which `except
+            # RepoCheckoutError` below does NOT catch. That made every refresh
+            # after the initial clone fail hard instead of degrading.
+            _git(
+                ["git", "-C", str(target), "reset", "--quiet", "--hard", "HEAD"],
+                target,
+            )
+            _git(["git", "-C", str(target), "pull", "--quiet", "--ff-only"], target)
         except RepoCheckoutError as exc:
             logger.warning(
                 "checkout refresh failed for %s: %s", repo.github_full_name, exc

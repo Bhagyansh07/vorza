@@ -108,7 +108,7 @@ class ConnectionManager:
         self, repo_id: RepoId, user_id: UserId, x: float, y: float
     ) -> bool:
         """True when a cursor update for this user may be broadcast immediately."""
-        return self._throttle_for(repo_id).submit(user_id, x, y)
+        return self.throttle_for(repo_id).submit(user_id, x, y)
 
     def throttle_due(self, repo_id: RepoId) -> dict[str, tuple[float, float]]:
-        return self._throttle_for(repo_id).due()
+        return self.throttle_for(repo_id).due()

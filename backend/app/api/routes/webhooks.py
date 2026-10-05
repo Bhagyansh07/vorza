@@ -1,3 +1,5 @@
+from typing import Any
+
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, status
 from sqlmodel import select
 
@@ -20,7 +22,7 @@ async def github_webhook(
     background_tasks: BackgroundTasks,
     x_github_event: str | None = Header(default=None),
     x_hub_signature_256: str | None = Header(default=None),
-) -> dict:
+) -> dict[str, Any]:
     """GitHub PR webhook receiver (see CONTRACTS.md).
 
     Verifies the HMAC signature, then hands PR events to Agent 2's review

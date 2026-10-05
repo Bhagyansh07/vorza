@@ -22,8 +22,9 @@ import os
 import re
 from collections import deque
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Any, Protocol
 
+from openai import OpenAI
 from pydantic import ValidationError
 
 from app.core.config import settings
@@ -37,7 +38,7 @@ DEFAULT_MAX_DIFF_CHARS = 120_000
 MAX_RETRIES = 1
 DEFAULT_MODEL = "gpt-4o-mini"
 
-MODEL_PRICES_USD_PER_1M = {
+MODEL_PRICES_USD_PER_1M: dict[str, tuple[float, float]] = {
     "gpt-4o-mini": (0.15, 0.60),
     "gpt-4o": (2.50, 10.00),
     "gpt-4.1-mini": (0.40, 1.60),
@@ -85,19 +86,17 @@ class OpenAIReviewClient:
         self.model = (
             model or settings.OPENAI_MODEL or os.getenv("OPENAI_MODEL") or DEFAULT_MODEL
         )
-        self._client = None
+        self._client: OpenAI | None = None
 
     @property
     def configured(self) -> bool:
         return bool(self.api_key)
 
-    def _connect(self):
+    def _connect(self) -> OpenAI:
         if self._client is None:
             if not self.api_key:
                 raise LLMError("OPENAI_API_KEY is not set")
-            import openai
-
-            self._client = openai.OpenAI(api_key=self.api_key)
+            self._client = OpenAI(api_key=self.api_key)
         return self._client
 
     def chat_json(self, *, system: str, user: str) -> tuple[str, LlmUsage]:
@@ -135,25 +134,27 @@ def truncate_diff(diff: str, max_chars: int = DEFAULT_MAX_DIFF_CHARS) -> str:
     return diff[:half] + marker + diff[-half:]
 
 
-def parse_review_json(raw: str) -> dict:
+def parse_review_json(raw: str) -> dict[str, Any]:
     """Parse the LLM's JSON, tolerating markdown fences and stray prose."""
     text = raw.strip()
     fenced = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
     if fenced:
         text = fenced.group(1).strip()
     try:
-        return json.loads(text)
+        parsed: dict[str, Any] = json.loads(text)
+        return parsed
     except json.JSONDecodeError:
         start, end = text.find("{"), text.rfind("}")
         if start != -1 and end > start:
             try:
-                return json.loads(text[start : end + 1])
+                salvaged: dict[str, Any] = json.loads(text[start : end + 1])
+                return salvaged
             except json.JSONDecodeError:
                 pass
         raise
 
 
-_cost_log: deque[dict] = deque(maxlen=500)
+_cost_log: deque[dict[str, Any]] = deque(maxlen=500)
 
 
 def _cost_log_path() -> str | None:
@@ -181,7 +182,7 @@ def record_usage(usage: LlmUsage) -> None:
     logger.info("LLM call: %s", entry)
 
 
-def get_cost_log() -> list[dict]:
+def get_cost_log() -> list[dict[str, Any]]:
     return list(_cost_log)
 
 

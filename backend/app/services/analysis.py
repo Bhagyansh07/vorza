@@ -115,18 +115,22 @@ def _max_nesting_depth(statements: list[ast.stmt], depth: int = 0) -> int:
                 ast.Try,
             ),
         ):
-            children = list(ast.iter_child_nodes(node))
+            # Narrow to ast.stmt here rather than at the recursion site: an
+            # `if` test or a `for` iter is an ast.expr, and recursing into an
+            # expression is not nesting depth.
+            children = [
+                c for c in ast.iter_child_nodes(node) if isinstance(c, ast.stmt)
+            ]
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             children = [c for c in node.body if isinstance(c, ast.stmt)]
         elif isinstance(node, ast.ClassDef):
             children = list(node.body) if isinstance(node.body, list) else []
         if children:
+            # `children` is already narrowed to ast.stmt by the assignments
+            # above, so the inner filter used to be what kept expression
+            # children (an `if` test, a `for` iter) out of the recursion.
             found = max(
-                (
-                    _max_nesting_depth([c], depth + 1)
-                    for c in children
-                    if isinstance(c, ast.stmt)
-                ),
+                (_max_nesting_depth([c], depth + 1) for c in children),
                 default=depth,
             )
             max_depth = max(max_depth, found)

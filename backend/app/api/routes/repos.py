@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from app.api.deps import CurrentUser, SessionDep
+from app.core.sql import order_desc
 from app.models.repo import Repo, RepoCreate, RepoPublic, ReposPublic
 from app.services.github import (
     GithubOAuthError,
@@ -54,7 +55,10 @@ async def connect_repo(
     session.add(repo)
     session.commit()
     session.refresh(repo)
-    return repo
+    # Build the response explicitly rather than letting FastAPI coerce the ORM
+    # row. `RepoPublic` is the contract in CONTRACTS.md; converting here means a
+    # column added to `Repo` later cannot widen the API response by accident.
+    return RepoPublic.model_validate(repo, from_attributes=True)
 
 
 @router.get("/repos", response_model=ReposPublic)
@@ -63,6 +67,9 @@ def list_repos(session: SessionDep, current_user: CurrentUser) -> ReposPublic:
     repos = session.exec(
         select(Repo)
         .where(Repo.owner_id == current_user.id)
-        .order_by(Repo.connected_at.desc())
+        .order_by(order_desc(Repo.connected_at))
     ).all()
-    return ReposPublic(data=repos, count=len(repos))
+    return ReposPublic(
+        data=[RepoPublic.model_validate(r, from_attributes=True) for r in repos],
+        count=len(repos),
+    )

@@ -26,6 +26,7 @@ from sqlmodel import Session
 from app.core.db import engine
 from app.models.snapshot import AiReviewRow
 from app.models.snapshot import AnalysisSnapshot as AnalysisSnapshotRow
+from app.models.snapshot import FileNode as FileNodeRow
 from app.services.ai_review import AiReviewError, OpenAIReviewClient, review_pr
 from app.services.analysis import analyze_repo as _pure_analyze
 from app.services.github import fetch_pull_request_diff
@@ -62,7 +63,11 @@ def analyze_repo(repo_id: uuid.UUID) -> None:
             db_snapshot = AnalysisSnapshotRow(
                 repo_id=repo_id,
                 overall_health_score=snapshot.overall_health_score,
-                files=[f.model_dump() for f in snapshot.files],
+                # Two FileNode types exist on purpose: services.schemas is the
+                # DB-free domain shape, models.snapshot is the JSON column type.
+                # Convert at this boundary rather than relying on either side to
+                # coerce, so a field added to one and not the other fails here.
+                files=[FileNodeRow.model_validate(f) for f in snapshot.files],
             )
             session.add(db_snapshot)
             session.commit()
