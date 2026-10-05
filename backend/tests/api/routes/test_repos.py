@@ -39,15 +39,22 @@ def test_connect_repo_returns_public_shape_not_raw_orm(
     body = response.json()
     # Exactly the RepoPublic contract from CONTRACTS.md -- no owner_id-only or
     # token-bearing extras leaking through ORM attribute exposure.
-    assert set(body) == {"id", "owner_id", "github_full_name", "default_branch",
-                         "connected_at"}
+    assert set(body) == {
+        "id",
+        "owner_id",
+        "github_full_name",
+        "default_branch",
+        "connected_at",
+    }
     assert body["github_full_name"] == "octocat/Hello-World"
     # The metadata default_branch wins over the RepoCreate default.
     assert body["default_branch"] == "trunk"
     assert body["connected_at"] is not None
 
 
-def test_connect_repo_rejects_duplicate(client: TestClient, db_session: Session) -> None:
+def test_connect_repo_rejects_duplicate(
+    client: TestClient, db_session: Session
+) -> None:
     user = create_user(db_session, github_access_token="tok")
     create_repo(db_session, user, "octocat/Hello-World")
 
@@ -126,16 +133,18 @@ def test_list_comments_newest_first_with_public_shape(
     user = create_user(db_session)
     repo = create_repo(db_session, user)
 
-    now = datetime.now(UTC)
-    for i, created in enumerate([now - timedelta(hours=2), now]):
+    for i in range(2):
         response = client.post(
             f"/repos/{repo.id}/comments",
-            json={"file_path": f"src/mod{i}.py", "body": f"note {i}", "x": 1.0,
-                  "y": 2.0},
+            json={
+                "file_path": f"src/mod{i}.py",
+                "body": f"note {i}",
+                "x": 1.0,
+                "y": 2.0,
+            },
             headers=auth_headers(user),
         )
         assert response.status_code == 201, response.text
-    db_session.commit()
 
     listed = client.get(f"/repos/{repo.id}/comments", headers=auth_headers(user))
     assert listed.status_code == 200, listed.text
@@ -143,8 +152,15 @@ def test_list_comments_newest_first_with_public_shape(
     assert body["count"] == 2
     assert [c["body"] for c in body["data"]] == ["note 1", "note 0"]
     assert set(body["data"][0]) == {
-        "id", "repo_id", "snapshot_id", "author_id", "file_path", "body",
-        "x", "y", "created_at",
+        "id",
+        "repo_id",
+        "snapshot_id",
+        "author_id",
+        "file_path",
+        "body",
+        "x",
+        "y",
+        "created_at",
     }
 
 
@@ -199,9 +215,7 @@ def test_latest_snapshot_returns_public_shape(
     repo = create_repo(db_session, user)
 
     for health in (70.0, 91.5):
-        db_session.add(
-            AnalysisSnapshot(repo_id=repo.id, overall_health_score=health)
-        )
+        db_session.add(AnalysisSnapshot(repo_id=repo.id, overall_health_score=health))
     db_session.commit()
 
     response = client.get(
@@ -249,7 +263,10 @@ def test_snapshot_history_is_oldest_first(
     assert [s["overall_health_score"] for s in body["data"]] == [60.0, 95.0]
     # The trend chart only needs these four fields.
     assert set(body["data"][0]) == {
-        "id", "repo_id", "created_at", "overall_health_score"
+        "id",
+        "repo_id",
+        "created_at",
+        "overall_health_score",
     }
 
 
@@ -259,12 +276,8 @@ def test_analyze_is_queued_as_a_background_task(
     user = create_user(db_session)
     repo = create_repo(db_session, user)
 
-    with patch(
-        "app.api.routes.analysis.analyze_repo"
-    ) as mock_analyze:
-        response = client.post(
-            f"/repos/{repo.id}/analyze", headers=auth_headers(user)
-        )
+    with patch("app.api.routes.analysis.analyze_repo") as mock_analyze:
+        response = client.post(f"/repos/{repo.id}/analyze", headers=auth_headers(user))
 
     assert response.status_code == 202, response.text
     assert response.json() == {"message": "Analysis queued", "repo_id": str(repo.id)}
