@@ -1,5 +1,10 @@
 import type { CSSProperties } from "react";
-import { legendStops, radiusSamplePoints } from "../lib/encoding";
+import {
+  HEALTH_GOOD_MIN,
+  HEALTH_WARN_MIN,
+  legendStops,
+  radiusSamplePoints,
+} from "../lib/encoding";
 
 export function GraphLegend() {
   const stops = legendStops();
@@ -21,10 +26,15 @@ export function GraphLegend() {
             className="h-2 w-28 rounded-full"
             style={{ background: gradient }}
             role="img"
-            aria-label="Color scale from red indicating unhealthy to green indicating healthy"
+            aria-label={`Color scale from red indicating unhealthy to green indicating healthy. At ${HEALTH_WARN_MIN} and above is At risk; at ${HEALTH_GOOD_MIN} and above is Healthy.`}
           />
           <span className="text-[11px] tabular text-ink-dim">100</span>
         </div>
+        <p className="max-w-[19rem] text-[11px] leading-snug text-ink-faint">
+          Colour is health: critical below {HEALTH_WARN_MIN}, at risk from{' '}
+          {HEALTH_WARN_MIN}, healthy from {HEALTH_GOOD_MIN}. Node size is
+          complexity.
+        </p>
       </div>
 
       <div className="h-8 w-px bg-line/70" />

@@ -1,5 +1,22 @@
 export const HEALTH_MAX = 100;
 
+/**
+ * Health thresholds, in one place.
+ *
+ * These were retyped as bare literals in three places -- `healthTone`,
+ * `healthLabel`, and `snapshotHealthBreakdown` -- and the legend's stop labels
+ * implied a fourth set that agreed with none of them. A legend that disagrees
+ * with the renderer is worse than no legend, because it is the
+ * authoritative-looking thing and the wrong one. F3 in
+ * `docs/audit/03-feature-roadmap.md`.
+ *
+ * Also documented in `CONTRACTS.md` and `docs/DESIGN_SYSTEM.md`. The frontend
+ * assertions live in `lib/health-thresholds.test.ts`; the backend assertion is
+ * `backend/tests/services/test_analysis_scoring.py`.
+ */
+export const HEALTH_GOOD_MIN = 70;
+export const HEALTH_WARN_MIN = 45;
+
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
@@ -22,14 +39,14 @@ export function healthFill(health: number): string {
 export type HealthTone = "good" | "warn" | "bad";
 
 export function healthTone(health: number): HealthTone {
-  if (health >= 70) return "good";
-  if (health >= 45) return "warn";
+  if (health >= HEALTH_GOOD_MIN) return "good";
+  if (health >= HEALTH_WARN_MIN) return "warn";
   return "bad";
 }
 
 export function healthLabel(health: number): string {
-  if (health >= 70) return "Healthy";
-  if (health >= 45) return "At risk";
+  if (health >= HEALTH_GOOD_MIN) return "Healthy";
+  if (health >= HEALTH_WARN_MIN) return "At risk";
   return "Critical";
 }
 
@@ -63,13 +80,37 @@ export interface LegendStop {
   label: string;
 }
 
+/**
+ * Gradient stops for the legend, labelled at the real thresholds.
+ *
+ * The previous stops were hand-placed at 0/25/50/75/100, which put the "At
+ * risk" label at 50 while the actual boundary is 45, and "Healthy" at 100 while
+ * the boundary is 70. Reading the legend, a node scoring 60 looked like the
+ * middle of the scale when it was actually just above the at-risk threshold,
+ * and one scoring 80 looked mid-green rather than healthy.
+ *
+ * Labels now land on the boundaries themselves -- 0, 45, 70, 100 -- so the
+ * legend states where the colour actually changes rather than implying it
+ * changes evenly.
+ */
 export function legendStops(): LegendStop[] {
   return [
-    { health: 0, color: healthColor(0), label: "Critical" },
-    { health: 25, color: healthColor(25), label: "" },
-    { health: 50, color: healthColor(50), label: "At risk" },
-    { health: 75, color: healthColor(75), label: "" },
-    { health: 100, color: healthColor(100), label: "Healthy" },
+    { health: 0, color: healthColor(0), label: healthLabel(0) },
+    {
+      health: HEALTH_WARN_MIN,
+      color: healthColor(HEALTH_WARN_MIN),
+      label: healthLabel(HEALTH_WARN_MIN),
+    },
+    {
+      health: HEALTH_GOOD_MIN,
+      color: healthColor(HEALTH_GOOD_MIN),
+      label: healthLabel(HEALTH_GOOD_MIN),
+    },
+    {
+      health: HEALTH_MAX,
+      color: healthColor(HEALTH_MAX),
+      label: healthLabel(HEALTH_MAX),
+    },
   ];
 }
 

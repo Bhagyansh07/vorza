@@ -1,3 +1,4 @@
+import { HEALTH_GOOD_MIN, HEALTH_WARN_MIN } from "./encoding";
 import type { AnalysisSnapshot, FileNode, GraphLink, GraphNode } from "../types";
 
 export interface Graph {
@@ -37,8 +38,8 @@ export function snapshotHealthBreakdown(snapshot: AnalysisSnapshot): {
   let atRisk = 0;
   let healthy = 0;
   for (const f of snapshot.files) {
-    if (f.health_score >= 70) healthy++;
-    else if (f.health_score >= 45) atRisk++;
+    if (f.health_score >= HEALTH_GOOD_MIN) healthy++;
+    else if (f.health_score >= HEALTH_WARN_MIN) atRisk++;
     else critical++;
   }
   return { files: snapshot.files.length, critical, atRisk, healthy };
