@@ -40,6 +40,17 @@ class Settings(BaseSettings):
     # GitHub OAuth (see CONTRACTS.md Auth section)
     GITHUB_CLIENT_ID: str | None = None
     GITHUB_CLIENT_SECRET: str | None = None
+
+    # The scope string sent in the authorize URL.
+    #
+    # Previously dead config: declared here, documented in .env.example and
+    # compose files, but the code hardcoded "read:user repo". Now it is read.
+    #
+    # Why `repo` and not something smaller: `repo` is read AND write across all
+    # public and private repositories. GitHub offers no read-only scope that can
+    # clone a repository. For an OAuth app this is the narrowest scope that can
+    # do the job; the consent copy names it and states what it grants.
+    # Fine-grained read-only permissions exist for GitHub Apps (tracked as F14).
     GITHUB_OAUTH_SCOPES: str = "read:user repo"
     GITHUB_OAUTH_CALLBACK_URL: str = ""  # filled below from FRONTEND_HOST
 

@@ -36,12 +36,69 @@ class GitHubCheckoutError(Exception):
     """Raised when a repo checkout cannot be cloned/refreshed on disk."""
 
 
+#: Scopes Vorza needs. `read:user` reads the signed-in user's profile (login
+#: and avatar). `repo` is what lets the analysis pipeline clone a repository
+#: over HTTPS.
+#:
+#: `repo` is *not* a read-only scope. GitHub documents it as "full access to
+#: public and private repositories including read and write access to code,
+#: commit statuses, repository invitations, collaborators, deployment statuses,
+#: and repository webhooks" -- verified against
+#: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps
+#:
+#: Vorza only ever *uses* it to read (clone, `GET /user`, `GET /repos/{name}`,
+#: `GET /repos/{name}/pulls/{n}`), but the grant is broader than the use. There
+#: is no OAuth scope that clones a repo without write access to it; a GitHub App
+#: with fine-grained read-only permissions is the way to narrow this, and is
+#: filed as F14. Until then the consent copy must say what is actually granted
+#: rather than the narrower thing that would read better.
+REQUIRED_SCOPES = ("read:user", "repo")
+
+#: Scopes that grant write access, used by the consent copy so the UI cannot
+#: drift from the actual grant. Anything in here must be disclosed as write.
+WRITE_SCOPES = frozenset({"repo"})
+
+
+def requested_scopes() -> str:
+    """The scope string sent to GitHub, space-separated.
+
+    Reads ``settings.GITHUB_OAUTH_SCOPES`` rather than hardcoding it. The
+    setting existed and was documented in three places (``.env.example``,
+    ``compose.yml``, ``docker-compose.yml``) but no code ever read it, so
+    changing it had no effect -- the value was hardcoded two functions away. An
+    operator who set it to something narrower would have seen the old scopes
+    anyway and had no way to tell.
+
+    The configured value is used as-is rather than merged with
+    ``REQUIRED_SCOPES``: an operator narrowing the scopes must not silently get
+    them added back.
+    """
+    configured = (settings.GITHUB_OAUTH_SCOPES or "").strip()
+    return configured or " ".join(REQUIRED_SCOPES)
+
+
+def granted_write_access() -> bool:
+    """Whether the configured scopes include write access to repositories.
+
+    The frontend asks the backend rather than hardcoding an answer, so the
+    consent copy on ``/login`` and the scope actually sent to GitHub cannot
+    disagree.
+    """
+    return bool(WRITE_SCOPES & set(requested_scopes().split()))
+
+
 def build_authorize_url() -> tuple[str, str]:
     """Return ``(authorize_url, state)`` for GitHub login.
 
     The ``state`` value is ``<nonce>.<hmac>`` -- HMAC-signed with the backend
     ``SECRET_KEY``, so the callback can verify it without server-side session
     storage. The frontend must echo it back in the callback request.
+
+    The ``scope`` parameter comes from :func:`requested_scopes`, which defaults
+    to ``read:user repo``. Note that ``repo`` includes **write** access to
+    repositories; see ``REQUIRED_SCOPES`` above. It is needed to clone, and
+    Vorza does not use the write half -- but the grant is what the user accepts,
+    so the UI must describe it accurately.
 
     What this gives us: an attacker cannot forge a state, which is the CSRF
     protection that matters here. What it does **not** give us:
@@ -65,7 +122,7 @@ def build_authorize_url() -> tuple[str, str]:
         {
             "client_id": settings.GITHUB_CLIENT_ID,
             "redirect_uri": settings.GITHUB_OAUTH_CALLBACK_URL,
-            "scope": "read:user repo",
+            "scope": requested_scopes(),
             "state": state,
         }
     )

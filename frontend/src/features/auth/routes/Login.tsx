@@ -29,17 +29,69 @@ function readQuery(search: string): QueryState {
   };
 }
 
+/**
+ * What the backend says it is about to ask GitHub for.
+ *
+ * Returned alongside the URL so the consent line below describes the real grant.
+ * This used to return just the URL while the page asserted "read access" in
+ * hardcoded copy -- about a value that lives in the backend and was `repo`,
+ * which is read *and write*. See `consentCopy`.
+ */
+interface AuthorizeGrant {
+  authorizeUrl: string;
+  scopes: string[];
+  writeAccess: boolean;
+}
+
 /** Backend owns the OAuth URL (client_id, redirect_uri, signed state). */
-async function fetchAuthorizeUrl(): Promise<string> {
+async function fetchAuthorizeGrant(): Promise<AuthorizeGrant> {
   const response = await fetch(`${config.apiUrl}/auth/github/login`);
   if (!response.ok) {
     throw new Error('GitHub OAuth is not configured on the backend');
   }
-  const body = (await response.json()) as { message?: string };
-  if (!body.message) {
+  const body = (await response.json()) as {
+    authorize_url?: string;
+    scopes?: string[];
+    write_access?: boolean;
+  };
+  if (!body.authorize_url) {
     throw new Error('GitHub OAuth is not configured on the backend');
   }
-  return body.message;
+  return {
+    authorizeUrl: body.authorize_url,
+    scopes: body.scopes ?? [],
+    // A missing field is `false` only for a backend too old to report it.
+    // Defaulting the other way would repeat the bug this fixes, so the copy is
+    // written to be correct without this field being present.
+    writeAccess: body.write_access === true,
+  };
+}
+
+/**
+ * The consent sentence, derived from the grant the backend reports.
+ *
+ * The point of this function is that "read access" cannot be written as a
+ * literal here. If the backend asks for a write scope, the copy says so, in
+ * words someone clicking a consent button would understand -- not the scope
+ * name, which means nothing to them.
+ *
+ * `repo` is GitHub's broad repository scope: read and write to code, plus
+ * invitations, collaborators, webhooks and org resources. Vorza uses it to
+ * clone and never writes -- but the grant is what the user accepts, and a
+ * consent screen that understates the grant is the problem, not the scope.
+ */
+export function consentCopy(grant: AuthorizeGrant): string {
+  const names = grant.scopes.length > 0 ? grant.scopes.join(', ') : null;
+
+  if (grant.writeAccess) {
+    return names
+      ? `Vorza asks GitHub for the ${names} scope, which grants read and write access to your repositories. Vorza only reads -- it clones the repo and fetches pull requests -- but the permission GitHub offers is not read-only.`
+      : 'GitHub will ask you to grant Vorza read and write access to your repositories. Vorza only reads, but the permission GitHub offers is not read-only.';
+  }
+
+  return names
+    ? `Vorza asks GitHub for the ${names} scope: read-only access to your public profile and repository metadata.`
+    : 'By continuing you grant Vorza read access to your public GitHub profile.';
 }
 
 export function LoginPage() {
@@ -55,6 +107,17 @@ export function LoginPage() {
   const location = useLocation();
   const { user, status, login, completeLogin } = useAuth();
   const [handling, setHandling] = useState(false);
+  // The grant the backend reported, fetched on mount rather than on click.
+  //
+  // This timing is the whole point. Fetching on click and then calling
+  // `window.location.assign` means any copy rendered at that moment is never
+  // seen -- the browser is already leaving the page. A consent claim that
+  // appears after the decision is not a consent claim.
+  //
+  // Fetching on mount also means the URL we navigate to is the exact one whose
+  // scopes were described, rather than a second request that could disagree.
+  const [grant, setGrant] = useState<AuthorizeGrant | null>(null);
+  const [grantError, setGrantError] = useState<string | null>(null);
 
   // `from` comes from `ProtectedRoute`, which sets it from `location.pathname`
   // -- i.e. from the address bar, so it is attacker-supplied. Sanitised here
@@ -103,11 +166,44 @@ export function LoginPage() {
     };
   }, [query.code, query.token, query.error, query.state, completeLogin, login, navigate, from]);
 
+  // Runs once on mount. A failure here is not fatal: the GitHub button reports
+  // it on click, because the alternative -- navigating to an authorize URL whose
+  // scopes nobody displayed -- is what this change exists to stop.
+  useEffect(() => {
+    let cancelled = false;
+    fetchAuthorizeGrant().then(
+      (next) => {
+        if (cancelled) return;
+        setGrant(next);
+        setGrantError(null);
+      },
+      () => {
+        if (cancelled) return;
+        setGrant(null);
+        setGrantError(
+          "Couldn't reach the backend, so the exact GitHub permissions requested cannot be shown. Continuing will retry."
+        );
+      }
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const startOAuth = async () => {
+    if (grant) {
+      // Navigate to the very URL whose scopes the footer just described.
+      oauthRedirect(grant.authorizeUrl);
+      return;
+    }
+    // No grant yet -- the mount fetch failed, likely because the backend was
+    // still starting. Retry rather than dead-ending.
     setHandling(true);
     try {
-      const url = await fetchAuthorizeUrl();
-      oauthRedirect(url);
+      const next = await fetchAuthorizeGrant();
+      setGrant(next);
+      setGrantError(null);
+      oauthRedirect(next.authorizeUrl);
     } catch (error) {
       toast.error(toErrorMessage(error));
       setHandling(false);
@@ -149,6 +245,14 @@ export function LoginPage() {
             Continue with GitHub
           </Button>
 
+          {/*
+            Shown when the mount fetch failed. Without it the button looks ready
+            and clicking produces an unrelated toast.
+          */}
+          {grantError ? (
+            <p className="text-xs text-muted-foreground">{grantError}</p>
+          ) : null}
+
           {config.useMocks ? (
             <>
               <div className="flex items-center gap-3">
@@ -175,9 +279,20 @@ export function LoginPage() {
           ) : null}
         </CardContent>
         <CardFooter className="justify-center">
-          <p className="text-xs text-muted-foreground">
-            By continuing you grant Vorza read access to your GitHub repos.
-          </p>
+          {/*
+            Rendered once the backend has reported what it will request. This
+            used to be a hardcoded literal asserting "read access" -- untrue,
+            because `repo` is read and write, and unverifiable from the
+            frontend because the value was on the other side of the network.
+          */}
+          {grant ? (
+            <p
+              className="text-xs text-muted-foreground"
+              data-testid="consent-copy"
+            >
+              {consentCopy(grant)}
+            </p>
+          ) : null}
         </CardFooter>
       </Card>
     </div>

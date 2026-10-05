@@ -70,7 +70,7 @@ describe('LoginPage', () => {
       vi.fn(async () =>
         Promise.resolve({
           ok: true,
-          json: async () => ({ message: backendUrl }),
+          json: async () => ({ authorize_url: backendUrl, scopes: ["read:user", "repo"], write_access: true }),
         })
       ) as unknown as typeof fetch
     );

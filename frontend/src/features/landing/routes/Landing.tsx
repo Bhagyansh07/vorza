@@ -121,9 +121,24 @@ export function Landing() {
               <Link to="/login">Sign in</Link>
             </Button>
           </div>
+          {/*
+            This said "read access to the repos you connect and nothing else".
+            It was false: the backend requests GitHub's `repo` scope, which
+            grants read *and write* to repositories, plus invitations,
+            collaborators, webhooks and org resources. It was also not scoped to
+            connected repos -- the grant covers every repo the user can reach.
+
+            Vorza only reads, and there is no OAuth scope that clones a repo
+            without write access to it, so the scope is not going away. Narrowing
+            it means a GitHub App with fine-grained permissions (roadmap F14).
+            Until then the page states what GitHub actually offers.
+          */}
           <p className="mt-4 text-sm text-muted-foreground">
-            Sign in with GitHub. Vorza asks for read access to the repos you
-            connect and nothing else.
+            Sign in with GitHub. Vorza asks for the{' '}
+            <code className="font-mono text-xs">repo</code> scope, which grants
+            read <em>and write</em> access to your repositories -- that is the
+            scope GitHub offers for cloning, and Vorza only ever reads. Narrowing
+            it to read-only needs a GitHub App, tracked as F14.
           </p>
         </section>
 
