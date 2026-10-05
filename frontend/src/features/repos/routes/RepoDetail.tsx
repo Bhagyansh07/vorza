@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   ActivityIcon,
@@ -25,7 +26,9 @@ import {
 } from '@/features/repos/hooks/use-repos';
 import { toErrorMessage } from '@/lib/errors';
 import { healthBadgeClasses } from '@/lib/health';
-import { GraphView, mockRealtimeSource } from '@/features/graph';
+import { GraphView } from '@/features/graph';
+import { createWebSocketSource } from '@/features/graph/realtime/websocket';
+import { useUser } from '@/features/auth/hooks/use-auth';
 
 type RepoDetailParams = {
   repoId: string;
@@ -33,6 +36,16 @@ type RepoDetailParams = {
 
 export function RepoDetail() {
   const { repoId = '' } = useParams<RepoDetailParams>();
+  const currentUser = useUser();
+
+  // One socket per mount, not per render. The source is stateless between
+  // connect() calls, so building it inline is safe; what matters is that
+  // `realtime` keeps a stable identity so useGraphView does not tear down and
+  // re-establish the socket on every render.
+  const realtime = useMemo(
+    () => createWebSocketSource({ userId: String(currentUser?.id ?? '') }),
+    [currentUser?.id]
+  );
   const { data: repos } = useRepos();
   const snapshot = useLatestSnapshot(repoId);
   const analyzeRepo = useAnalyzeRepo(repoId);
@@ -140,7 +153,7 @@ export function RepoDetail() {
         <GraphView
           repoId={repoId}
           repoName={repo?.github_full_name}
-          realtime={mockRealtimeSource}
+          realtime={realtime}
         />
       </div>
     </div>

@@ -110,9 +110,7 @@ def test_analyze_returns_message_and_repo_id(
     db_session.refresh(repo)
 
     with patch("app.api.routes.analysis.analyze_repo"):
-        response = client.post(
-            f"/repos/{repo.id}/analyze", headers=auth_headers(user)
-        )
+        response = client.post(f"/repos/{repo.id}/analyze", headers=auth_headers(user))
 
     assert response.status_code == 202
     body = response.json()

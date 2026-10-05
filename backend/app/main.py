@@ -9,6 +9,7 @@ from app.api.main import api_router
 from app.core.config import settings
 from app.core.rate_limit import RateLimitMiddleware
 from app.core.security_headers import SecurityHeadersMiddleware
+from app.ws.comment_store import SqlCommentStore
 from app.ws.gateway import init_runtime, ws_router
 
 
@@ -26,7 +27,10 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     from app.core.db import engine
 
     SQLModel.metadata.create_all(engine)
-    init_runtime()
+    # Bind the persistent comment store. init_runtime() leaves the in-memory
+    # DummyCommentStore bound when called with no argument, so comments posted
+    # from the graph were broadcast to other viewers and then dropped.
+    init_runtime(SqlCommentStore())
     yield
 
 

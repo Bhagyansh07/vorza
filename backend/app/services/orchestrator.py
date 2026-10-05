@@ -35,6 +35,7 @@ from app.services.pipeline import (
     _ensure_checkout,
     _resolve_repo_and_token,
 )
+from app.ws.pubsub import publish_review_new, publish_snapshot_updated
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------
 
 
-def analyze_repo(repo_id: uuid.UUID) -> None:
+async def analyze_repo(repo_id: uuid.UUID) -> None:
     """Resolve repo, ensure checkout, run pure analysis, persist snapshot.
 
     Opens its own short-lived session -- safe for BackgroundTasks.
@@ -73,6 +74,13 @@ def analyze_repo(repo_id: uuid.UUID) -> None:
             session.commit()
             session.refresh(db_snapshot)
 
+        # Tell every open graph about the new snapshot. This is the only place
+        # the event could come from, and it had no caller -- so `snapshot:updated`
+        # was declared in CONTRACTS.md and in app.ws.events but never emitted.
+        await publish_snapshot_updated(
+            str(repo_id), db_snapshot.model_dump(mode="json")
+        )
+
         logger.info(
             "orchestrator.analyze_repo(%s): done (health=%.1f, files=%d)",
             repo.github_full_name,
@@ -90,7 +98,7 @@ def analyze_repo(repo_id: uuid.UUID) -> None:
 # ------------------------------------------------------------------
 
 
-def review_pull_request(repo_id: uuid.UUID, pr_number: int) -> None:
+async def review_pull_request(repo_id: uuid.UUID, pr_number: int) -> None:
     """Resolve repo, fetch diff, run AI review, persist result.
 
     Opens its own short-lived session -- safe for BackgroundTasks.
@@ -137,6 +145,11 @@ def review_pull_request(repo_id: uuid.UUID, pr_number: int) -> None:
             pr_number,
             review.risk_score,
         )
+
+        # Broadcast the review. Same story as snapshot:updated: the helper
+        # existed, was exported, and had no caller, so ReviewBanner could never
+        # fire no matter how long the webhook took to run.
+        await publish_review_new(str(repo_id), review.model_dump(mode="json"))
     except RepoCheckoutError as exc:
         logger.error(
             "orchestrator.review_pull_request(%s, #%s): %s", repo_id, pr_number, exc

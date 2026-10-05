@@ -213,8 +213,19 @@ async def _handle_client_stream(
                     websocket, EVENT_ERROR, {"message": "comment:new needs a comment"}
                 )
                 continue
+            body = payload["comment"]
+            if not isinstance(body, dict):
+                await _manager.send(
+                    websocket, EVENT_ERROR, {"message": "comment must be an object"}
+                )
+                continue
+            # repo_id and author_id come from the authenticated socket, never
+            # from the frame. The gateway proved `user_id` at join time and the
+            # repo is the channel path parameter, so a client that sets either
+            # field in the payload is only trying to post as someone else.
+            attempt = {**body, "repo_id": repo_id, "author_id": user_id}
             try:
-                stored = await _comment_store.create(dict(payload["comment"]))
+                stored = await _comment_store.create(attempt)
             except ValueError as exc:
                 await _manager.send(websocket, EVENT_ERROR, {"message": str(exc)})
                 continue
