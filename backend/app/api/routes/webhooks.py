@@ -4,8 +4,8 @@ from sqlmodel import select
 from app.api.deps import SessionDep
 from app.core.config import settings
 from app.models.repo import Repo
-from app.services.orchestrator import review_pull_request
 from app.services.github import verify_webhook_signature
+from app.services.orchestrator import review_pull_request
 
 router = APIRouter(tags=["webhooks"])
 
@@ -62,9 +62,7 @@ async def github_webhook(
     if action not in REVIEWABLE_ACTIONS or not repo_name or not pr_number:
         return {"status": "ignored", "message": "action not reviewable"}
 
-    repos = session.exec(
-        select(Repo).where(Repo.github_full_name == repo_name)
-    ).all()
+    repos = session.exec(select(Repo).where(Repo.github_full_name == repo_name)).all()
     if not repos:
         return {"status": "ignored", "message": "repo not connected"}
 

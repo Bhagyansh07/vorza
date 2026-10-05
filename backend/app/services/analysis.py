@@ -57,14 +57,18 @@ _JS_IMPORT_RE = re.compile(
     r"""^\s*import\s+(?:type\s+)?[\w*.,{}\s]+?from\s*['"]([^'"]+)['"]""",
     re.MULTILINE,
 )
-_JS_IMPORT_SIDE_EFFECT_RE = re.compile(r"""^\s*import\s+['"]([^'"]+)['"]""", re.MULTILINE)
+_JS_IMPORT_SIDE_EFFECT_RE = re.compile(
+    r"""^\s*import\s+['"]([^'"]+)['"]""", re.MULTILINE
+)
 _JS_REQUIRE_RE = re.compile(r"""require\(\s*['"]([^'"]+)['"]\s*\)""")
 
 
 def _iter_source_files(repo_root: Path) -> list[Path]:
     files: list[Path] = []
     for dirpath, dirnames, filenames in os.walk(repo_root):
-        dirnames[:] = [d for d in dirnames if d not in IGNORED_DIRS and not d.startswith(".")]
+        dirnames[:] = [
+            d for d in dirnames if d not in IGNORED_DIRS and not d.startswith(".")
+        ]
         for name in filenames:
             if Path(name).suffix in SUPPORTED_EXTENSIONS:
                 files.append(Path(dirpath) / name)
@@ -99,14 +103,32 @@ def _max_nesting_depth(statements: list[ast.stmt], depth: int = 0) -> int:
     max_depth = depth
     for node in statements:
         children: list[ast.stmt] = []
-        if isinstance(node, (ast.If, ast.For, ast.AsyncFor, ast.While, ast.With, ast.AsyncWith, ast.Try)):
+        if isinstance(
+            node,
+            (
+                ast.If,
+                ast.For,
+                ast.AsyncFor,
+                ast.While,
+                ast.With,
+                ast.AsyncWith,
+                ast.Try,
+            ),
+        ):
             children = list(ast.iter_child_nodes(node))
         elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             children = [c for c in node.body if isinstance(c, ast.stmt)]
         elif isinstance(node, ast.ClassDef):
             children = list(node.body) if isinstance(node.body, list) else []
         if children:
-            found = max((_max_nesting_depth([c], depth + 1) for c in children if isinstance(c, ast.stmt)), default=depth)
+            found = max(
+                (
+                    _max_nesting_depth([c], depth + 1)
+                    for c in children
+                    if isinstance(c, ast.stmt)
+                ),
+                default=depth,
+            )
             max_depth = max(max_depth, found)
     return max_depth
 
@@ -117,7 +139,9 @@ def _python_imports(tree: ast.Module) -> list[str]:
         if isinstance(node, ast.Import):
             imports.extend(alias.name for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module:
-            imports.append(node.module if not node.level else "." * node.level + node.module)
+            imports.append(
+                node.module if not node.level else "." * node.level + node.module
+            )
     return imports
 
 
@@ -161,7 +185,9 @@ def _brace_nesting_depth(source: str) -> int:
 
 def _js_ts_metrics(source: str) -> tuple[float, list[str]]:
     stripped = _strip_js_comments_and_strings(source)
-    fn_count = len(re.findall(r"\bfunction\b", stripped)) + len(re.findall(r"=>", stripped))
+    fn_count = len(re.findall(r"\bfunction\b", stripped)) + len(
+        re.findall(r"=>", stripped)
+    )
     class_count = len(re.findall(r"\bclass\b", stripped))
     nesting = _brace_nesting_depth(stripped)
     raw = fn_count + class_count * 2 + nesting * 2
@@ -223,13 +249,29 @@ def _git_churn(repo_root: Path, since_months: int) -> dict[str, dict[str, int]]:
         if head.returncode != 0:
             return {}
         commits_raw = subprocess.run(
-            ["git", "-C", str(repo_root), "log", f"--since={since}", "--name-only", "--pretty=format:%H"],
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "log",
+                f"--since={since}",
+                "--name-only",
+                "--pretty=format:%H",
+            ],
             capture_output=True,
             text=True,
             timeout=120,
         ).stdout
         changes_raw = subprocess.run(
-            ["git", "-C", str(repo_root), "log", f"--since={since}", "--numstat", "--pretty=format:"],
+            [
+                "git",
+                "-C",
+                str(repo_root),
+                "log",
+                f"--since={since}",
+                "--numstat",
+                "--pretty=format:",
+            ],
             capture_output=True,
             text=True,
             timeout=120,
@@ -246,7 +288,9 @@ def _git_churn(repo_root: Path, since_months: int) -> dict[str, dict[str, int]]:
             current_commit = line
             continue
         if line and current_commit:
-            entry = per_path.setdefault(line.replace("\\", "/"), {"commits": 0, "changes": 0})
+            entry = per_path.setdefault(
+                line.replace("\\", "/"), {"commits": 0, "changes": 0}
+            )
             entry["commits"] += 1
     for line in changes_raw.splitlines():
         parts = line.split("\t")
@@ -255,7 +299,9 @@ def _git_churn(repo_root: Path, since_months: int) -> dict[str, dict[str, int]]:
         adds, deletes, path = parts
         if not adds.isdigit() or not deletes.isdigit():
             continue
-        entry = per_path.setdefault(path.replace("\\", "/"), {"commits": 0, "changes": 0})
+        entry = per_path.setdefault(
+            path.replace("\\", "/"), {"commits": 0, "changes": 0}
+        )
         entry["changes"] += int(adds) + int(deletes)
     return per_path
 
@@ -276,7 +322,9 @@ def _compute_metrics(repo_root: Path, since_months: int = 3) -> AnalysisSnapshot
         ]
         churn_entry = churn.get(rel, {"commits": 0, "changes": 0})
         churn_score = min(
-            100.0, math.log1p(churn_entry["commits"]) * 30 + math.log1p(churn_entry["changes"]) * 8
+            100.0,
+            math.log1p(churn_entry["commits"]) * 30
+            + math.log1p(churn_entry["changes"]) * 8,
         )
         loc = _count_loc(path)
         health = min(100.0, max(0.0, 100.0 - 0.55 * complexity - 0.45 * churn_score))

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
 import pytest
@@ -20,7 +19,9 @@ async def test_events_reach_subscribers_on_the_repo_channel() -> None:
         received.append((channel, event))
 
     await hub.subscribe("repo-123", handler)
-    await hub.publish("repo-123", "snapshot:updated", {"repo_id": "repo-123", "snapshot": {"id": 1}})
+    await hub.publish(
+        "repo-123", "snapshot:updated", {"repo_id": "repo-123", "snapshot": {"id": 1}}
+    )
 
     assert len(received) == 1
     channel, event = received[0]
@@ -52,7 +53,9 @@ async def test_repos_are_isolated_channels() -> None:
         other.append(event)
 
     await hub.subscribe("repo-a", handler)
-    await hub.publish("repo-b", "snapshot:updated", {"repo_id": "repo-b", "snapshot": {}})
+    await hub.publish(
+        "repo-b", "snapshot:updated", {"repo_id": "repo-b", "snapshot": {}}
+    )
     assert other == []
     await hub.close()
 

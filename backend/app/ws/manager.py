@@ -10,7 +10,6 @@ documented stretch goal in CONTRACTS.md).
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
@@ -82,11 +81,15 @@ class ConnectionManager:
                     continue
                 await self._send(ws, event_type, payload)
 
-    async def send(self, websocket: WebSocket, event_type: str, payload: dict[str, Any]) -> None:
+    async def send(
+        self, websocket: WebSocket, event_type: str, payload: dict[str, Any]
+    ) -> None:
         await self._send(websocket, event_type, payload)
 
     @staticmethod
-    async def _send(websocket: WebSocket, event_type: str, payload: dict[str, Any]) -> None:
+    async def _send(
+        websocket: WebSocket, event_type: str, payload: dict[str, Any]
+    ) -> None:
         try:
             await websocket.send_json({"type": event_type, "payload": payload})
         except Exception:
@@ -101,7 +104,9 @@ class ConnectionManager:
             self._throttles[repo_id] = throttle
         return throttle
 
-    def throttle_submit(self, repo_id: RepoId, user_id: UserId, x: float, y: float) -> bool:
+    def throttle_submit(
+        self, repo_id: RepoId, user_id: UserId, x: float, y: float
+    ) -> bool:
         """True when a cursor update for this user may be broadcast immediately."""
         return self._throttle_for(repo_id).submit(user_id, x, y)
 

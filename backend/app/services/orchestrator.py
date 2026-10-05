@@ -24,9 +24,10 @@ import uuid
 from sqlmodel import Session
 
 from app.core.db import engine
-from app.models.snapshot import AiReviewRow, AnalysisSnapshot as AnalysisSnapshotRow
-from app.services.analysis import analyze_repo as _pure_analyze
+from app.models.snapshot import AiReviewRow
+from app.models.snapshot import AnalysisSnapshot as AnalysisSnapshotRow
 from app.services.ai_review import AiReviewError, OpenAIReviewClient, review_pr
+from app.services.analysis import analyze_repo as _pure_analyze
 from app.services.github import fetch_pull_request_diff
 from app.services.pipeline import (
     RepoCheckoutError,

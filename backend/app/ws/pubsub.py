@@ -33,6 +33,7 @@ except ImportError:  # pragma: no cover - Render free tier has no managed Redis
     class _FakeAsyncRedis:  # minimal stand-in so type hints don't break
         pass
 
+
 from app.ws.events import encode
 
 logger = logging.getLogger(__name__)
@@ -85,7 +86,9 @@ class RedisPubSubBackend:
         pubsub = client.pubsub()
         await pubsub.psubscribe(SUBSCRIBE_PATTERN)
         self._pubsub = pubsub
-        self._listener_task = asyncio.create_task(self._listen_loop(), name="ws-pubsub-listener")
+        self._listener_task = asyncio.create_task(
+            self._listen_loop(), name="ws-pubsub-listener"
+        )
 
     async def subscribe(self, channel: str, callback: EventHandler) -> None:
         self._handlers.setdefault(channel, []).append(callback)
@@ -116,7 +119,9 @@ class RedisPubSubBackend:
                     continue
                 raw_channel = message.get("channel")
                 raw_data = message.get("data")
-                if not isinstance(raw_channel, bytes) or not isinstance(raw_data, bytes):
+                if not isinstance(raw_channel, bytes) or not isinstance(
+                    raw_data, bytes
+                ):
                     continue
                 channel = raw_channel.decode()
                 event = self._parse(raw_data.decode())
@@ -291,7 +296,9 @@ async def close_hub() -> None:
 
 
 async def publish_snapshot_updated(repo_id: str, snapshot: dict[str, Any]) -> None:
-    await get_hub().publish(repo_id, "snapshot:updated", {"repo_id": repo_id, "snapshot": snapshot})
+    await get_hub().publish(
+        repo_id, "snapshot:updated", {"repo_id": repo_id, "snapshot": snapshot}
+    )
 
 
 async def publish_review_new(repo_id: str, review: dict[str, Any]) -> None:

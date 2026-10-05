@@ -9,7 +9,6 @@ repos) and, later, uses the stored token to fetch repo metadata.
 import hashlib
 import hmac
 import secrets
-from pathlib import Path
 
 import httpx
 
@@ -154,9 +153,7 @@ async def fetch_repo_metadata(access_token: str, github_full_name: str) -> dict:
     if resp.status_code == 404:
         raise GithubRepoNotFound(f"Repo {github_full_name} not found or not accessible")
     if resp.status_code >= 400:
-        raise GithubOAuthError(
-            f"GitHub returned {resp.status_code}: {resp.text[:200]}"
-        )
+        raise GithubOAuthError(f"GitHub returned {resp.status_code}: {resp.text[:200]}")
     return resp.json()
 
 
@@ -174,9 +171,9 @@ def verify_webhook_signature(
     """
     if not signature_header:
         return False
-    expected = "sha256=" + hmac.new(
-        secret.encode(), payload, hashlib.sha256
-    ).hexdigest()
+    expected = (
+        "sha256=" + hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+    )
     return hmac.compare_digest(expected, signature_header)
 
 
@@ -204,11 +201,7 @@ def fetch_pull_request_diff(
     except httpx.HTTPError as exc:
         raise GithubOAuthError(f"GitHub diff fetch failed: {exc}") from exc
     if resp.status_code == 404:
-        raise GithubRepoNotFound(
-            f"PR #{pr_number} not found in {github_full_name}"
-        )
+        raise GithubRepoNotFound(f"PR #{pr_number} not found in {github_full_name}")
     if resp.status_code >= 400:
-        raise GithubOAuthError(
-            f"GitHub returned {resp.status_code}: {resp.text[:200]}"
-        )
+        raise GithubOAuthError(f"GitHub returned {resp.status_code}: {resp.text[:200]}")
     return resp.text

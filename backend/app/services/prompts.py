@@ -60,7 +60,6 @@ def build_user_review_prompt(*, pr_number: int, diff: str) -> str:
 
 
 def build_retry_review_prompt(*, pr_number: int, diff: str) -> str:
-    return (
-        USER_REVIEW_PROMPT_TEMPLATE.format(pr_number=pr_number, diff=diff)
-        + RETRY_REMEDIATION_PROMPT.format(schema=REVIEW_JSON_SCHEMA)
-    )
+    return USER_REVIEW_PROMPT_TEMPLATE.format(
+        pr_number=pr_number, diff=diff
+    ) + RETRY_REMEDIATION_PROMPT.format(schema=REVIEW_JSON_SCHEMA)

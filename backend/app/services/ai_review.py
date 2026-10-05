@@ -21,7 +21,7 @@ import logging
 import os
 import re
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Protocol
 
 from pydantic import ValidationError
@@ -62,7 +62,9 @@ class LlmUsage:
     @property
     def cost_usd(self) -> float:
         input_price, output_price = MODEL_PRICES_USD_PER_1M.get(self.model, (0.0, 0.0))
-        return (self.input_tokens / 1_000_000) * input_price + (self.output_tokens / 1_000_000) * output_price
+        return (self.input_tokens / 1_000_000) * input_price + (
+            self.output_tokens / 1_000_000
+        ) * output_price
 
 
 class LLMClient(Protocol):
@@ -80,7 +82,9 @@ class OpenAIReviewClient:
         # key was invisible to `Settings`, to `.env.example`, and to any test
         # that patched the config object.
         self.api_key = api_key or settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
-        self.model = model or settings.OPENAI_MODEL or os.getenv("OPENAI_MODEL") or DEFAULT_MODEL
+        self.model = (
+            model or settings.OPENAI_MODEL or os.getenv("OPENAI_MODEL") or DEFAULT_MODEL
+        )
         self._client = None
 
     @property
@@ -125,7 +129,9 @@ def truncate_diff(diff: str, max_chars: int = DEFAULT_MAX_DIFF_CHARS) -> str:
     if len(diff) <= max_chars:
         return diff
     half = max_chars // 2
-    marker = f"\n\n... [diff truncated at {len(diff)} chars, showing {max_chars}] ...\n\n"
+    marker = (
+        f"\n\n... [diff truncated at {len(diff)} chars, showing {max_chars}] ...\n\n"
+    )
     return diff[:half] + marker + diff[-half:]
 
 
@@ -148,6 +154,7 @@ def parse_review_json(raw: str) -> dict:
 
 
 _cost_log: deque[dict] = deque(maxlen=500)
+
 
 def _cost_log_path() -> str | None:
     return os.getenv("CODATLAS_COST_LOG")
@@ -188,11 +195,17 @@ def review_pr(diff: str, pr_number: int, client: LLMClient) -> AiReview:
     last_error: Exception | None = None
     for attempt in range(MAX_RETRIES + 1):
         if attempt == 0:
-            user_prompt = prompts.build_user_review_prompt(pr_number=pr_number, diff=snippet)
+            user_prompt = prompts.build_user_review_prompt(
+                pr_number=pr_number, diff=snippet
+            )
         else:
-            user_prompt = prompts.build_retry_review_prompt(pr_number=pr_number, diff=snippet)
+            user_prompt = prompts.build_retry_review_prompt(
+                pr_number=pr_number, diff=snippet
+            )
         try:
-            content, usage = client.chat_json(system=prompts.SYSTEM_REVIEW_PROMPT, user=user_prompt)
+            content, usage = client.chat_json(
+                system=prompts.SYSTEM_REVIEW_PROMPT, user=user_prompt
+            )
         except LLMError as exc:
             raise AiReviewError(f"LLM call failed: {exc}") from exc
         record_usage(usage)
@@ -204,5 +217,9 @@ def review_pr(diff: str, pr_number: int, client: LLMClient) -> AiReview:
             return review
         except (json.JSONDecodeError, ValidationError, TypeError, ValueError) as exc:
             last_error = exc
-            logger.warning("review attempt %d failed validation: %s", attempt + 1, last_error)
-    raise AiReviewError(f"AiReview failed after {MAX_RETRIES + 1} attempts; last error: {last_error}")
+            logger.warning(
+                "review attempt %d failed validation: %s", attempt + 1, last_error
+            )
+    raise AiReviewError(
+        f"AiReview failed after {MAX_RETRIES + 1} attempts; last error: {last_error}"
+    )

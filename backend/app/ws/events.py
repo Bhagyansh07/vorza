@@ -24,7 +24,9 @@ EVENT_REVIEW_NEW = "review:new"
 EVENT_ERROR = "error"
 
 # --- client -> server events -----------------------------------------------
-CLIENT_EVENTS = frozenset({EVENT_PRESENCE_JOIN, EVENT_PRESENCE_CURSOR, EVENT_COMMENT_NEW})
+CLIENT_EVENTS = frozenset(
+    {EVENT_PRESENCE_JOIN, EVENT_PRESENCE_CURSOR, EVENT_COMMENT_NEW}
+)
 
 # --- wire envelope ----------------------------------------------------------
 

@@ -13,8 +13,8 @@ from app.models.snapshot import (
     AnalysisSnapshotBase,
     AnalysisSnapshotPublic,
     FileNode,
-    SnapshotSummary,
     SnapshotsList,
+    SnapshotSummary,
 )
 from app.models.user import (
     Message,

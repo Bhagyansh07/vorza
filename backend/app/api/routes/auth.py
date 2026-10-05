@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, HTTPException, status
 from sqlmodel import SQLModel, select
 
 from app.api.deps import CurrentUser, SessionDep

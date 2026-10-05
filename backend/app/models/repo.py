@@ -1,6 +1,6 @@
 import re
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from pydantic import field_validator
 from sqlalchemy import DateTime, UniqueConstraint

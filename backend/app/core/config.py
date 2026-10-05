@@ -1,4 +1,4 @@
-﻿import warnings
+import warnings
 from pathlib import Path
 from typing import Literal, Self
 
@@ -87,13 +87,8 @@ class Settings(BaseSettings):
     @model_validator(mode="after")
     def _enforce_non_default_secrets(self) -> Self:
         self._check_default_secret("SECRET_KEY", self.SECRET_KEY)
-        self._check_default_secret(
-            "GITHUB_WEBHOOK_SECRET", self.GITHUB_WEBHOOK_SECRET
-        )
-        if (
-            self.FASTAPI_ENV == "production"
-            and not self.GITHUB_WEBHOOK_SECRET
-        ):
+        self._check_default_secret("GITHUB_WEBHOOK_SECRET", self.GITHUB_WEBHOOK_SECRET)
+        if self.FASTAPI_ENV == "production" and not self.GITHUB_WEBHOOK_SECRET:
             warnings.warn(
                 "GITHUB_WEBHOOK_SECRET is unset: POST /webhooks/github will "
                 "return 503. Set it to enable PR reviews.",
@@ -103,9 +98,7 @@ class Settings(BaseSettings):
         # (where Login.tsx picks up `code`), so production doesn't redirect to
         # localhost. Set GITHUB_OAUTH_CALLBACK_URL to override explicitly.
         if not self.GITHUB_OAUTH_CALLBACK_URL:
-            self.GITHUB_OAUTH_CALLBACK_URL = (
-                f"{self.FRONTEND_HOST.rstrip('/')}/login"
-            )
+            self.GITHUB_OAUTH_CALLBACK_URL = f"{self.FRONTEND_HOST.rstrip('/')}/login"
         return self
 
 

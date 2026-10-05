@@ -12,6 +12,7 @@ from datetime import timedelta
 from typing import Any
 
 import pytest
+from fastapi import FastAPI
 from starlette.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
@@ -20,8 +21,6 @@ from app.core.security import create_access_token
 from app.ws import publish_snapshot_updated
 from app.ws.comment_store import DummyCommentStore
 from app.ws.pubsub import configure_hub, reset_hub
-
-from fastapi import FastAPI
 
 REPO = "repo-1"
 
@@ -39,7 +38,9 @@ def hub():
     reset_hub()
 
 
-def until(ws: Any, wanted: str, *, where: dict[str, Any] | None = None) -> dict[str, Any]:
+def until(
+    ws: Any, wanted: str, *, where: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Read events until the wanted type arrives, optionally matching payload fields."""
     for _ in range(30):
         event = ws.receive_json()
@@ -54,7 +55,9 @@ def until(ws: Any, wanted: str, *, where: dict[str, Any] | None = None) -> dict[
 
 def join(ws: Any, repo_id: str, user_id: str) -> dict[str, Any]:
     token = create_access_token(user_id, expires_delta=timedelta(hours=1))
-    ws.send_json({"type": "presence:join", "payload": {"repo_id": repo_id, "token": token}})
+    ws.send_json(
+        {"type": "presence:join", "payload": {"repo_id": repo_id, "token": token}}
+    )
     roster = until(ws, "presence:roster")
     assert roster["payload"]["repo_id"] == repo_id
     until(ws, "presence:join")  # drain the self-echo broadcast before the next read
@@ -104,7 +107,10 @@ def test_cursor_rebroadcasts_to_other_client(hub) -> None:
                 join(ws2, REPO, "u2")
 
                 ws1.send_json(
-                    {"type": "presence:cursor", "payload": {"user_id": "u1", "x": 42, "y": 24}}
+                    {
+                        "type": "presence:cursor",
+                        "payload": {"user_id": "u1", "x": 42, "y": 24},
+                    }
                 )
                 cursor = until(ws2, "presence:cursor")
                 assert cursor["payload"]["user_id"] == "u1"
@@ -120,7 +126,10 @@ def test_server_uses_registered_identity_for_cursors(hub) -> None:
             with client.websocket_connect(f"/ws/repos/{REPO}") as ws2:
                 join(ws2, REPO, "u2")
                 ws1.send_json(
-                    {"type": "presence:cursor", "payload": {"user_id": "someone-else", "x": 1, "y": 2}}
+                    {
+                        "type": "presence:cursor",
+                        "payload": {"user_id": "someone-else", "x": 1, "y": 2},
+                    }
                 )
                 cursor = until(ws2, "presence:cursor")
                 assert cursor["payload"]["user_id"] == "u1"

@@ -9,14 +9,22 @@ Agent 1's API/model lands; Agent 1 swaps in the real store (see STATUS.md).
 from __future__ import annotations
 
 import logging
-import uuid
 import time
+import uuid
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 logger = logging.getLogger(__name__)
 
-NEW_COMMENT_FIELDS = {"repo_id", "snapshot_id", "file_path", "author_id", "body", "x", "y"}
+NEW_COMMENT_FIELDS = {
+    "repo_id",
+    "snapshot_id",
+    "file_path",
+    "author_id",
+    "body",
+    "x",
+    "y",
+}
 
 
 class CommentStore(Protocol):

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
-from app.api.deps import CurrentUser, SessionDep, get_owned_repo
+from app.api.deps import CurrentUser, SessionDep
 from app.models.repo import Repo, RepoCreate, RepoPublic, ReposPublic
 from app.services.github import (
     GithubOAuthError,
