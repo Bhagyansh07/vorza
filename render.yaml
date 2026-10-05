@@ -1,0 +1,90 @@
+# Render blueprint for Vorza. Free tiers only.
+#
+# Why this file exists: the deploy was previously configured by hand in the
+# Render dashboard, which is why the ephemeral-disk data loss documented in
+# HANDOVER.md was not visible to anyone reading the repo. A blueprint makes the
+# deploy reproducible and reviewable.
+#
+# The critical change is the Postgres instance. Render's free web services keep
+# a local disk only for the life of the instance: on every restart, redeploy or
+# instance move the disk is wiped. That is why connected repositories kept
+# disappearing (HANDOVER.md:51-62). `DATABASE_URL` now points at a real database,
+# so the data outlives the process.
+#
+# Apply: Render dashboard -> Blueprints -> New Blueprint Instance -> point at
+# this repo, then set the secret values listed in docs/MANUAL_STEPS.md.
+# Note that adopting a blueprint onto an existing service replaces its
+# configuration, so read docs/MANUAL_STEPS.md first.
+
+databases:
+  - name: vorza-db
+    databaseName: vorza
+    user: vorza
+    # Free Postgres instances go to sleep after 5 minutes and are deleted after
+    # 30 days of inactivity. A deleted instance takes the data with it, so pair
+    # this with the weekly ping in MANUAL_STEPS.md.
+    plan: free
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: vorza-api
+    runtime: python
+    plan: free
+    region: oregon
+    # Same region as the database above. A cross-region connection to a free
+    # instance that has just woken up is a reliable source of timeouts.
+    healthCheckPath: /openapi.json
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vorza-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      # GitHub OAuth app credentials. Set by hand -- see MANUAL_STEPS.md.
+      - key: GITHUB_CLIENT_ID
+        sync: false
+      - key: GITHUB_CLIENT_SECRET
+        sync: false
+      # Shared secret for the PR webhook HMAC. Set by hand.
+      - key: GITHUB_WEBHOOK_SECRET
+        sync: false
+      # Optional. With no key the orchestrator skips AI review and logs an
+      # explicit warning instead of failing the run.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      # Must match the frontend origin exactly, because CORS here is an
+      # explicit allowlist. Update it to the new Vercel URL before deploying.
+      - key: FRONTEND_HOST
+        sync: false
+      - key: ENVIRONMENT
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+
+    # Docker is the only deploy path that has been verified to work: the repo
+    # has a Dockerfile, and the CI workflow builds it on every push. Render's
+    # native Python runtime resolves dependencies from a requirements.txt that
+    # this repo does not have (it uses pyproject.toml).
+    #
+    # The context is ./backend because that is where the Dockerfile and
+    # alembic.ini live; the paths below are relative to the context.
+    dockerContext: ./backend
+    dockerfilePath: ./Dockerfile
+    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+    # `preDeployCommand` runs against the *new* release before it takes traffic,
+    # so a failing migration stops the deploy instead of booting an app that
+    # cannot serve. Without it, migrations and the new code race.
+    preDeployCommand: alembic upgrade head
+
+    # Uncomment to keep the container's own writable layer small. Analysis
+    # clones repos to disk, so this needs a real volume to be useful -- see the
+    # disk notes in docs/MANUAL_STEPS.md.
+    # disk:
+    #   name: vorza-checkouts
+    #   mountPath: /var/data
+    #   sizeGB: 1

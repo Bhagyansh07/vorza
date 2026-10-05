@@ -19,14 +19,15 @@ def custom_generate_unique_id(route: APIRoute) -> str:
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    # Ensure tables exist even when Alembic migrations never ran (Render free
-    # tier falls back to SQLite and has no prestart hook). Idempotent — leaves a
-    # Postgres schema untouched.
-    from sqlmodel import SQLModel
-
+    # Bring the schema up to whatever is authoritative for this database.
+    # `ensure_schema` hands control to Alembic when a revision is stamped and
+    # only falls back to create_all for a database with no migrations at all --
+    # see app/core/schema.py for why calling create_all unconditionally is what
+    # let a wrong table name in 0001_initial go unnoticed for so long.
     from app.core.db import engine
+    from app.core.schema import ensure_schema
 
-    SQLModel.metadata.create_all(engine)
+    ensure_schema(engine)
     # Bind the persistent comment store. init_runtime() leaves the in-memory
     # DummyCommentStore bound when called with no argument, so comments posted
     # from the graph were broadcast to other viewers and then dropped.
