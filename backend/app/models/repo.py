@@ -1,6 +1,6 @@
 import re
 import uuid
-from datetime import UTC, datetime
+from datetime import datetime
 
 from pydantic import field_validator
 from sqlalchemy import DateTime, UniqueConstraint
@@ -34,7 +34,7 @@ class Repo(RepoBase, table=True):
     )
     connected_at: datetime | None = Field(
         default_factory=get_datetime_utc,
-        sa_type=DateTime(timezone=True),  # type: ignore
+        sa_type=DateTime(timezone=True),
     )
     # Cascades are enforced at the DB level (ondelete="CASCADE" / "SET NULL"),
     # so no ORM relationships are required between models.

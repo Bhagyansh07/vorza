@@ -9,7 +9,7 @@ repos) and, later, uses the stored token to fetch repo metadata.
 import hashlib
 import hmac
 import secrets
-from pathlib import Path
+from typing import Any, cast
 
 import httpx
 
@@ -102,16 +102,20 @@ async def exchange_code_for_token(code: str) -> str:
         )
     if resp.status_code != 200:
         raise GithubOAuthError(f"Token exchange failed ({resp.status_code})")
-    data = resp.json()
+    data: dict[str, Any] = resp.json()
     if "error" in data:
-        raise GithubOAuthError(data["error_description"] or data["error"])
+        # GitHub omits error_description on some failures, so fall back
+        # rather than raising KeyError from inside an error path.
+        raise GithubOAuthError(
+            str(data.get("error_description") or data.get("error") or data["error"])
+        )
     token = data.get("access_token")
-    if not token:
+    if not isinstance(token, str) or not token:
         raise GithubOAuthError("No access_token in GitHub response")
     return token
 
 
-async def fetch_github_user(access_token: str) -> dict:
+async def fetch_github_user(access_token: str) -> dict[str, Any]:
     """Fetch the authenticated user's GitHub profile.
 
     Raises ``GithubOAuthError`` on failure.
@@ -127,7 +131,7 @@ async def fetch_github_user(access_token: str) -> dict:
         )
     if resp.status_code != 200:
         raise GithubOAuthError(f"GitHub profile fetch failed ({resp.status_code})")
-    return resp.json()
+    return cast("dict[str, Any]", resp.json())
 
 
 # ---------------------------------------------------------------------------
@@ -135,7 +139,9 @@ async def fetch_github_user(access_token: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-async def fetch_repo_metadata(access_token: str, github_full_name: str) -> dict:
+async def fetch_repo_metadata(
+    access_token: str, github_full_name: str
+) -> dict[str, Any]:
     """Fetch repo metadata from GitHub to validate it exists and is accessible.
 
     Raises ``GithubRepoNotFound`` if the repo is not found, ``GithubOAuthError``
@@ -154,10 +160,8 @@ async def fetch_repo_metadata(access_token: str, github_full_name: str) -> dict:
     if resp.status_code == 404:
         raise GithubRepoNotFound(f"Repo {github_full_name} not found or not accessible")
     if resp.status_code >= 400:
-        raise GithubOAuthError(
-            f"GitHub returned {resp.status_code}: {resp.text[:200]}"
-        )
-    return resp.json()
+        raise GithubOAuthError(f"GitHub returned {resp.status_code}: {resp.text[:200]}")
+    return cast("dict[str, Any]", resp.json())
 
 
 # ---------------------------------------------------------------------------
@@ -174,9 +178,9 @@ def verify_webhook_signature(
     """
     if not signature_header:
         return False
-    expected = "sha256=" + hmac.new(
-        secret.encode(), payload, hashlib.sha256
-    ).hexdigest()
+    expected = (
+        "sha256=" + hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+    )
     return hmac.compare_digest(expected, signature_header)
 
 
@@ -204,11 +208,7 @@ def fetch_pull_request_diff(
     except httpx.HTTPError as exc:
         raise GithubOAuthError(f"GitHub diff fetch failed: {exc}") from exc
     if resp.status_code == 404:
-        raise GithubRepoNotFound(
-            f"PR #{pr_number} not found in {github_full_name}"
-        )
+        raise GithubRepoNotFound(f"PR #{pr_number} not found in {github_full_name}")
     if resp.status_code >= 400:
-        raise GithubOAuthError(
-            f"GitHub returned {resp.status_code}: {resp.text[:200]}"
-        )
+        raise GithubOAuthError(f"GitHub returned {resp.status_code}: {resp.text[:200]}")
     return resp.text

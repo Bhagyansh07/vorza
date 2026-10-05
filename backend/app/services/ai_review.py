@@ -21,10 +21,13 @@ import logging
 import os
 import re
 from collections import deque
-from dataclasses import dataclass, field
-from typing import Protocol
+from dataclasses import dataclass
+from typing import Any, Protocol
 
+from openai import OpenAI
 from pydantic import ValidationError
+
+from app.core.config import settings
 
 from . import prompts
 from .schemas import AiReview
@@ -35,7 +38,7 @@ DEFAULT_MAX_DIFF_CHARS = 120_000
 MAX_RETRIES = 1
 DEFAULT_MODEL = "gpt-4o-mini"
 
-MODEL_PRICES_USD_PER_1M = {
+MODEL_PRICES_USD_PER_1M: dict[str, tuple[float, float]] = {
     "gpt-4o-mini": (0.15, 0.60),
     "gpt-4o": (2.50, 10.00),
     "gpt-4.1-mini": (0.40, 1.60),
@@ -60,7 +63,9 @@ class LlmUsage:
     @property
     def cost_usd(self) -> float:
         input_price, output_price = MODEL_PRICES_USD_PER_1M.get(self.model, (0.0, 0.0))
-        return (self.input_tokens / 1_000_000) * input_price + (self.output_tokens / 1_000_000) * output_price
+        return (self.input_tokens / 1_000_000) * input_price + (
+            self.output_tokens / 1_000_000
+        ) * output_price
 
 
 class LLMClient(Protocol):
@@ -74,17 +79,24 @@ class OpenAIReviewClient:
     """OpenAI adapter using JSON mode (structured output, not string parsing)."""
 
     def __init__(self, *, api_key: str | None = None, model: str | None = None) -> None:
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.model = model or os.getenv("OPENAI_MODEL") or DEFAULT_MODEL
-        self._client = None
+        # Settings first, env second. Reading the raw environment here meant the
+        # key was invisible to `Settings`, to `.env.example`, and to any test
+        # that patched the config object.
+        self.api_key = api_key or settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+        self.model = (
+            model or settings.OPENAI_MODEL or os.getenv("OPENAI_MODEL") or DEFAULT_MODEL
+        )
+        self._client: OpenAI | None = None
 
-    def _connect(self):
+    @property
+    def configured(self) -> bool:
+        return bool(self.api_key)
+
+    def _connect(self) -> OpenAI:
         if self._client is None:
             if not self.api_key:
                 raise LLMError("OPENAI_API_KEY is not set")
-            import openai  # lazy: tests and non-LLM paths don't need it installed
-
-            self._client = openai.OpenAI(api_key=self.api_key)
+            self._client = OpenAI(api_key=self.api_key)
         return self._client
 
     def chat_json(self, *, system: str, user: str) -> tuple[str, LlmUsage]:
@@ -116,29 +128,34 @@ def truncate_diff(diff: str, max_chars: int = DEFAULT_MAX_DIFF_CHARS) -> str:
     if len(diff) <= max_chars:
         return diff
     half = max_chars // 2
-    marker = f"\n\n... [diff truncated at {len(diff)} chars, showing {max_chars}] ...\n\n"
+    marker = (
+        f"\n\n... [diff truncated at {len(diff)} chars, showing {max_chars}] ...\n\n"
+    )
     return diff[:half] + marker + diff[-half:]
 
 
-def parse_review_json(raw: str) -> dict:
+def parse_review_json(raw: str) -> dict[str, Any]:
     """Parse the LLM's JSON, tolerating markdown fences and stray prose."""
     text = raw.strip()
     fenced = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
     if fenced:
         text = fenced.group(1).strip()
     try:
-        return json.loads(text)
+        parsed: dict[str, Any] = json.loads(text)
+        return parsed
     except json.JSONDecodeError:
         start, end = text.find("{"), text.rfind("}")
         if start != -1 and end > start:
             try:
-                return json.loads(text[start : end + 1])
+                salvaged: dict[str, Any] = json.loads(text[start : end + 1])
+                return salvaged
             except json.JSONDecodeError:
                 pass
         raise
 
 
-_cost_log: deque[dict] = deque(maxlen=500)
+_cost_log: deque[dict[str, Any]] = deque(maxlen=500)
+
 
 def _cost_log_path() -> str | None:
     return os.getenv("CODATLAS_COST_LOG")
@@ -165,7 +182,7 @@ def record_usage(usage: LlmUsage) -> None:
     logger.info("LLM call: %s", entry)
 
 
-def get_cost_log() -> list[dict]:
+def get_cost_log() -> list[dict[str, Any]]:
     return list(_cost_log)
 
 
@@ -179,11 +196,17 @@ def review_pr(diff: str, pr_number: int, client: LLMClient) -> AiReview:
     last_error: Exception | None = None
     for attempt in range(MAX_RETRIES + 1):
         if attempt == 0:
-            user_prompt = prompts.build_user_review_prompt(pr_number=pr_number, diff=snippet)
+            user_prompt = prompts.build_user_review_prompt(
+                pr_number=pr_number, diff=snippet
+            )
         else:
-            user_prompt = prompts.build_retry_review_prompt(pr_number=pr_number, diff=snippet)
+            user_prompt = prompts.build_retry_review_prompt(
+                pr_number=pr_number, diff=snippet
+            )
         try:
-            content, usage = client.chat_json(system=prompts.SYSTEM_REVIEW_PROMPT, user=user_prompt)
+            content, usage = client.chat_json(
+                system=prompts.SYSTEM_REVIEW_PROMPT, user=user_prompt
+            )
         except LLMError as exc:
             raise AiReviewError(f"LLM call failed: {exc}") from exc
         record_usage(usage)
@@ -195,5 +218,9 @@ def review_pr(diff: str, pr_number: int, client: LLMClient) -> AiReview:
             return review
         except (json.JSONDecodeError, ValidationError, TypeError, ValueError) as exc:
             last_error = exc
-            logger.warning("review attempt %d failed validation: %s", attempt + 1, last_error)
-    raise AiReviewError(f"AiReview failed after {MAX_RETRIES + 1} attempts; last error: {last_error}")
+            logger.warning(
+                "review attempt %d failed validation: %s", attempt + 1, last_error
+            )
+    raise AiReviewError(
+        f"AiReview failed after {MAX_RETRIES + 1} attempts; last error: {last_error}"
+    )

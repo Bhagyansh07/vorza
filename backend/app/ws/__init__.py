@@ -13,9 +13,6 @@ See ``CONTRACTS.md`` → "WebSocket events" for the wire shapes.
 """
 
 from app.ws.events import (
-    decode,
-    encode,
-    is_client_event_type,
     EVENT_COMMENT_NEW,
     EVENT_ERROR,
     EVENT_PRESENCE_CURSOR,
@@ -24,6 +21,9 @@ from app.ws.events import (
     EVENT_PRESENCE_ROSTER,
     EVENT_REVIEW_NEW,
     EVENT_SNAPSHOT_UPDATED,
+    decode,
+    encode,
+    is_client_event_type,
 )
 from app.ws.gateway import init_runtime, ws_router
 from app.ws.manager import ConnectionManager

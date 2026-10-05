@@ -14,15 +14,45 @@ dependencies = [
     "psycopg[binary]>=3.3.4,<4.0.0",
     "sqlmodel>=0.0.39,<1.0.0",
     "pyjwt<3.0.0,>=2.13.0",
+    # Imported by services/ai_review.py (OpenAIReviewClient). It was previously
+    # absent, so every AI PR review raised LLMError("OPENAI_API_KEY is not set")
+    # and was swallowed by the orchestrator -- the webhook answered 200 while
+    # reviewing nothing. The package must be installed; the API key stays
+    # optional and absence degrades gracefully. See docs/audit/01-code-audit.md C2.
+    "openai<3.0.0,>=1.60.0",
 ]
 
 [dependency-groups]
+# PEP 735 dependency group. Install with:
+#     pip install -e . --group dev
+# NOT `pip install -e ".[dev]"` -- that names an extra that does not exist,
+# so pip silently installs runtime deps only and ruff/pytest/mypy go missing.
 dev = [
     "pytest<10.0.0,>=7.4.3",
     "pytest-asyncio<1.0.0,>=0.26.0",
+    # Required by CI.yml's `--cov=app`; without it pytest exits with
+    # "unrecognized arguments: --cov=app".
+    "pytest-cov<8.0.0,>=5.0.0",
     "mypy<3.0.0,>=1.8.0",
     "ruff<1.0.0,>=0.2.2",
     "coverage<8.0.0,>=7.4.3",
+    # Typing-only. app/ws/pubsub.py imports redis.asyncio inside try/except and
+    # mypy --strict flags an unresolvable import even in the fallback branch.
+    # Runtime never needs it: REDIS_URL is unset on the free single-instance
+    # deploy and the gateway uses the in-process hub.
+    "redis<7.0.0,>=5.0.0",
+]
+
+[project.optional-dependencies]
+# Runtime extras, installed on request: `pip install -e ".[pubsub]"`.
+#
+# NOTE: the backend Dockerfile runs `pip install --no-cache-dir .`, which
+# installs [project].dependencies only. Anything required in production must be
+# a main dependency or a dependency in that image's own layer -- an extra here
+# is NOT installed by the deploy path. That is the same trap as the `.[dev]`
+# extra that broke CI (audit finding H2).
+pubsub = [
+    "redis<7.0.0,>=5.0.0",
 ]
 
 [build-system]
@@ -55,12 +85,38 @@ ignore = [
     "B904",  # Allow raising exceptions without from e, for HTTPException
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# ARG001 fires on arguments a function must declare but cannot use:
+#   - pytest fixtures requested for their setup side effects
+#   - fake/stub implementations of a Protocol, or the FastAPI lifespan
+#     signature, where the caller fixes the parameter names.
+# Renaming or dropping them would break the caller, so the rule is scoped off
+# rather than worked around with renames.
+"tests/**" = ["ARG001"]
+"app/main.py" = ["ARG001"]
+
 [tool.ruff.lint.pyupgrade]
 keep-runtime-typing = true
 
 [tool.mypy]
 strict = true
 exclude = ["venv", ".venv", "alembic"]
+
+[[tool.mypy.overrides]]
+# `redis` is an optional runtime extra, so it is deliberately absent from a
+# default install and CI. Without this, `import redis.asyncio` fails
+# resolution and mypy --strict reports it even though the code guards the
+# import and falls back to the in-process hub.
+#
+# `follow_imports = skip` rather than `ignore_missing_imports` alone, because
+# redis's own stubs are partial (redis.asyncio.from_url and PubSub.aclose are
+# untyped upstream), which trips no-untyped-call once the package is present.
+# The cost is that RedisPubSubBackend's internals are unchecked -- accepted
+# because it is dead code on the single-instance free deploy, and the
+# InMemoryPubSubBackend it falls back to is fully typed and tested.
+module = ["redis", "redis.*"]
+ignore_missing_imports = true
+follow_imports = "skip"
 
 [tool.coverage.run]
 source = ["app"]

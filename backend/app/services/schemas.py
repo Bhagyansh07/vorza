@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -20,7 +20,7 @@ class FileNode(BaseModel):
 class AnalysisSnapshot(BaseModel):
     id: str | None = None
     repo_id: str | None = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     files: list[FileNode] = Field(default_factory=list)
     overall_health_score: float = 100.0
 

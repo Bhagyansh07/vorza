@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from app.api.deps import CurrentUser, SessionDep, get_owned_repo
+from app.core.sql import order_desc
 from app.models.comment import Comment, CommentCreate, CommentPublic, CommentsPublic
 from app.models.snapshot import AnalysisSnapshot
 
@@ -19,9 +20,12 @@ def list_comments(
     comments = session.exec(
         select(Comment)
         .where(Comment.repo_id == repo_id)
-        .order_by(Comment.created_at.desc())
+        .order_by(order_desc(Comment.created_at))
     ).all()
-    return CommentsPublic(data=comments, count=len(comments))
+    return CommentsPublic(
+        data=[CommentPublic.model_validate(c, from_attributes=True) for c in comments],
+        count=len(comments),
+    )
 
 
 @router.post(
@@ -56,4 +60,4 @@ def create_comment(
     session.add(comment)
     session.commit()
     session.refresh(comment)
-    return comment
+    return CommentPublic.model_validate(comment, from_attributes=True)

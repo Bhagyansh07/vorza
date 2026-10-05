@@ -51,9 +51,7 @@ def _checkout_path(repo_id: uuid.UUID) -> Path:
 
 def _git(args: list[str], cwd: Path, *, check: bool = True) -> str:
     """Run git, raise RepoCheckoutError on failure, return stdout."""
-    result = subprocess.run(
-        args, cwd=cwd, capture_output=True, text=True, timeout=600
-    )
+    result = subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=600)
     merged = (result.stdout or "") + (result.stderr or "")
     if check and result.returncode != 0:
         raise RepoCheckoutError(merged.strip() or "git command failed")
@@ -65,22 +63,39 @@ def _ensure_checkout(repo: Repo, access_token: str) -> Path:
     target = _checkout_path(repo.id)
     if (target / ".git").exists():
         try:
-            _git(["git", "-C", str(target), "reset", "--quiet", "--hard", "HEAD"])
-            _git(["git", "-C", str(target), "pull", "--quiet", "--ff-only"])
+            # cwd must be passed explicitly: _git() has no default, and a
+            # missing argument raises TypeError, which `except
+            # RepoCheckoutError` below does NOT catch. That made every refresh
+            # after the initial clone fail hard instead of degrading.
+            _git(
+                ["git", "-C", str(target), "reset", "--quiet", "--hard", "HEAD"],
+                target,
+            )
+            _git(["git", "-C", str(target), "pull", "--quiet", "--ff-only"], target)
         except RepoCheckoutError as exc:
-            logger.warning("checkout refresh failed for %s: %s", repo.github_full_name, exc)
+            logger.warning(
+                "checkout refresh failed for %s: %s", repo.github_full_name, exc
+            )
         return target
     target.parent.mkdir(parents=True, exist_ok=True)
     authed_url = (
         f"https://x-access-token:{access_token}@github.com/{repo.github_full_name}.git"
     )
     try:
-        _git(["git", "clone", "--quiet", "--depth=1", authed_url, str(target)], target.parent)
+        _git(
+            ["git", "clone", "--quiet", "--depth=1", authed_url, str(target)],
+            target.parent,
+        )
         # Persist the token-less remote so refreshes don't re-embed secrets
         # in the worktree config.
         _git(
             [
-                "git", "-C", str(target), "remote", "set-url", "origin",
+                "git",
+                "-C",
+                str(target),
+                "remote",
+                "set-url",
+                "origin",
                 f"https://github.com/{repo.github_full_name}.git",
             ],
             target,

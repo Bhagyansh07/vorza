@@ -1,18 +1,29 @@
 import contextlib
 import os
+import shutil
+import tempfile
 from collections.abc import Generator
 from pathlib import Path
+
+# A per-session temp directory, not a file in the repo.
+#
+# The suite used a fixed ./vorza_test.db and unlinked it at session start. On
+# Windows that fails with WinError 32 whenever anything still holds a handle --
+# a previous crashed run, an editor preview, or antivirus -- which turned every
+# run into 30 setup errors. A unique directory per session removes the shared
+# handle entirely and keeps the repo clean.
+_TMP_DIR = Path(tempfile.mkdtemp(prefix="vorza-test-"))
 
 # Set env vars BEFORE importing app code so Settings reads them.
 os.environ["FASTAPI_ENV"] = "development"
 os.environ["PROJECT_NAME"] = "Vorza Test"
 os.environ["SECRET_KEY"] = "pytest-secret-key-not-for-production"
-os.environ["DATABASE_URL"] = "sqlite:///./vorza_test.db"
+os.environ["DATABASE_URL"] = f"sqlite:///{(_TMP_DIR / 'test.db').as_posix()}"
 os.environ["GITHUB_CLIENT_ID"] = "pytest-client-id"
 os.environ["GITHUB_CLIENT_SECRET"] = "pytest-client-secret"
 os.environ["GITHUB_WEBHOOK_SECRET"] = "pytest-webhook-secret"
 
-TEST_DB_PATH = Path("vorza_test.db")
+TEST_DB_PATH = _TMP_DIR / "test.db"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -27,15 +38,13 @@ from tests.utils.user import create_user  # noqa: E402
 
 @pytest.fixture(scope="session", autouse=True)
 def db() -> Generator[Session]:
-    if TEST_DB_PATH.exists():
-        TEST_DB_PATH.unlink()
     with Session(engine) as session:
         init_db(session)
         yield session
     engine.dispose()
-    if TEST_DB_PATH.exists():
-        with contextlib.suppress(PermissionError):
-            TEST_DB_PATH.unlink()
+    # Best effort: the engine may still hold a handle on Windows.
+    with contextlib.suppress(OSError):
+        shutil.rmtree(_TMP_DIR, ignore_errors=True)
 
 
 @pytest.fixture(scope="module")

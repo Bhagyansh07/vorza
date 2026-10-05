@@ -28,10 +28,13 @@ from typing import Any, Protocol, TypeAlias
 try:
     import redis.asyncio as aioredis
 except ImportError:  # pragma: no cover - Render free tier has no managed Redis
-    aioredis = None  # type: ignore[assignment]
+    # `redis` is an optional extra (see pyproject.toml [project.optional-dependencies]
+    # -> pubsub). When it is absent this module still imports and the gateway
+    # falls back to the in-process hub. `Any` rather than a stub class: the
+    # `aioredis.Redis` annotations below need a real module to resolve, and a
+    # stand-in class only existed to satisfy a checker.
+    aioredis = None
 
-    class _FakeAsyncRedis:  # minimal stand-in so type hints don't break
-        pass
 
 from app.ws.events import encode
 
@@ -85,7 +88,9 @@ class RedisPubSubBackend:
         pubsub = client.pubsub()
         await pubsub.psubscribe(SUBSCRIBE_PATTERN)
         self._pubsub = pubsub
-        self._listener_task = asyncio.create_task(self._listen_loop(), name="ws-pubsub-listener")
+        self._listener_task = asyncio.create_task(
+            self._listen_loop(), name="ws-pubsub-listener"
+        )
 
     async def subscribe(self, channel: str, callback: EventHandler) -> None:
         self._handlers.setdefault(channel, []).append(callback)
@@ -116,7 +121,9 @@ class RedisPubSubBackend:
                     continue
                 raw_channel = message.get("channel")
                 raw_data = message.get("data")
-                if not isinstance(raw_channel, bytes) or not isinstance(raw_data, bytes):
+                if not isinstance(raw_channel, bytes) or not isinstance(
+                    raw_data, bytes
+                ):
                     continue
                 channel = raw_channel.decode()
                 event = self._parse(raw_data.decode())
@@ -131,13 +138,20 @@ class RedisPubSubBackend:
 
     @staticmethod
     def _parse(raw: str) -> dict[str, Any] | None:
-        try:
-            import json
+        import json
 
-            return json.loads(raw)
+        try:
+            parsed = json.loads(raw)
         except Exception:
             logger.warning("dropping malformed pubsub message: %.80s", raw)
             return None
+        # A well-formed JSON scalar (a bare string, number, list) is still not
+        # an event envelope. Discard it rather than letting the subscriber
+        # raise on `.get`.
+        if not isinstance(parsed, dict):
+            logger.warning("dropping non-object pubsub message: %.80s", raw)
+            return None
+        return parsed
 
     async def _dispatch(self, channel: str, event: dict[str, Any]) -> None:
         for callback in list(self._handlers.get(channel, [])):
@@ -291,7 +305,9 @@ async def close_hub() -> None:
 
 
 async def publish_snapshot_updated(repo_id: str, snapshot: dict[str, Any]) -> None:
-    await get_hub().publish(repo_id, "snapshot:updated", {"repo_id": repo_id, "snapshot": snapshot})
+    await get_hub().publish(
+        repo_id, "snapshot:updated", {"repo_id": repo_id, "snapshot": snapshot}
+    )
 
 
 async def publish_review_new(repo_id: str, review: dict[str, Any]) -> None:

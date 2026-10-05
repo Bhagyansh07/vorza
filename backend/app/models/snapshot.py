@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
 from pydantic import Field as PydanticField
 from sqlalchemy import JSON, Column, DateTime
@@ -35,7 +36,7 @@ class AnalysisSnapshot(AnalysisSnapshotBase, table=True):
     )
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
-        sa_type=DateTime(timezone=True),  # type: ignore
+        sa_type=DateTime(timezone=True),
     )
     # Stored as plain dicts (FileNode.model_dump()); pydantic coerces them
     # back to FileNode on the way out. See CONTRACTS.md Core data models.
@@ -73,9 +74,9 @@ class AiReviewRow(SQLModel, table=True):
     pr_number: int = Field(nullable=False)
     risk_score: float = Field(default=0.0, ge=0.0, le=100.0)
     summary: str = Field(default="", max_length=4096)
-    flags: list[dict] = Field(default_factory=list, sa_column=Column(JSON))
+    flags: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
     updated_files: list[str] = Field(default_factory=list, sa_column=Column(JSON))
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
-        sa_type=DateTime(timezone=True),  # type: ignore
+        sa_type=DateTime(timezone=True),
     )

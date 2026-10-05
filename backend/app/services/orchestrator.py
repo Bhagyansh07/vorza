@@ -24,9 +24,11 @@ import uuid
 from sqlmodel import Session
 
 from app.core.db import engine
-from app.models.snapshot import AiReviewRow, AnalysisSnapshot as AnalysisSnapshotRow
+from app.models.snapshot import AiReviewRow
+from app.models.snapshot import AnalysisSnapshot as AnalysisSnapshotRow
+from app.models.snapshot import FileNode as FileNodeRow
+from app.services.ai_review import AiReviewError, OpenAIReviewClient, review_pr
 from app.services.analysis import analyze_repo as _pure_analyze
-from app.services.ai_review import OpenAIReviewClient, review_pr
 from app.services.github import fetch_pull_request_diff
 from app.services.pipeline import (
     RepoCheckoutError,
@@ -61,7 +63,11 @@ def analyze_repo(repo_id: uuid.UUID) -> None:
             db_snapshot = AnalysisSnapshotRow(
                 repo_id=repo_id,
                 overall_health_score=snapshot.overall_health_score,
-                files=[f.model_dump() for f in snapshot.files],
+                # Two FileNode types exist on purpose: services.schemas is the
+                # DB-free domain shape, models.snapshot is the JSON column type.
+                # Convert at this boundary rather than relying on either side to
+                # coerce, so a field added to one and not the other fails here.
+                files=[FileNodeRow.model_validate(f) for f in snapshot.files],
             )
             session.add(db_snapshot)
             session.commit()
@@ -99,6 +105,17 @@ def review_pull_request(repo_id: uuid.UUID, pr_number: int) -> None:
         diff = fetch_pull_request_diff(token, repo.github_full_name, pr_number)
 
         client = OpenAIReviewClient()
+        if not client.configured:
+            # Degrade loudly rather than failing opaquely further down. GitHub
+            # has already accepted the webhook by this point, so the log is the
+            # only place left to be honest about why nothing was reviewed.
+            logger.warning(
+                "orchestrator.review_pull_request(%s, #%s): skipped - no "
+                "OPENAI_API_KEY configured, so this PR was not reviewed.",
+                repo_id,
+                pr_number,
+            )
+            return
         review = review_pr(diff, pr_number, client)
 
         with Session(engine) as session:
@@ -123,6 +140,17 @@ def review_pull_request(repo_id: uuid.UUID, pr_number: int) -> None:
     except RepoCheckoutError as exc:
         logger.error(
             "orchestrator.review_pull_request(%s, #%s): %s", repo_id, pr_number, exc
+        )
+    except AiReviewError as exc:
+        # Previously collapsed into the generic handler, which made a missing
+        # API key indistinguishable from a real provider fault: the webhook
+        # answered 200 and nothing was ever reviewed. Name the cause.
+        logger.error(
+            "orchestrator.review_pull_request(%s, #%s): AI review failed (%s). "
+            "Check OPENAI_API_KEY / OPENAI_MODEL if this says 'not set'.",
+            repo_id,
+            pr_number,
+            exc,
         )
     except Exception:
         logger.exception(

@@ -28,9 +28,7 @@ def create_user(
 
 
 def authentication_token(user: User) -> str:
-    return security.create_access_token(
-        user.id, expires_delta=timedelta(minutes=30)
-    )
+    return security.create_access_token(user.id, expires_delta=timedelta(minutes=30))
 
 
 def auth_headers(user: User) -> dict[str, str]:

@@ -15,7 +15,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
-from typing import Any, cast
+from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
@@ -32,7 +32,7 @@ from app.ws.events import (
     is_client_event_type,
 )
 from app.ws.manager import ConnectionManager
-from app.ws.pubsub import CHANNEL_PREFIX, CHANNEL_SUFFIX, PubSubHub, get_hub
+from app.ws.pubsub import CHANNEL_PREFIX, CHANNEL_SUFFIX, get_hub
 from app.ws.throttler import CursorThrottle
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,9 @@ logger = logging.getLogger(__name__)
 ws_router = APIRouter(tags=["ws"])
 
 JOIN_TIMEOUT_SECONDS = 15.0
-TICK_INTERVAL_SECONDS = 1.0 / 10.0  # cursor coalescing cadence (matches CONTRACTS.md limit)
+TICK_INTERVAL_SECONDS = (
+    1.0 / 10.0
+)  # cursor coalescing cadence (matches CONTRACTS.md limit)
 
 _manager = ConnectionManager()
 _comment_store: CommentStore = DummyCommentStore()
@@ -69,7 +71,9 @@ async def _repo_channel_handler(channel: str, event: dict[str, Any]) -> None:
         repo_id = channel[len(prefix) : -len(suffix)]
     else:
         repo_id = channel
-    await _manager.broadcast(repo_id, str(event.get("type", "")), dict(event.get("payload", {})))
+    await _manager.broadcast(
+        repo_id, str(event.get("type", "")), dict(event.get("payload", {}))
+    )
 
 
 async def _cursor_flush_loop(repo_id: str, cursor: CursorThrottle) -> None:
@@ -108,7 +112,9 @@ async def repo_socket(websocket: WebSocket, repo_id: str) -> None:
             EVENT_PRESENCE_ROSTER,
             {"repo_id": repo_id, "user_ids": roster},
         )
-        await hub.publish(repo_id, EVENT_PRESENCE_JOIN, {"repo_id": repo_id, "user_id": user_id})
+        await hub.publish(
+            repo_id, EVENT_PRESENCE_JOIN, {"repo_id": repo_id, "user_id": user_id}
+        )
 
         flush_task = asyncio.create_task(_cursor_flush_loop(repo_id, cursor))
         try:
@@ -124,17 +130,23 @@ async def repo_socket(websocket: WebSocket, repo_id: str) -> None:
         await hub.unsubscribe(repo_id, _repo_channel_handler)
         if removed is not None:
             await hub.publish(
-                repo_id, EVENT_PRESENCE_LEAVE, {"repo_id": repo_id, "user_id": removed[1]}
+                repo_id,
+                EVENT_PRESENCE_LEAVE,
+                {"repo_id": repo_id, "user_id": removed[1]},
             )
 
 
 async def _await_join(websocket: WebSocket, repo_id: str) -> str | None:
     """Wait for the mandatory first message ``presence:join {repo_id, user_id}``."""
     try:
-        raw = await asyncio.wait_for(websocket.receive_text(), timeout=JOIN_TIMEOUT_SECONDS)
+        raw = await asyncio.wait_for(
+            websocket.receive_text(), timeout=JOIN_TIMEOUT_SECONDS
+        )
         event = decode(raw)
     except TimeoutError:
-        logger.info("ws connect aborted: no presence:join within %.0fs", JOIN_TIMEOUT_SECONDS)
+        logger.info(
+            "ws connect aborted: no presence:join within %.0fs", JOIN_TIMEOUT_SECONDS
+        )
         return None
     except WebSocketDisconnect:
         return None
@@ -142,7 +154,10 @@ async def _await_join(websocket: WebSocket, repo_id: str) -> str | None:
         logger.debug("ws connect aborted: join message unparsable", exc_info=True)
         return None
     if event.type != EVENT_PRESENCE_JOIN:
-        logger.info("ws connect aborted: first message must be presence:join, got %s", event.type)
+        logger.info(
+            "ws connect aborted: first message must be presence:join, got %s",
+            event.type,
+        )
         return None
     payload: Any = event.payload
     if not isinstance(payload, dict) or not payload.get("token"):
@@ -166,11 +181,15 @@ async def _handle_client_stream(
         try:
             event = decode(raw)
         except Exception:
-            await _manager.send(websocket, EVENT_ERROR, {"message": "malformed message"})
+            await _manager.send(
+                websocket, EVENT_ERROR, {"message": "malformed message"}
+            )
             continue
         if not is_client_event_type(event.type):
             await _manager.send(
-                websocket, EVENT_ERROR, {"message": f"unexpected event type: {event.type}"}
+                websocket,
+                EVENT_ERROR,
+                {"message": f"unexpected event type: {event.type}"},
             )
             continue
         payload: Any = event.payload
@@ -182,13 +201,17 @@ async def _handle_client_stream(
                 if isinstance(x, (int, float)) and isinstance(y, (int, float)):
                     if cursor.submit(user_id, float(x), float(y)):
                         await hub.publish(
-                            repo_id, EVENT_PRESENCE_CURSOR, {"user_id": user_id, "x": float(x), "y": float(y)}
+                            repo_id,
+                            EVENT_PRESENCE_CURSOR,
+                            {"user_id": user_id, "x": float(x), "y": float(y)},
                         )
             continue
 
         if event.type == EVENT_COMMENT_NEW:
             if not isinstance(payload, dict) or "comment" not in payload:
-                await _manager.send(websocket, EVENT_ERROR, {"message": "comment:new needs a comment"})
+                await _manager.send(
+                    websocket, EVENT_ERROR, {"message": "comment:new needs a comment"}
+                )
                 continue
             try:
                 stored = await _comment_store.create(dict(payload["comment"]))

@@ -4,6 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException, status
 from sqlmodel import select
 
 from app.api.deps import CurrentUser, SessionDep, get_owned_repo
+from app.core.sql import order_asc, order_desc
 from app.models.snapshot import (
     AnalysisSnapshot,
     AnalysisSnapshotPublic,
@@ -18,13 +19,13 @@ router = APIRouter(tags=["analysis"])
 @router.get("/repos/{repo_id}/snapshots/latest", response_model=AnalysisSnapshotPublic)
 def get_latest_snapshot(
     repo_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
-) -> AnalysisSnapshot:
+) -> AnalysisSnapshotPublic:
     """Latest analysis snapshot — the force-directed map's graph data."""
     get_owned_repo(session, repo_id, current_user)
     snapshot = session.exec(
         select(AnalysisSnapshot)
         .where(AnalysisSnapshot.repo_id == repo_id)
-        .order_by(AnalysisSnapshot.created_at.desc())
+        .order_by(order_desc(AnalysisSnapshot.created_at))
         .limit(1)
     ).first()
     if not snapshot:
@@ -32,7 +33,7 @@ def get_latest_snapshot(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No snapshot yet for this repo — trigger POST /repos/{id}/analyze",
         )
-    return snapshot
+    return AnalysisSnapshotPublic.model_validate(snapshot, from_attributes=True)
 
 
 @router.get("/repos/{repo_id}/snapshots/history", response_model=SnapshotsList)
@@ -44,7 +45,7 @@ def list_snapshots(
     snapshots = session.exec(
         select(AnalysisSnapshot)
         .where(AnalysisSnapshot.repo_id == repo_id)
-        .order_by(AnalysisSnapshot.created_at.asc())
+        .order_by(order_asc(AnalysisSnapshot.created_at))
     ).all()
     summaries = [
         SnapshotSummary(
@@ -67,7 +68,7 @@ def trigger_analyze(
     background_tasks: BackgroundTasks,
     session: SessionDep,
     current_user: CurrentUser,
-) -> dict:
+) -> dict[str, str]:
     """Queue a manual re-analysis of a repo.
 
     Agent 2 implements `services.analysis.analyze_repo`; for now the stub
