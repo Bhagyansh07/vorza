@@ -26,7 +26,11 @@ import {
 } from '@/features/repos/hooks/use-repos';
 import { toErrorMessage } from '@/lib/errors';
 import { healthBadgeClasses } from '@/lib/health';
-import { GraphView } from '@/features/graph';
+// Imported from the module, not from '@/features/graph'. The barrel
+// re-exports TrendChart, which imports recharts -- and a barrel import
+// drags that 356 kB / 103.75 kB gzip chunk into the main bundle no matter
+// who lazy-imports TrendChart. See the comment on the barrel itself.
+import { GraphView } from '@/features/graph/components/GraphView';
 import { createWebSocketSource } from '@/features/graph/realtime/websocket';
 import { useUser } from '@/features/auth/hooks/use-auth';
 import { useDocumentMeta } from '@/lib/seo';

@@ -83,10 +83,35 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
+        // `charts: ['recharts']` used to be here. Removing it is what makes the
+        // lazy chart load actually work, and the reason is not obvious.
+        //
+        // `manualChunks` forces the named modules into a chunk regardless of
+        // whether anything reaches them statically. The `charts` chunk therefore
+        // became a *static* import of `index`, and Vite emits a `modulepreload`
+        // link for every static chunk dependency -- so 356.24 kB raw /
+        // 103.75 kB gzip of chart library was fetched by every first-time
+        // visitor to the landing page, no matter what `RepoHistory.tsx` did.
+        //
+        // Verified against built output, not assumed:
+        //   with the manual chunk -> `index-*.js` statically imports
+        //                             `charts-*.js`; index.html preloads it
+        //   without it            -> `index-*.js` statically imports only react
+        //                             and d3; index.html preloads only those;
+        //                             recharts moves into the 360 kB dynamic
+        //                             TrendChart chunk
+        //
+        // `hoistTransitiveImports` (Rollup default `true`) is NOT the culprit
+        // and deliberately stays at its default. It was the obvious suspect;
+        // setting it to `false` changed nothing, because the index chunk still
+        // statically imported `charts-*.js` with no dynamic import of it
+        // anywhere. Only removing the manual chunk moved the bytes. Setting the
+        // flag would have looked like a fix and left the bloat in place.
+        //
+        // Pinned by src/features/graph/bundle-boundary.test.ts.
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
           d3: ['d3-force', 'd3-selection', 'd3-zoom'],
-          charts: ['recharts'],
         },
       },
     },
