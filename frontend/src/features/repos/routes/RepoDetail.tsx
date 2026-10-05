@@ -42,7 +42,7 @@ export function RepoDetail() {
   const runAnalysis = async () => {
     try {
       const result = await analyzeRepo.mutateAsync();
-      toast.success(`Analysis ${result.status === 'queued' ? 'queued' : 'started'}`);
+      toast.success(result.message ?? 'Analysis queued');
     } catch (error) {
       toast.error(toErrorMessage(error));
     }

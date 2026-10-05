@@ -42,6 +42,18 @@ const comment = {
   created_at: '2026-09-02T00:00:00Z',
 };
 
+/**
+ * These fixtures mirror the REAL backend wire shape, not the shape the client
+ * wishes for. The backend serves collection endpoints as `{data, count}`
+ * envelopes (ReposPublic / SnapshotsList / CommentsPublic) and returns
+ * `{message, repo_id}` from POST /analyze -- see
+ * `backend/tests/test_frontend_contract.py`, which pins the same contract from
+ * the other side.
+ *
+ * They previously returned bare arrays and `{status}`, which agreed with the
+ * client's own types and so passed while the real API disagreed. A mock that is
+ * derived from the consumer's expectations cannot catch a contract break.
+ */
 const server = setupServer(
   // One handler per CONTRACTS.md endpoint the frontend calls.
   http.post(`${API}/auth/github/callback`, () =>
@@ -59,7 +71,9 @@ const server = setupServer(
     return HttpResponse.json(user);
   }),
 
-  http.get(`${API}/repos`, () => HttpResponse.json([repo])),
+  http.get(`${API}/repos`, () =>
+    HttpResponse.json({ data: [repo], count: 1 })
+  ),
 
   http.post(`${API}/repos`, async ({ request }) => {
     const body = (await request.json()) as { github_full_name: string };
@@ -68,13 +82,28 @@ const server = setupServer(
 
   http.get(`${API}/repos/r_1/snapshots/latest`, () => HttpResponse.json(snapshot)),
 
+  // History returns summaries: no `files`.
   http.get(`${API}/repos/r_1/snapshots/history`, () =>
-    HttpResponse.json([snapshot])
+    HttpResponse.json({
+      data: [
+        {
+          id: snapshot.id,
+          repo_id: snapshot.repo_id,
+          created_at: snapshot.created_at,
+          overall_health_score: snapshot.overall_health_score,
+        },
+      ],
+      count: 1,
+    })
   ),
 
-  http.post(`${API}/repos/r_1/analyze`, () => HttpResponse.json({ status: 'queued' })),
+  http.post(`${API}/repos/r_1/analyze`, () =>
+    HttpResponse.json({ message: 'Analysis queued', repo_id: 'r_1' })
+  ),
 
-  http.get(`${API}/repos/r_1/comments`, () => HttpResponse.json([comment])),
+  http.get(`${API}/repos/r_1/comments`, () =>
+    HttpResponse.json({ data: [comment], count: 1 })
+  ),
 
   http.post(`${API}/repos/r_1/comments`, async ({ request }) => {
     const body = (await request.json()) as { body: string };
@@ -141,9 +170,12 @@ describe('httpApiClient (Agent 1 contract endpoints)', () => {
 
     const history = await httpApiClient.getSnapshotHistory('r_1');
     expect(history).toHaveLength(1);
+    // Summaries carry no `files`.
+    expect(history[0]).not.toHaveProperty('files');
 
     const analyze = await httpApiClient.analyzeRepo('r_1');
-    expect(analyze.status).toBe('queued');
+    expect(analyze.message).toBe('Analysis queued');
+    expect(analyze.repo_id).toBe('r_1');
 
     const comments = await httpApiClient.listComments('r_1');
     expect(comments[0].body).toBe('risky file');

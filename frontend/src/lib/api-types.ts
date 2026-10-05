@@ -1,16 +1,21 @@
 import type {
   AnalysisSnapshot,
+  AnalyzeQueuedResponse,
   CommentPin,
   Repo,
+  SnapshotSummary,
   User,
 } from '@/types';
 
 /** Re-export the contract model types so features can import them from one place. */
 export type {
   AnalysisSnapshot,
+  AnalyzeQueuedResponse,
   CommentPin,
   FileNode,
+  ListEnvelope,
   Repo,
+  SnapshotSummary,
   User,
   AiReviewFlag,
   AiReviewResult,
@@ -59,6 +64,19 @@ export interface CreateCommentInput {
  * intentionally absent — it is a server-side receiver (GitHub → backend), the
  * frontend never calls it.
  */
+/**
+ * Server data-access interface. Implemented by the HTTP client (Agent 1's
+ * backend) and by the mock adapter in src/lib/mock-api.ts.
+ *
+ * Covers every endpoint in the CONTRACTS.md REST table. `/webhooks/github` is
+ * intentionally absent — it is a server-side receiver (GitHub → backend), the
+ * frontend never calls it.
+ *
+ * Collection endpoints return unwrapped arrays. The backend serves a
+ * `{data, count}` envelope on the wire (`ListEnvelope`); unwrapping happens
+ * once, inside the client, so no feature has to know about it. The backend
+ * contract is pinned by `backend/tests/test_frontend_contract.py`.
+ */
 export interface ApiClient {
   // auth
   loginWithGitHubCode(input: LoginWithGitHubCodeInput): Promise<AuthResponse>;
@@ -71,10 +89,11 @@ export interface ApiClient {
 
   // snapshots / analysis
   getLatestSnapshot(repoId: string | number): Promise<AnalysisSnapshot>;
+  /** Summaries, not full snapshots — the history endpoint omits `files`. */
   getSnapshotHistory(
     repoId: string | number
-  ): Promise<AnalysisSnapshot[]>;
-  analyzeRepo(repoId: string | number): Promise<{ status: string }>;
+  ): Promise<SnapshotSummary[]>;
+  analyzeRepo(repoId: string | number): Promise<AnalyzeQueuedResponse>;
 
   // comments
   listComments(repoId: string | number): Promise<CommentPin[]>;

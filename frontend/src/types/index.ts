@@ -41,6 +41,38 @@ export interface AnalysisSnapshot {
   overall_health_score: number; // 0-100, higher = healthier
 }
 
+/**
+ * `SnapshotSummary` in CONTRACTS.md — one point on the health trend.
+ *
+ * Deliberately NOT AnalysisSnapshot: the history endpoint returns summaries
+ * with no `files`, so typing it as a full snapshot claimed a field the server
+ * never sends.
+ */
+export interface SnapshotSummary {
+  id: string | number;
+  repo_id: string | number;
+  created_at: string;
+  overall_health_score: number;
+}
+
+/**
+ * List envelope served by every collection endpoint (`ReposPublic`,
+ * `CommentsPublic`, `SnapshotsList` in CONTRACTS.md).
+ *
+ * The client unwraps `.data` at the boundary so features never handle the
+ * envelope, but the wire type is named here because that is what axios sees.
+ */
+export interface ListEnvelope<T> {
+  data: T[];
+  count: number;
+}
+
+/** Response body of `POST /repos/{id}/analyze`. */
+export interface AnalyzeQueuedResponse {
+  message: string;
+  repo_id: string;
+}
+
 /** `Comment` in CONTRACTS.md (renamed to avoid shadowing the DOM type). */
 export interface CommentPin {
   id: string | number;

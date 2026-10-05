@@ -2,8 +2,11 @@ import axios, { AxiosError } from 'axios';
 
 import type {
   AnalysisSnapshot,
+  AnalyzeQueuedResponse,
   CommentPin,
+  ListEnvelope,
   Repo,
+  SnapshotSummary,
   User,
 } from '@/types';
 import type {
@@ -82,8 +85,8 @@ export const httpApiClient: ApiClient = {
   },
 
   async listRepos(): Promise<Repo[]> {
-    const { data } = await http.get<Repo[]>('/repos');
-    return data;
+    const { data } = await http.get<ListEnvelope<Repo>>('/repos');
+    return data.data;
   },
 
   async connectRepo(input: ConnectRepoInput): Promise<Repo> {
@@ -102,15 +105,15 @@ export const httpApiClient: ApiClient = {
 
   async getSnapshotHistory(
     repoId: string | number
-  ): Promise<AnalysisSnapshot[]> {
-    const { data } = await http.get<AnalysisSnapshot[]>(
+  ): Promise<SnapshotSummary[]> {
+    const { data } = await http.get<ListEnvelope<SnapshotSummary>>(
       `/repos/${repoId}/snapshots/history`
     );
-    return data;
+    return data.data;
   },
 
-  async analyzeRepo(repoId: string | number): Promise<{ status: string }> {
-    const { data } = await http.post<{ status: string }>(
+  async analyzeRepo(repoId: string | number): Promise<AnalyzeQueuedResponse> {
+    const { data } = await http.post<AnalyzeQueuedResponse>(
       `/repos/${repoId}/analyze`
     );
     return data;
@@ -119,8 +122,10 @@ export const httpApiClient: ApiClient = {
   async listComments(
     repoId: string | number
   ): Promise<CommentPin[]> {
-    const { data } = await http.get<CommentPin[]>(`/repos/${repoId}/comments`);
-    return data;
+    const { data } = await http.get<ListEnvelope<CommentPin>>(
+      `/repos/${repoId}/comments`
+    );
+    return data.data;
   },
 
   async createComment(

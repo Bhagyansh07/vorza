@@ -7,10 +7,12 @@ import {
 } from '@tanstack/react-query';
 import type {
   AnalysisSnapshot,
+  AnalyzeQueuedResponse,
   CommentPin,
   ConnectRepoInput,
   CreateCommentInput,
   Repo,
+  SnapshotSummary,
 } from '@/lib/api-types';
 
 import {
@@ -67,7 +69,7 @@ export function useLatestSnapshot(
 
 export function useSnapshotHistory(
   repoId: string | number | undefined
-): UseQueryResult<AnalysisSnapshot[]> {
+): UseQueryResult<SnapshotSummary[]> {
   return useQuery({
     queryKey: queryKeys.repoHistory(repoId ?? ''),
     queryFn: () => fetchSnapshotHistory(repoId as string | number),
@@ -77,7 +79,7 @@ export function useSnapshotHistory(
 
 export function useAnalyzeRepo(
   repoId: string | number
-): UseMutationResult<{ status: string }, Error> {
+): UseMutationResult<AnalyzeQueuedResponse, Error> {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => triggerAnalysis(repoId),

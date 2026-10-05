@@ -1,10 +1,12 @@
 import { api } from '@/lib/api-client';
 import type {
   AnalysisSnapshot,
+  AnalyzeQueuedResponse,
   CommentPin,
   ConnectRepoInput,
   CreateCommentInput,
   Repo,
+  SnapshotSummary,
 } from '@/lib/api-types';
 
 /** Feature API module — typed delegations to the shared client. */
@@ -25,13 +27,13 @@ export function fetchLatestSnapshot(
 
 export function fetchSnapshotHistory(
   repoId: string | number
-): Promise<AnalysisSnapshot[]> {
+): Promise<SnapshotSummary[]> {
   return api.getSnapshotHistory(repoId);
 }
 
 export function triggerAnalysis(
   repoId: string | number
-): Promise<{ status: string }> {
+): Promise<AnalyzeQueuedResponse> {
   return api.analyzeRepo(repoId);
 }
 

@@ -11,9 +11,11 @@ import type {
   CommentPin,
   FileNode,
   Repo,
+  SnapshotSummary,
   User,
 } from '@/types';
 import type {
+  AnalyzeQueuedResponse,
   ApiClient,
   AuthResponse,
   ConnectRepoInput,
@@ -154,16 +156,19 @@ export const mockApiClient: ApiClient = {
 
   async getSnapshotHistory(
     repoId: string | number
-  ): Promise<AnalysisSnapshot[]> {
+  ): Promise<SnapshotSummary[]> {
     await delay();
-    return [14, 7, 3, 0].map((days) => buildSnapshot(repoId, days));
+    // Summaries only, mirroring the real history endpoint which omits `files`.
+    return [14, 7, 3, 0].map((days) => {
+      const { id, repo_id, created_at, overall_health_score } =
+        buildSnapshot(repoId, days);
+      return { id, repo_id, created_at, overall_health_score };
+    });
   },
 
-  async analyzeRepo(
-    _repoId: string | number
-  ): Promise<{ status: string }> {
+  async analyzeRepo(_repoId: string | number): Promise<AnalyzeQueuedResponse> {
     await delay(600);
-    return { status: 'queued' };
+    return { message: 'Analysis queued', repo_id: String(_repoId) };
   },
 
   async listComments(repoId: string | number): Promise<CommentPin[]> {
