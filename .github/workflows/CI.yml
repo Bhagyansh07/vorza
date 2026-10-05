@@ -25,7 +25,10 @@ jobs:
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          # `--group dev`, not `.[dev]`: the dev tools live in a PEP 735
+          # dependency-group, and `.[dev]` resolves to an extra that does not
+          # exist, leaving ruff/pytest/mypy uninstalled.
+          pip install -e . --group dev
       - name: Lint (ruff)
         run: ruff check .
       - name: Format check
@@ -33,6 +36,9 @@ jobs:
       - name: Type check (mypy)
         run: mypy app
       - name: Test (pytest + coverage)
+        # Gate left at 60%: measured total is 62% (1411 statements, 536 missed).
+        # This step was previously failing because pytest-cov was not installed,
+        # not because coverage was below the bar.
         run: |
           python -m pytest tests --cov=app --cov-report=term-missing --cov-fail-under=60
         timeout-minutes: 8

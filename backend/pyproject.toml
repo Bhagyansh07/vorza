@@ -23,9 +23,16 @@ dependencies = [
 ]
 
 [dependency-groups]
+# PEP 735 dependency group. Install with:
+#     pip install -e . --group dev
+# NOT `pip install -e ".[dev]"` -- that names an extra that does not exist,
+# so pip silently installs runtime deps only and ruff/pytest/mypy go missing.
 dev = [
     "pytest<10.0.0,>=7.4.3",
     "pytest-asyncio<1.0.0,>=0.26.0",
+    # Required by CI.yml's `--cov=app`; without it pytest exits with
+    # "unrecognized arguments: --cov=app".
+    "pytest-cov<8.0.0,>=5.0.0",
     "mypy<3.0.0,>=1.8.0",
     "ruff<1.0.0,>=0.2.2",
     "coverage<8.0.0,>=7.4.3",
