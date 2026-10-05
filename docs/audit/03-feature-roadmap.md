@@ -210,6 +210,35 @@ exceeds a sane limit — instead of a silent timeout or an OOM.
 
 ---
 
+### F11 — Make the OAuth `state` genuinely single-use
+
+**Why:** `services/github.py` documents the `state` as "opaque, single-use", and
+it is neither. It is `<nonce>.<hmac>` with no timestamp and no record of spent
+nonces, so a captured state verifies forever and can be replayed. The docstring
+now says so; the behaviour does not.
+
+**Practical impact is low but the gap is real.** The `code` is single-use on
+GitHub's side, so a captured `(state, code)` pair cannot mint a second session,
+and pairing a valid state with an attacker's own code only logs the attacker in
+as themselves. So this is not an account-takeover path today. It is a claim the
+code does not back up, which is worse than the bug it describes.
+
+**Scope:** store spent nonces with a TTL, check-and-insert atomically in
+`verify_oauth_state`, and let a periodic task or the insert itself expire them.
+A cache with a TTL is enough; it does not need to be a table.
+
+**Done when:** a `state` that has already been redeemed fails verification, and
+there is a test that reuses the same `state` twice and asserts the second
+attempt is rejected. The security value of `state` is CSRF protection, and that
+part already works — this closes the mismatch between the code and its
+documentation.
+
+**Why P2 and not P0:** the current behaviour is not exploitable, so nothing is
+at risk while this waits. It is filed because leaving a false security claim in a
+docstring is how a real one gets missed later.
+
+---
+
 ## Explicitly not planned
 
 Stating what is deliberately absent, with the reason, is more useful than a
@@ -240,6 +269,7 @@ F7  delete repo              <- new API surface, needs care
 F8  snapshot comparison
 F9  public share link        <- the best backlink play
 F10 cost and time budget
+F11 single-use OAuth state   <- not exploitable today; closes a false security claim
 ```
 
 F1 is not a feature and it is first because without it none of the rest can be

@@ -57,7 +57,7 @@ repo** using three mechanisms:
    you're blocked on, what you need from someone else. Never end a session
    silently.
 4. **Small commits, your branch only.** Commit early and often on your own
-   branch. Never commit directly to `main`. Never commit secrets, `.env`
+   branch. Never commit directly to the default branch. Never commit secrets, `.env`
    files, `node_modules/`, or `__pycache__/`.
 5. **Working code over clever code.** Ship the smallest thing that satisfies
    your task file's checklist before adding anything extra. Scope creep from
@@ -81,7 +81,7 @@ repo** using three mechanisms:
 - `STATUS.md` has a fresh entry.
 - `brain/16_CHANGELOG.md` updated under "Unreleased".
 - Any new architectural/product decision logged in `brain/17_DECISIONS.md`.
-- A PR is opened against `main` (do not merge it yourself — see
+- A PR is opened against `master` (do not merge it yourself — see
   `tasks/06-devops-qa-lead.md` for who does).
 
 ## How Agents Communicate (The Protocol)

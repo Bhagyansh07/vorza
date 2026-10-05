@@ -4,17 +4,17 @@ Status: 🟡 DRAFT
 
 ## Branch Strategy
 
-- Main branch: `main` (always deployable)
+- Main branch: `master` (always deployable)
 - Working branches: `feature/[task-id]-short-name`, `fix/[task-id]-short-name`
 - Merge strategy: [squash merge / rebase / merge commit]
-- Rule: no direct pushes to `main` — always via pull request, even solo.
+- Rule: no direct pushes to `master` — always via pull request, even solo.
 
 ## Pipeline Stages
 
 1. **Lint** — run formatter/linter, fail build on errors (see `19_CODING_STANDARDS.md`)
 2. **Test** — run unit + integration tests (see `13_TESTING.md`)
 3. **Build** — compile/build the app or bundle
-4. **Deploy** — deploy to staging automatically on merge to `main`; deploy to
+4. **Deploy** — deploy to staging automatically on merge to `master`; deploy to
    production [manually / automatically] via [ ]
 
 ## Example Workflow Skeleton (`.github/workflows/ci.yml`)
@@ -24,9 +24,9 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [master]
   push:
-    branches: [main]
+    branches: [master]
 
 jobs:
   lint-and-test:

@@ -171,10 +171,27 @@ Also fixed: mypy surfaced two live bugs it had been hiding — `pipeline.py:66-6
 missing `cwd`, and `ws/manager.py:111,114` referencing a non-existent
 `self._throttle_for`.
 
-### Low — all 9 open, listed in `01-code-audit.md`
+### Low — worked through, 9 of 9 closed or explained
 
-Deliberately. They are naming, docstrings and small refactors, and doing them
-now would mean 9 commits of churn against 12 commits of substance.
+Names and docstrings, so each was re-examined rather than blindly edited:
+
+| ID | Outcome |
+|---|---|
+| L1 | **Fixed.** README rewritten in `e4a946b`. |
+| L2 | **Deliberately not fixed.** Filling `brain/*.md` means inventing requirements nobody stated. An empty template is honest; a fabricated PRD is a trap for the next agent. The roadmap derives from the code instead. |
+| L3 | **Blocked** on GitHub account access. Exact description and topic text written out in `SEO_BACKLINKS.md` 4.1. |
+| L4 | **Partial.** `.gitignore` is clean. Old `STATUS.md` entries keep their mojibake — they are a historical record, and rewriting the log of what was actually written would be the dishonest fix. |
+| L5 | **Fixed.** Five docs plus the workflow snippets in `brain/12`, which had `branches: [main]` in two places while the real CI workflow used `master`. |
+| L6 | **Not a defect.** `_pure_analyze` is a *local alias* distinguishing the pure core from the orchestrator's own `analyze_repo`. Renaming it would misread the most important line in the file. |
+| L7 | **Already gone.** Path does not exist; the finding was stale. |
+| L8 | **Already gone.** Zero grep matches for `DEFAULT_USERNAMES`. |
+| L9 | **Partial, and the honest half matters.** The OAuth `state` docstring claimed "single-use"; it is neither single-use nor time-boxed. Corrected to state exactly what is enforced. The real fix needs spent-nonce storage and is filed as roadmap **F11** rather than half-done. |
+
+Worth recording: two of the nine were **not defects at all**, and one was **not
+fixable as recommended** (L2's original advice was "fill PRD or delete the
+fiction" — deleting would have destroyed the repo's stated constitution, and
+filling would have invented it). An audit that only records fixes hides the fact
+that its own findings needed re-examination.
 
 ---
 

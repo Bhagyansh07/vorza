@@ -259,15 +259,15 @@ exploitable; **medium** = correctness/maintainability; **low** = polish.
 | M8 | `deps.py:41` unhandled `ValueError` → 500 instead of 403 | medium | S | Wrap the UUID parse |
 | M9 | Two HTTP clients split across features | medium | M | Consolidate |
 | M10 | No health-check endpoint | medium | S | `GET /health` for Render + uptime checks |
-| L1 | README describes a "kit", not the product | low | M | Rewrite (Phase 7) |
-| L2 | `brain/*.md` are empty templates | low | M | Fill PRD or delete the fiction |
-| L3 | No repo description or topics | low | S | Set both |
-| L4 | `.gitignore` / `STATUS.md` mojibake | low | S | Fix encodings |
-| L5 | Docs say `main`, branch is `master` | low | S | Align docs |
-| L6 | `orchestrator` imports private `_`-prefixed names | low | S | Promote to public API |
-| L7 | `services/requirements.txt` duplicates `pyproject.toml` | low | S | Delete |
-| L8 | Hardcoded `DEFAULT_USERNAMES` ignores the real roster | low | S | Prefer server roster when present |
-| L9 | OAuth `state` claimed single-use but is replayable | low | S | Correct the docstring; note the limitation |
+| L1 | README describes a "kit", not the product | low | M | **DONE** `e4a946b` |
+| L2 | `brain/*.md` are empty templates | low | M | **DELIBERATELY NOT** — filling them means inventing requirements no one stated; roadmap derives from code instead |
+| L3 | No repo description or topics | low | S | **BLOCKED** on GitHub account access; exact text written out in `SEO_BACKLINKS.md` 4.1 |
+| L4 | `.gitignore` / `STATUS.md` mojibake | low | S | **PARTIAL** — `.gitignore` clean; old `STATUS.md` entries left as-is (historical record), new ones UTF-8 |
+| L5 | Docs say `main`, branch is `master` | low | S | **DONE** — 5 files + `brain/12` workflow snippets |
+| L6 | `orchestrator` imports private `_`-prefixed names | low | S | **NOT A DEFECT** — `_pure_analyze` is a local alias distinguishing the pure core from the orchestrator's own `analyze_repo` |
+| L7 | `services/requirements.txt` duplicates `pyproject.toml` | low | S | **ALREADY GONE** — path does not exist; finding is stale |
+| L8 | Hardcoded `DEFAULT_USERNAMES` ignores the real roster | low | S | **ALREADY GONE** — zero grep matches |
+| L9 | OAuth `state` claimed single-use but is replayable | low | S | **PARTIAL** — docstring corrected to state exactly what is and isn't enforced; real fix filed as roadmap F11 |
 
 **Totals:** 2 critical, 9 high, 10 medium, 9 low.
 

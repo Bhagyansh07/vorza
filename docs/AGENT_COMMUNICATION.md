@@ -69,7 +69,7 @@ Agents B,C,D... read STATUS.md → see notification → read CONTRACTS.md → ad
 
 ### 3. Git PRs + Reviews — The Integration Layer
 
-**What it is:** Formal code review and merge process. Agent 6 (DevOps) is the only one who merges to `main`.
+**What it is:** Formal code review and merge process. Agent 6 (DevOps) is the only one who merges to the default branch.
 
 **Workflow:**
 ```
@@ -79,7 +79,7 @@ Agent N finishes task → pushes branch → opens PR → assigns Agent 6
 Agent 6 reviews: code quality + CONTRACTS.md consistency + tests pass
        │
        ▼
-Agent 6 merges → main updated → all worktrees `git pull origin main` to sync
+Agent 6 merges → default branch updated → all worktrees `git pull origin master` to sync
 ```
 
 **Conflict resolution:** If two agents' work conflicts on `CONTRACTS.md`, `CONTRACTS.md` wins. Agent 6 fixes the code that violates the contract (or updates contract + logs in STATUS.md if justified).
@@ -92,8 +92,8 @@ Agent 6 merges → main updated → all worktrees `git pull origin main` to sync
 # 1. Enter your worktree
 cd /path/to/CodeAtlas-agentN-xxx
 
-# 2. Sync with main
-git pull origin main
+# 2. Sync with the default branch
+git pull origin master
 
 # 3. Read the constitution
 cat brain/00_MASTER_RULES.md
@@ -150,5 +150,5 @@ If an agent is blocked > 2 sessions on another agent's deliverable:
 | DM another agent | Write to `CONTRACTS.md` + `STATUS.md` |
 | Assume a contract shape | Read `CONTRACTS.md` first |
 | End session silently | Log to `STATUS.md` |
-| Commit to `main` directly | PR → Agent 6 reviews → merge |
+| Commit to the default branch directly | PR → Agent 6 reviews → merge |
 | Guess missing specs | Add `[NEEDS INPUT]` to `STATUS.md` and stop |

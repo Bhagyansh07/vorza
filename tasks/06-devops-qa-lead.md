@@ -3,7 +3,7 @@
 ## Mission
 
 Be the glue. Own Docker, CI, seed data, and the final integration —
-you're the one who merges the other five agents' branches into `main` and
+you're the one who merges the other five agents' branches into `master` and
 makes sure the whole thing actually runs as one system, not five separate
 demos.
 
@@ -14,7 +14,7 @@ demos.
    (see `docs/REFERENCE_REPOS.md`) and extend it with Redis + the real
    frontend service.
 2. **CI** (`.github/workflows/`): on every PR — lint + type-check + test for
-   both `backend/` and `frontend/`. On merge to `main` — build both Docker
+   both `backend/` and `frontend/`. On merge to `master` — build both Docker
    images.
 3. **Seed data + demo script**: a script that connects one real small public
    repo end to end (OAuth-free demo mode if needed — e.g. a pre-fetched
@@ -63,7 +63,7 @@ demos.
 
 - [ ] `docker-compose up` from a clean clone brings up the full stack and
       the demo flow works.
-- [ ] CI is green on `main`.
+- [ ] CI is green on `master`.
 - [ ] Playwright E2E suite covers the full demo script from `docs/IDEA.md`.
 - [ ] `docs/DEPLOYMENT.md` is accurate — you followed it yourself once.
 - [ ] `STATUS.md` reflects the true final state of the project.

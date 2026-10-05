@@ -242,7 +242,8 @@ Open, ordered by how much they matter.
 | No graph legend | Node colour means nothing without one. | roadmap F3 |
 | `npm audit`: 10 advisories (6 high, 4 moderate) | Unaddressed. | `01-code-audit.md` |
 | No repo deletion | Connected repos can never be removed. | roadmap F7 |
-| 9 low-severity code findings open | Naming and docstrings. Deliberately deferred over churn. | `01-code-audit.md` |
+| OAuth `state` is not single-use | The docstring claimed it was. Impact is limited (the GitHub `code` is single-use), but the claim did not match the code. Real fix filed as F11. | roadmap F11 |
+| 7 low-severity code findings | Worked through and closed. Two were not defects and one is blocked on your GitHub account. | `01-code-audit.md` |
 
 ---
 

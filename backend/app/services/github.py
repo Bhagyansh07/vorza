@@ -39,9 +39,24 @@ class GitHubCheckoutError(Exception):
 def build_authorize_url() -> tuple[str, str]:
     """Return ``(authorize_url, state)`` for GitHub login.
 
-    The ``state`` value is opaque, single-use, and HMAC-signed with the
-    backend ``SECRET_KEY`` so the callback can verify it without server-side
-    session storage. The frontend must echo it back in the callback request.
+    The ``state`` value is ``<nonce>.<hmac>`` -- HMAC-signed with the backend
+    ``SECRET_KEY``, so the callback can verify it without server-side session
+    storage. The frontend must echo it back in the callback request.
+
+    What this gives us: an attacker cannot forge a state, which is the CSRF
+    protection that matters here. What it does **not** give us:
+
+    - **Not single-use.** Nothing records that a state was already spent.
+    - **Not time-boxed.** There is no timestamp in the value, so a captured
+      state verifies forever.
+
+    Both were previously claimed in this docstring and were not true. The
+    practical impact is limited: the ``code`` is single-use on GitHub's side, so
+    a captured (state, code) pair cannot be replayed to mint a second session,
+    and replaying a valid state against an attacker's own code only logs the
+    attacker in as themselves. Making it genuinely single-use means storing
+    spent nonces, which needs a table plus a cleanup job -- a real change, not a
+    docstring one, so it is filed as a P2 in docs/audit/03-feature-roadmap.md.
     """
     if not settings.GITHUB_CLIENT_ID:
         raise GithubOAuthError("GITHUB_CLIENT_ID is not configured")
