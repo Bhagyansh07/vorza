@@ -1,16 +1,20 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#8b5cf6" />
-      <stop offset="1" stop-color="#4f46e5" />
-    </linearGradient>
-  </defs>
-  <rect width="32" height="32" rx="7" fill="url(#g)" />
-  <circle cx="16" cy="16" r="5" fill="#fff" />
-  <circle cx="9" cy="9" r="2.5" fill="#e2e8f0" />
-  <circle cx="23" cy="23" r="2.5" fill="#e2e8f0" />
-  <line x1="11" y1="11" x2="14" y2="14" stroke="#e2e8f0" stroke-width="1.5" />
-  <line x1="21" y1="21" x2="18" y2="18" stroke="#e2e8f0" stroke-width="1.5" />
-  <line x1="9" y1="9" x2="14" y2="14" stroke="#e2e8f0" stroke-width="1" opacity="0.6" />
-  <line x1="23" y1="23" x2="18" y2="18" stroke="#e2e8f0" stroke-width="1" opacity="0.6" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Vorza">
+  <!--
+    Kept in step with scripts/make_brand_assets.py and the token values in
+    frontend/src/index.css. This file used to carry a stock shadcn violet
+    gradient (#8b5cf6 -> #4f46e5) from before the accent was retuned to cyan
+    190 72% 52%, so the tab icon advertised a different brand than the app.
+  -->
+  <rect width="32" height="32" rx="7" fill="#0b0d14" />
+  <path d="M0 0h32v2.4H0z" fill="#31c7dc" />
+  <g stroke="#383c4c" stroke-width="1.1" stroke-linecap="round">
+    <line x1="10.4" y1="10.6" x2="16" y2="16" />
+    <line x1="16" y1="16" x2="22.4" y2="22.2" />
+    <line x1="22.4" y1="22.2" x2="11.6" y2="19.4" />
+    <line x1="10.4" y1="10.6" x2="22.4" y2="22.2" opacity="0.55" />
+  </g>
+  <circle cx="16" cy="16" r="4.6" fill="#34c77b" />
+  <circle cx="10.4" cy="10.6" r="2.5" fill="#f0aa32" />
+  <circle cx="22.4" cy="22.2" r="2.5" fill="#34c77b" />
+  <circle cx="11.6" cy="19.4" r="1.8" fill="#eb5468" />
 </svg>

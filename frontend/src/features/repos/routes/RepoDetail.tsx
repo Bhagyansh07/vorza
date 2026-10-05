@@ -29,6 +29,7 @@ import { healthBadgeClasses } from '@/lib/health';
 import { GraphView } from '@/features/graph';
 import { createWebSocketSource } from '@/features/graph/realtime/websocket';
 import { useUser } from '@/features/auth/hooks/use-auth';
+import { useDocumentMeta } from '@/lib/seo';
 
 type RepoDetailParams = {
   repoId: string;
@@ -37,6 +38,7 @@ type RepoDetailParams = {
 export function RepoDetail() {
   const { repoId = '' } = useParams<RepoDetailParams>();
   const currentUser = useUser();
+  const { data: repos } = useRepos();
 
   // One socket per mount, not per render. The source is stateless between
   // connect() calls, so building it inline is safe; what matters is that
@@ -46,11 +48,20 @@ export function RepoDetail() {
     () => createWebSocketSource({ userId: String(currentUser?.id ?? '') }),
     [currentUser?.id]
   );
-  const { data: repos } = useRepos();
   const snapshot = useLatestSnapshot(repoId);
   const analyzeRepo = useAnalyzeRepo(repoId);
 
   const repo = repos?.find((r) => String(r.id) === repoId);
+
+  useDocumentMeta({
+    title: repo?.github_full_name ?? 'Repository map',
+    description:
+      'Live force-directed map and file health scores for this repository.',
+    // Per-repo pages are authed and keyed by UUID: noindex so they do not
+    // compete with the landing page for crawl budget.
+    path: `/repos/${repoId}`,
+    noindex: true,
+  });
 
   const runAnalysis = async () => {
     try {

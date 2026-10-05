@@ -4,14 +4,63 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!--
+      These tags are duplicated in src/lib/seo.ts on purpose.
+
+      Social crawlers (Twitter/X, Facebook, LinkedIn, Slack, Discord) and most
+      search crawlers do not execute JavaScript, so index.html is the only
+      version of the head they will ever see. `useDocumentMeta` then keeps them
+      accurate per-route for the live SPA and for anything that reads the DOM.
+      If you change one, change both.
+    -->
+    <title>Vorza - the living, AI-reviewed map of your codebase</title>
     <meta
       name="description"
-      content="Vorza — the living, AI-reviewed map of your codebase."
+      content="Vorza turns a GitHub repo into a force-directed map of every file, scores each one on complexity, churn and health, and flags risky pull requests with citations instead of vibes."
     />
-    <title>Vorza</title>
+    <link rel="canonical" href="/" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#0b0d14" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="application-name" content="Vorza" />
+
+    <!-- Open Graph. og:image must be an absolute URL for most scrapers. -->
+    <meta property="og:site_name" content="Vorza" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Vorza - the living, AI-reviewed map of your codebase" />
+    <meta
+      property="og:description"
+      content="Every file is a node. Complexity, churn and health decide how it looks. Pull requests get reviewed before they ship."
+    />
+    <meta property="og:url" content="/" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Vorza: a force-directed graph of a codebase, with each file coloured by health score."
+    />
+
+    <!-- Twitter/X uses its own tags; og:image is the fallback. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Vorza - the living, AI-reviewed map of your codebase" />
+    <meta
+      name="twitter:description"
+      content="Every file is a node. Complexity, churn and health decide how it looks. Pull requests get reviewed before they ship."
+    />
+    <meta name="twitter:image" content="/og-image.png" />
+    <meta name="twitter:image:alt" content="A force-directed map of a codebase, coloured by file health." />
+
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      Vorza is a JavaScript application and needs scripting enabled. The API it
+      talks to is documented at /docs on the backend.
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

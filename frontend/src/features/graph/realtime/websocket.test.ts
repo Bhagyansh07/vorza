@@ -112,9 +112,14 @@ describe('createWebSocketSource', () => {
   beforeEach(() => {
     FakeSocket.instances = [];
     vi.useFakeTimers();
+    // The retry delay is jittered with Math.random, so any assertion about
+    // exact timings has to pin it. 0.5 is the midpoint of the 0.7-1.3 window,
+    // which makes the delays exactly 500ms, 1000ms, 2000ms.
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
   });
 
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
@@ -232,26 +237,82 @@ describe('createWebSocketSource', () => {
     expect(FakeSocket.instances).toHaveLength(1);
 
     FakeSocket.instances[0].drop();
-    // Not immediate: the first retry waits out the backoff.
+    // Not immediate: the first retry waits out the backoff (500ms at
+    // jitter=1.0).
+    expect(FakeSocket.instances).toHaveLength(1);
+    vi.advanceTimersByTime(499);
     expect(FakeSocket.instances).toHaveLength(1);
 
-    vi.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1);
     expect(FakeSocket.instances).toHaveLength(2);
   });
 
-  it('grows the backoff across repeated failures', () => {
+  it('doubles the delay on each consecutive failure', () => {
     source().connect('repo-1', makeScope());
 
+    // Retry 1 waits 500ms.
     FakeSocket.instances[0].drop();
-    vi.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(499);
+    expect(FakeSocket.instances).toHaveLength(1);
+    vi.advanceTimersByTime(1);
     expect(FakeSocket.instances).toHaveLength(2);
 
-    // Second retry must wait longer than 1s.
+    // Retry 2 waits 1000ms, so 999ms is not enough.
     FakeSocket.instances[1].drop();
-    vi.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(999);
     expect(FakeSocket.instances).toHaveLength(2);
-    vi.advanceTimersByTime(2000);
+    vi.advanceTimersByTime(1);
     expect(FakeSocket.instances).toHaveLength(3);
+
+    // Retry 3 waits 2000ms.
+    FakeSocket.instances[2].drop();
+    vi.advanceTimersByTime(1999);
+    expect(FakeSocket.instances).toHaveLength(3);
+    vi.advanceTimersByTime(1);
+    expect(FakeSocket.instances).toHaveLength(4);
+  });
+
+  it('caps the backoff so a long outage still recovers', () => {
+    source().connect('repo-1', makeScope());
+
+    // 500, 1000, 2000, 4000, 8000, 16000 -> capped at 15000.
+    for (let i = 0; i < 8; i += 1) {
+      FakeSocket.instances[FakeSocket.instances.length - 1].drop();
+      vi.advanceTimersByTime(15_000);
+    }
+
+    // Kept reconnecting rather than giving up or growing without bound.
+    expect(FakeSocket.instances.length).toBeGreaterThan(8);
+  });
+
+  it('applies jitter so tabs do not reconnect in lockstep', () => {
+    // Different random values must move the retry time. Without this the
+    // backoff is a fixed schedule, and several open tabs hitting a sleeping
+    // Render instance at the same instant is its own thundering-herd problem.
+    const attempt = (random: number): number => {
+      vi.restoreAllMocks();
+      vi.spyOn(Math, 'random').mockReturnValue(random);
+      FakeSocket.instances = [];
+      source().connect('repo-1', makeScope());
+      FakeSocket.instances[0].drop();
+      // Find how far it went by bisecting the timer window.
+      let fired = 0;
+      for (const ms of [350, 400, 450, 500, 550, 600, 650]) {
+        vi.advanceTimersByTime(ms === 350 ? 350 : 50);
+        if (FakeSocket.instances.length > 1) {
+          fired = ms;
+          break;
+        }
+      }
+      return fired;
+    };
+
+    const early = attempt(0);
+    const late = attempt(1);
+    expect(early).toBeGreaterThan(0);
+    expect(late).toBeGreaterThan(0);
+    // A full jitter window spans 350-650ms; both ends must be reachable.
+    expect(early).toBeLessThan(late);
   });
 
   it('stops retrying once the component unmounts', () => {

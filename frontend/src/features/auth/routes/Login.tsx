@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { config, oauthRedirect } from '@/lib/config';
 import { toErrorMessage } from '@/lib/errors';
+import { useDocumentMeta } from '@/lib/seo';
 
 interface QueryState {
   code: string | null;
@@ -41,6 +42,14 @@ async function fetchAuthorizeUrl(): Promise<string> {
 }
 
 export function LoginPage() {
+  // Indexed but thin: this page is the second sitemap entry.
+  useDocumentMeta({
+    title: 'Sign in',
+    description:
+      'Sign in to Vorza with GitHub and connect a repository to map.',
+    path: '/login',
+  });
+
   const navigate = useNavigate();
   const location = useLocation();
   const { user, status, login, completeLogin } = useAuth();

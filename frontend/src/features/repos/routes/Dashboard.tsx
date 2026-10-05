@@ -5,8 +5,18 @@ import { ConnectRepoDialog } from '@/features/repos/components/ConnectRepoDialog
 import { RepoCard } from '@/features/repos/components/RepoCard';
 import { RepoListSkeleton } from '@/features/repos/components/RepoListSkeleton';
 import { useRepos } from '@/features/repos/hooks/use-repos';
+import { useDocumentMeta } from '@/lib/seo';
 
 export function Dashboard() {
+  // Authed: no standalone value in a search result, and it renders nothing
+  // for a crawler because it sits behind ProtectedRoute.
+  useDocumentMeta({
+    title: 'Connected repositories',
+    description: 'Your connected repositories in Vorza.',
+    path: '/dashboard',
+    noindex: true,
+  });
+
   const { data: repos, isPending, isError, error, refetch, isRefetching } =
     useRepos();
 

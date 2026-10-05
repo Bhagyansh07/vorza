@@ -6,6 +6,7 @@ import { ErrorState } from '@/components/errors/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSnapshotHistory } from '@/features/repos/hooks/use-repos';
 import { TrendChart } from '@/features/graph';
+import { useDocumentMeta } from '@/lib/seo';
 
 type RepoHistoryParams = {
   repoId: string;
@@ -13,6 +14,14 @@ type RepoHistoryParams = {
 
 export function RepoHistory() {
   const { repoId = '' } = useParams<RepoHistoryParams>();
+
+  useDocumentMeta({
+    title: 'Snapshot history',
+    description: 'Repository health over time.',
+    path: `/repos/${repoId}/history`,
+    noindex: true,
+  });
+
   const { data, isPending, isError, error, refetch } = useSnapshotHistory(repoId);
 
   return (
