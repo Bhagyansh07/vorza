@@ -43,8 +43,15 @@ class Settings(BaseSettings):
     GITHUB_OAUTH_SCOPES: str = "read:user repo"
     GITHUB_OAUTH_CALLBACK_URL: str = ""  # filled below from FRONTEND_HOST
 
-    # GitHub webhook receiver (POST /webhooks/github)
-    GITHUB_WEBHOOK_SECRET: str = "vorza-wbhook-58f2b1e0-9c4d-4f7a-a3de-ok"
+    # GitHub webhook receiver (POST /webhooks/github).
+    #
+    # Intentionally NO default. This used to ship a real-looking literal that
+    # the `_check_default_secret` guard never rejected (it only denies the exact
+    # string "changethis"), so anyone who read the repo could forge a signed
+    # webhook and make the app queue PR reviews. Unset now means the receiver is
+    # disabled and returns 503, rather than accepting an unverifiable payload.
+    # See docs/audit/01-code-audit.md finding C1.
+    GITHUB_WEBHOOK_SECRET: str | None = None
 
     # Redis for the realtime gateway (see backend/app/ws/pubsub.py)
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -55,6 +62,13 @@ class Settings(BaseSettings):
     )
 
     def _check_default_secret(self, var_name: str, value: str | None) -> None:
+        """Refuse a placeholder secret outside development.
+
+        The check is a denylist, which is inherently incomplete: it only catches
+        the literal ``"changethis"`` we ship in ``.env.example``. The real
+        protection is that no usable default exists to leak -- see
+        ``GITHUB_WEBHOOK_SECRET`` below, which is ``None`` rather than a value.
+        """
         if value == "changethis":
             message = (
                 f'The value of {var_name} is "changethis", '
@@ -71,6 +85,15 @@ class Settings(BaseSettings):
         self._check_default_secret(
             "GITHUB_WEBHOOK_SECRET", self.GITHUB_WEBHOOK_SECRET
         )
+        if (
+            self.FASTAPI_ENV == "production"
+            and not self.GITHUB_WEBHOOK_SECRET
+        ):
+            warnings.warn(
+                "GITHUB_WEBHOOK_SECRET is unset: POST /webhooks/github will "
+                "return 503. Set it to enable PR reviews.",
+                stacklevel=1,
+            )
         # Default the OAuth callback to the deployed frontend's /login route
         # (where Login.tsx picks up `code`), so production doesn't redirect to
         # localhost. Set GITHUB_OAUTH_CALLBACK_URL to override explicitly.

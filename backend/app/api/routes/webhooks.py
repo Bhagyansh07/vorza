@@ -26,6 +26,15 @@ async def github_webhook(
     Verifies the HMAC signature, then hands PR events to Agent 2's review
     pipeline entrypoint for every connected copy of that repo.
     """
+    # Fail closed. Without a configured secret we cannot verify anything, and a
+    # signature check against an empty/guessed secret is worse than no endpoint
+    # at all -- it looks like it works.
+    if not settings.GITHUB_WEBHOOK_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Webhook receiver is not configured on this deployment",
+        )
+
     payload = await request.body()
     if not verify_webhook_signature(
         payload, x_hub_signature_256, settings.GITHUB_WEBHOOK_SECRET
