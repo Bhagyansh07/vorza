@@ -59,7 +59,6 @@ describe('graph api delegations', () => {
       id: 'u1',
       email: 'a@b.co',
       github_username: 'octocat',
-      full_name: null,
       created_at: '2026-01-01T00:00:00Z',
     });
 

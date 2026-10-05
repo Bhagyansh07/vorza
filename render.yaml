@@ -1,30 +1,33 @@
 # Render blueprint for Vorza. Free tiers only.
 #
 # Why this file exists: the deploy was previously configured by hand in the
-# Render dashboard, which is why the ephemeral-disk data loss documented in
-# HANDOVER.md was not visible to anyone reading the repo. A blueprint makes the
-# deploy reproducible and reviewable.
-#
-# The critical change is the Postgres instance. Render's free web services keep
-# a local disk only for the life of the instance: on every restart, redeploy or
-# instance move the disk is wiped. That is why connected repositories kept
-# disappearing (HANDOVER.md:51-62). `DATABASE_URL` now points at a real database,
-# so the data outlives the process.
+# Render dashboard, which is why the data loss documented in HANDOVER.md was not
+# visible to anyone reading the repo. A blueprint makes the deploy reproducible
+# and reviewable.
 #
 # Apply: Render dashboard -> Blueprints -> New Blueprint Instance -> point at
 # this repo, then set the secret values listed in docs/MANUAL_STEPS.md.
-# Note that adopting a blueprint onto an existing service replaces its
-# configuration, so read docs/MANUAL_STEPS.md first.
-
-databases:
-  - name: vorza-db
-    databaseName: vorza
-    user: vorza
-    # Free Postgres instances go to sleep after 5 minutes and are deleted after
-    # 30 days of inactivity. A deleted instance takes the data with it, so pair
-    # this with the weekly ping in MANUAL_STEPS.md.
-    plan: free
-    postgresMajorVersion: "16"
+#
+# Two facts that shape this file, both checked against vendor docs on
+# 2026-10-05 rather than assumed:
+#
+# 1. Render free web services have NO persistent disk. It is wiped on every
+#    restart, redeploy and instance move. That is why connected repositories
+#    kept disappearing (HANDOVER.md:51-62). The only fix is an external
+#    `DATABASE_URL`.
+#
+# 2. Render's own free Postgres is NOT a substitute. Free Render Postgres
+#    expires 30 days after *creation* (not after inactivity -- there is a
+#    14-day grace period, then the database and all its data are deleted), it is
+#    capped at 1 GB, and an account may only have one. A 30-day data-loss clock
+#    is worse than an ephemeral disk, because it looks durable right up until
+#    it is not.
+#
+# So this blueprint deliberately declares NO `databases:` block. Point
+# `DATABASE_URL` at Neon (free, no expiry) instead. Neon Free gives
+# 100 CU-hours/project/month, 1 GB storage, 5 GB egress and scale-to-zero after
+# 5 minutes, and exceeding a limit suspends compute rather than deleting data.
+# See docs/MANUAL_STEPS.md for the click-by-click.
 
 services:
   - type: web
@@ -32,14 +35,17 @@ services:
     runtime: python
     plan: free
     region: oregon
-    # Same region as the database above. A cross-region connection to a free
-    # instance that has just woken up is a reliable source of timeouts.
     healthCheckPath: /openapi.json
     envVars:
+      # Neon pooled connection string, pasted by hand. Must start with
+      # postgresql:// -- app/core/config.py rewrites the scheme to
+      # postgresql+psycopg:// and psycopg[binary] is already a main dependency.
+      #
+      # Use the POOLED URI if Neon offers one. Render free has ~30s outbound
+      # timeouts and the backend opens a pool per process, so a direct
+      # (non-pooled) connection is the more likely thing to fall over.
       - key: DATABASE_URL
-        fromDatabase:
-          name: vorza-db
-          property: connectionString
+        sync: false
       - key: SECRET_KEY
         generateValue: true
       # GitHub OAuth app credentials. Set by hand -- see MANUAL_STEPS.md.
@@ -47,7 +53,9 @@ services:
         sync: false
       - key: GITHUB_CLIENT_SECRET
         sync: false
-      # Shared secret for the PR webhook HMAC. Set by hand.
+      # Shared secret for the PR webhook HMAC. Set by hand. The webhook
+      # receiver is fail-closed: with this unset it returns 503 rather than
+      # accepting unsigned payloads.
       - key: GITHUB_WEBHOOK_SECRET
         sync: false
       # Optional. With no key the orchestrator skips AI review and logs an
@@ -56,8 +64,10 @@ services:
         sync: false
       - key: OPENAI_MODEL
         value: gpt-4o-mini
-      # Must match the frontend origin exactly, because CORS here is an
-      # explicit allowlist. Update it to the new Vercel URL before deploying.
+      # Must match the frontend origin exactly: CORS here is an explicit
+      # allowlist, and this also builds GITHUB_OAUTH_CALLBACK_URL as
+      # "{FRONTEND_HOST}/login". Update it to the new Vercel URL before
+      # deploying.
       - key: FRONTEND_HOST
         sync: false
       - key: ENVIRONMENT
@@ -66,7 +76,7 @@ services:
         value: INFO
 
     # Docker is the only deploy path that has been verified to work: the repo
-    # has a Dockerfile, and the CI workflow builds it on every push. Render's
+    # has a Dockerfile, and CI builds it on every push to master. Render's
     # native Python runtime resolves dependencies from a requirements.txt that
     # this repo does not have (it uses pyproject.toml).
     #
@@ -76,14 +86,21 @@ services:
     dockerfilePath: ./Dockerfile
     dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
-    # `preDeployCommand` runs against the *new* release before it takes traffic,
-    # so a failing migration stops the deploy instead of booting an app that
-    # cannot serve. Without it, migrations and the new code race.
+    # `preDeployCommand` runs against the *new* release before it takes
+    # traffic, so a failing migration stops the deploy instead of booting an
+    # app that cannot serve. Without it, migrations and the new code race.
+    #
+    # Safe to run on every deploy precisely because app/core/schema.py stamps a
+    # freshly created database and then hands control to Alembic, so an
+    # idempotent `alembic upgrade head` never collides with `create_all`.
     preDeployCommand: alembic upgrade head
 
-    # Uncomment to keep the container's own writable layer small. Analysis
-    # clones repos to disk, so this needs a real volume to be useful -- see the
-    # disk notes in docs/MANUAL_STEPS.md.
+    # Uncomment to keep the container's writable layer small. Analysis clones
+    # repos to disk, so this needs a real volume to be useful -- and free
+    # services cannot have one. On the free tier the checkouts go to the
+    # container's ephemeral layer and are lost on restart, which is acceptable:
+    # only the analysis results are persisted, not the clones. See the disk
+    # notes in docs/MANUAL_STEPS.md.
     # disk:
     #   name: vorza-checkouts
     #   mountPath: /var/data

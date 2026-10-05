@@ -36,7 +36,11 @@ jobs:
       - name: Type check (mypy)
         run: mypy app
       - name: Test (pytest + coverage)
-        # Gate left at 60%: measured total is 62% (1411 statements, 536 missed).
+        # Gate is 60%. Measured total is 69.5% (1725 statements), so there is
+        # headroom, but the gate was deliberately not raised: a higher bar that
+        # then gets lowered to go green is worse than a bar that reflects what
+        # the suite actually protects. Raise it when the suite grows into it.
+        #
         # This step was previously failing because pytest-cov was not installed,
         # not because coverage was below the bar.
         run: |
