@@ -26,6 +26,8 @@ from typing import Protocol
 
 from pydantic import ValidationError
 
+from app.core.config import settings
+
 from . import prompts
 from .schemas import AiReview
 
@@ -74,15 +76,22 @@ class OpenAIReviewClient:
     """OpenAI adapter using JSON mode (structured output, not string parsing)."""
 
     def __init__(self, *, api_key: str | None = None, model: str | None = None) -> None:
-        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.model = model or os.getenv("OPENAI_MODEL") or DEFAULT_MODEL
+        # Settings first, env second. Reading the raw environment here meant the
+        # key was invisible to `Settings`, to `.env.example`, and to any test
+        # that patched the config object.
+        self.api_key = api_key or settings.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+        self.model = model or settings.OPENAI_MODEL or os.getenv("OPENAI_MODEL") or DEFAULT_MODEL
         self._client = None
+
+    @property
+    def configured(self) -> bool:
+        return bool(self.api_key)
 
     def _connect(self):
         if self._client is None:
             if not self.api_key:
                 raise LLMError("OPENAI_API_KEY is not set")
-            import openai  # lazy: tests and non-LLM paths don't need it installed
+            import openai
 
             self._client = openai.OpenAI(api_key=self.api_key)
         return self._client

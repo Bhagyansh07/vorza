@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     # Redis for the realtime gateway (see backend/app/ws/pubsub.py)
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    # AI PR review (services/ai_review.py). Both optional: without a key the
+    # review is skipped with a logged reason instead of raising at import.
+    OPENAI_API_KEY: str | None = None
+    OPENAI_MODEL: str = "gpt-4o-mini"
+
     # Persistent repo checkouts for analysis (see services/pipeline.py)
     REPO_CHECKOUTS_DIR: str = str(
         Path(__file__).resolve().parents[2] / "data" / "checkouts"

@@ -14,6 +14,12 @@ dependencies = [
     "psycopg[binary]>=3.3.4,<4.0.0",
     "sqlmodel>=0.0.39,<1.0.0",
     "pyjwt<3.0.0,>=2.13.0",
+    # Imported by services/ai_review.py (OpenAIReviewClient). It was previously
+    # absent, so every AI PR review raised LLMError("OPENAI_API_KEY is not set")
+    # and was swallowed by the orchestrator -- the webhook answered 200 while
+    # reviewing nothing. The package must be installed; the API key stays
+    # optional and absence degrades gracefully. See docs/audit/01-code-audit.md C2.
+    "openai<3.0.0,>=1.60.0",
 ]
 
 [dependency-groups]

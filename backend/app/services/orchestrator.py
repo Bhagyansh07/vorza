@@ -26,7 +26,7 @@ from sqlmodel import Session
 from app.core.db import engine
 from app.models.snapshot import AiReviewRow, AnalysisSnapshot as AnalysisSnapshotRow
 from app.services.analysis import analyze_repo as _pure_analyze
-from app.services.ai_review import OpenAIReviewClient, review_pr
+from app.services.ai_review import AiReviewError, OpenAIReviewClient, review_pr
 from app.services.github import fetch_pull_request_diff
 from app.services.pipeline import (
     RepoCheckoutError,
@@ -99,6 +99,17 @@ def review_pull_request(repo_id: uuid.UUID, pr_number: int) -> None:
         diff = fetch_pull_request_diff(token, repo.github_full_name, pr_number)
 
         client = OpenAIReviewClient()
+        if not client.configured:
+            # Degrade loudly rather than failing opaquely further down. GitHub
+            # has already accepted the webhook by this point, so the log is the
+            # only place left to be honest about why nothing was reviewed.
+            logger.warning(
+                "orchestrator.review_pull_request(%s, #%s): skipped - no "
+                "OPENAI_API_KEY configured, so this PR was not reviewed.",
+                repo_id,
+                pr_number,
+            )
+            return
         review = review_pr(diff, pr_number, client)
 
         with Session(engine) as session:
@@ -123,6 +134,17 @@ def review_pull_request(repo_id: uuid.UUID, pr_number: int) -> None:
     except RepoCheckoutError as exc:
         logger.error(
             "orchestrator.review_pull_request(%s, #%s): %s", repo_id, pr_number, exc
+        )
+    except AiReviewError as exc:
+        # Previously collapsed into the generic handler, which made a missing
+        # API key indistinguishable from a real provider fault: the webhook
+        # answered 200 and nothing was ever reviewed. Name the cause.
+        logger.error(
+            "orchestrator.review_pull_request(%s, #%s): AI review failed (%s). "
+            "Check OPENAI_API_KEY / OPENAI_MODEL if this says 'not set'.",
+            repo_id,
+            pr_number,
+            exc,
         )
     except Exception:
         logger.exception(
