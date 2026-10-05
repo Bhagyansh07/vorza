@@ -142,10 +142,20 @@ def _python_imports(tree: ast.Module) -> list[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             imports.extend(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            imports.append(
-                node.module if not node.level else "." * node.level + node.module
-            )
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                imports.append(
+                    node.module if not node.level else "." * node.level + node.module
+                )
+            elif node.level:
+                # `from . import target` has level=1 and module=None, so the
+                # guard above dropped it entirely and the import edge vanished
+                # from the graph. Each imported name is a sibling of the
+                # current module, so "." * level + name resolves through
+                # _resolve_relative_import exactly like any other relative
+                # import.
+                prefix = "." * node.level
+                imports.extend(f"{prefix}{alias.name}" for alias in node.names)
     return imports
 
 
@@ -222,6 +232,16 @@ def _resolve_relative_import(module: str, file_path: Path, repo_root: Path) -> s
     base_dir = file_path.parent
     for _ in range(max(0, depth - 1)):
         base_dir = base_dir.parent
+    # A Python package. `from . import target` where `target/` is a package
+    # resolves to its `__init__.py`, and this check was missing, so every
+    # `from . import <package>` silently lost its edge in the graph. Checked
+    # before the extension loop because a package must win over a same-named
+    # module.
+    if name:
+        package_init = base_dir / name / "__init__.py"
+        if package_init.is_file():
+            return str(package_init.relative_to(repo_root)).replace("\\", "/")
+
     for ext in ("py", "js", "jsx", "ts", "tsx", "mjs", "cjs"):
         candidate = base_dir / f"{name}.{ext}"
         if candidate.is_file():
