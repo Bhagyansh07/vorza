@@ -240,7 +240,8 @@ Open, ordered by how much they matter.
 |---|---|---|
 | `services/ai_review.py` at 36% coverage | Parses model output. Non-deterministic, so it needs recorded fixtures. | `04-test-strategy.md` T2 |
 | No E2E or accessibility tests | Every route's behaviour is verified by reading code, not driving it. The graph is likely keyboard-hostile. | T4, T5 |
-| `charts-*.js` is 356.24 kB raw / 103.75 kB gzip | Larger than the entire app bundle (292.35 / 94.19), used by one component on one route. | roadmap F5 |
+| ~~Chart library shipped to every visitor~~ | **Fixed** in `fc69379`. `recharts` (103.75 kB gzip) was in the initial bundle because the graph barrel re-exported the chart and `manualChunks` forced it into a preloaded chunk. Now dynamically imported on the history route only. | roadmap F5 |
+| No bundle-size gate in CI | Source-level guards exist (`bundle-boundary.test.ts`), but nothing measures actual bytes, so a future *quantitative* regression would not be caught. | `04-test-strategy.md` T6 |
 | Missing empty states on 3 routes | A new user's second screen shows nothing. | roadmap F2 |
 | No graph legend | Node colour means nothing without one. | roadmap F3 |
 | `npm audit`: 10 advisories (6 high, 4 moderate) | Unaddressed. | `01-code-audit.md` |

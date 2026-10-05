@@ -39,6 +39,13 @@ Audit, fix, SEO and deploy-hardening pass. Full write-up per phase in
   missing graph edges**: `from . import <name>` produced no import at all (the
   AST sets `module=None`, so an `and node.module` guard dropped it), and a
   relative import of a Python package never resolved to its `__init__.py`.
+- `recharts` (103.75 kB gzip) removed from the initial bundle. Three causes, and
+  the obvious one was wrong: the graph barrel re-exported `TrendChart` (so
+  `RepoDetail`'s barrel import dragged recharts in), and
+  `manualChunks: { charts: ['recharts'] }` forced it into a chunk that Vite
+  preloads. `hoistTransitiveImports` looked like the cause and setting it to
+  `false` moved zero bytes. Pinned by 6 source-level tests
+  (`frontend/src/features/graph/bundle-boundary.test.ts`).
 - `docs/MANUAL_STEPS.md`, `SEO_BACKLINKS.md`, `DESIGN_SYSTEM.md`,
   `RESUME_BULLETS.md`, and `docs/audit/02`-`06`.
 

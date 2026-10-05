@@ -156,11 +156,19 @@ documented as normalised `0..1`, dual-shape `comment:new`.
 - **Accessibility unverified.** No axe run; source review only.
 - `npm audit` reports 10 advisories (6 high, 4 moderate). Unaddressed — see
   `docs/audit/01-code-audit.md`.
-- `charts-*.js` is 356.24 kB raw / 103.75 kB gzip, larger than the app bundle,
-  and used by one component on one route. Deferred as F5 in
-  `docs/audit/03-feature-roadmap.md`.
-- 9 low-severity findings in `docs/audit/01-code-audit.md` still open (naming,
-  docstrings, small refactors) — deliberately, to avoid churn over substance.
+- ~~Chart library shipped to every visitor.~~ **DONE** in `fc69379`.
+  `recharts` (103.75 kB gzip) is no longer in the initial bundle: the graph
+  barrel's `TrendChart` re-export is gone and `manualChunks: { charts:
+  ['recharts'] }` is removed. Verified against `dist/index.html` and the
+  emitted imports. `hoistTransitiveImports` was the wrong suspect and stays at
+  its default.
+- **No bundle-size gate in CI.** `bundle-boundary.test.ts` pins the two source
+  properties that caused it, but it cannot measure bytes, so a future
+  *quantitative* regression would not be caught. `docs/audit/04-test-strategy.md`
+  T6.
+- 9 low-severity findings in `docs/audit/01-code-audit.md` — all now worked
+  through: 5 fixed, 2 were not defects, 1 blocked on GitHub account access,
+  1 needs a real code change filed as roadmap F11.
 
 ### NOT VERIFIED
 - The live deploy on current code, and whether data survives a backend restart.

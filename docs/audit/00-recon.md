@@ -181,7 +181,7 @@ All numbers from this machine, on the branch point of `master`
 
 | Chunk | Raw | Gzip |
 | --- | --- | --- |
-| `charts-BmzW2pkX.js` (recharts) | 356.24 kB | 103.75 kB |
+| `charts-BmzW2pkX.js` (recharts) | 356.24 kB | 103.75 kB |  # since moved to an on-demand chunk (`fc69379`)
 | `index-Co6llnv-.js` (app) | 284.60 kB | 91.74 kB |
 | `react-Bv0AXtS9.js` | 205.74 kB | 65.68 kB |
 | `d3-D5_4qGb0.js` | 60.22 kB | 20.62 kB |

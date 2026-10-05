@@ -119,10 +119,10 @@ Bundle, unchanged by this work except for the landing page:
 
 | Chunk | Raw | Gzip |
 |---|---|---|
-| `charts-*.js` | 356.24 kB | 103.75 kB |
-| `index-*.js` | 292.35 kB | 94.19 kB |
+| `index-*.js` (the app) | 285.37 kB | 92.21 kB |
 | `react-*.js` | 205.74 kB | 65.68 kB |
 | `d3-*.js` | 60.22 kB | 20.62 kB |
+| `TrendChart-*.js` (recharts, **on demand**) | 360.13 kB | 105.02 kB |
 
 ---
 
@@ -221,6 +221,7 @@ Recording it because the corrections are the useful part.
 | Neon connection from Render | URL normalisation verified with four real Neon URL shapes; a real connection needs real accounts |
 | Docker Compose stack | No Docker on this machine. The Dockerfile **is** built by CI on every push. |
 | Scoring correctness | **Much improved** — `analysis.py` 17% -> 90%, 34 tests. Still no recorded-model-response test for `ai_review.py`. |
+| Bundle size | `recharts` off first paint (103.75 kB gzip), verified against built output. No CI byte budget yet — T6. |
 | Accessibility | No axe run. Source review only. `04-test-strategy.md` T5. |
 | Search indexing | Takes weeks. Cannot be forced. |
 | Keyword search volume | Needs a Keyword Planner account |

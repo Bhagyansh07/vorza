@@ -123,10 +123,10 @@ Measured on the current build:
 
 | Chunk | Raw | Gzip |
 |---|---|---|
-| `charts-*.js` (recharts) | 356.24 kB | 103.75 kB |
-| `index-*.js` (the app) | 292.35 kB | 94.19 kB |
+| `index-*.js` (the app) | 285.37 kB | 92.21 kB |
 | `react-*.js` | 205.74 kB | 65.68 kB |
 | `d3-*.js` | 60.22 kB | 20.62 kB |
+| `TrendChart-*.js` (recharts, **on demand**) | 360.13 kB | 105.02 kB |
 
 Recharts is 25% larger than the entire application and it is used by exactly one
 component, `TrendChart`, on exactly one route. Every visitor to the landing page

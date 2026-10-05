@@ -118,19 +118,41 @@ change without a manual refresh.
 
 ---
 
-### F5 — Lazy-load the chart bundle
+### F5 — Lazy-load the chart bundle — **DONE**, `fc69379`
 
-**Why, measured:** `charts-*.js` is **356.24 kB raw / 103.75 kB gzip** —
-25% larger than the entire app bundle (`292.35 kB / 94.19 kB`) — and it is used
-by one component on one route.
+**Why, measured:** `charts-*.js` was **356.24 kB raw / 103.75 kB gzip** — 25%
+larger than the entire app bundle (`292.35 kB / 94.19 kB`) — and it is used by
+one component on one route.
 
-**Scope:** `React.lazy` + `Suspense` for `TrendChart`, plus a skeleton that
-matches the chart's dimensions so the layout does not jump.
+**Result, read off the built output:** first paint now fetches react, d3 and
+`index` only. `index.html` preloads three assets instead of four,
+`index-*.js` statically imports react and d3 and *dynamically* imports
+`TrendChart-*.js`, and the chart library moved into that 360 kB dynamic chunk.
+The app bundle itself went 94.19 kB -> 92.21 kB gzip.
 
-**Done when:** `charts-*.js` is not requested when loading `/` or `/dashboard`,
-and bundle sizes are checked in CI so this cannot regress silently.
+**Three causes, and it took three to fix it.** Recorded because the obvious one
+was wrong and a fix that moves zero bytes is worse than no fix:
 
-**Blocked on:** the bundle-size check in `docs/audit/04-test-strategy.md`.
+1. `features/graph/index.ts` re-exported `TrendChart`; `RepoDetail.tsx` imports
+   `GraphView` from that barrel. A barrel re-export is an invisible static edge.
+2. `manualChunks: { charts: ['recharts'] }` — `manualChunks` forces modules into
+   a chunk regardless of whether anything reaches them statically, so the chunk
+   became a static dependency of `index` and Vite preloaded it. **This is the one
+   that actually moved the bytes.**
+3. `hoistTransitiveImports` — Rollup's default `true` does hoist a dynamic
+   import's dependencies into the importer, so it is the obvious suspect.
+   Setting it to `false` changed nothing. Left at the default, with a comment.
+
+**Done when:** `charts-*.js` is not requested when loading `/` or `/dashboard`.
+Verified by reading `dist/index.html` and the emitted import statements, not by
+assumption.
+
+**Partially done — the CI half.** `bundle-boundary.test.ts` pins the source
+properties that caused it (6 tests) so the barrel and the manual chunk cannot
+grow back. It cannot measure bytes: a unit test has no way to observe what
+Rollup emitted. The bundle-size gate in `docs/audit/04-test-strategy.md` T6 is
+still unbuilt, and that is the part that would catch a future *quantitative*
+regression rather than a reintroduction of these two specific mistakes.
 
 ---
 
@@ -262,7 +284,7 @@ F1  deploy and verify        <- blocks everything observable
 F3  graph legend             <- small, self-contained, no dependency
 F2  empty states             <- highest teaching value
 F4  analysis feedback        <- mostly free, socket events already exist
-F5  lazy-load charts         <- verified by the CI bundle check from phase 5
+F5  lazy-load charts         <- DONE fc69379; CI bundle gate still to build (T6)
 F6  graph skeleton           <- small
 F7  delete repo              <- new API surface, needs care
 --- from here, product-led ---

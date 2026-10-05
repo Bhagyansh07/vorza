@@ -182,10 +182,10 @@ Measure, then gate. Current numbers from the last build:
 
 | Chunk | Raw | Gzip |
 |---|---|---|
-| `charts-*.js` | 356.24 kB | 103.75 kB |
-| `index-*.js` | 292.35 kB | 94.19 kB |
+| `index-*.js` (the app) | 285.37 kB | 92.21 kB |
 | `react-*.js` | 205.74 kB | 65.68 kB |
 | `d3-*.js` | 60.22 kB | 20.62 kB |
+| `TrendChart-*.js` (recharts, **on demand**) | 360.13 kB | 105.02 kB |
 
 A simple check that fails if any gzip chunk exceeds a budget. This is what makes
 the recharts lazy-load (F5 in the roadmap) verifiable rather than hopeful.
