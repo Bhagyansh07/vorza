@@ -34,6 +34,11 @@ Audit, fix, SEO and deploy-hardening pass. Full write-up per phase in
   `aireviewrow`.
 - `render.yaml` (Render blueprint) and `vercel.json` (SPA rewrite + headers) so
   the deploy is reviewable in a diff instead of living in a dashboard.
+- 34 tests for `services/analysis.py` (17% -> 90% module coverage; project total
+  69.51% -> 77.67%). They found two production bugs, both causing **silently
+  missing graph edges**: `from . import <name>` produced no import at all (the
+  AST sets `module=None`, so an `and node.module` guard dropped it), and a
+  relative import of a Python package never resolved to its `__init__.py`.
 - `docs/MANUAL_STEPS.md`, `SEO_BACKLINKS.md`, `DESIGN_SYSTEM.md`,
   `RESUME_BULLETS.md`, and `docs/audit/02`-`06`.
 
@@ -88,12 +93,12 @@ Audit, fix, SEO and deploy-hardening pass. Full write-up per phase in
 - `colors.panel` from the Tailwind theme.
 
 ### Verification state
-- Backend 101 passing, 69.51% coverage (gate 60%). Frontend 69 passing across 9
+- Backend 135 passing, 77.67% coverage (gate 60%). Frontend 69 passing across 9
   files, `tsc` clean, eslint 0 errors / 4 pre-existing warnings. CI green.
 - **NOT VERIFIED:** the live deploy on current code; that data survives a restart;
   live WebSocket delivery; the Docker Compose stack (no Docker locally — the
   Dockerfiles are built by CI); accessibility (no axe run); scoring correctness
-  (`services/analysis.py` is at 17% coverage).
+  (`services/ai_review.py` is at 36%; `analysis.py` is now 90%).
 
 ---
 

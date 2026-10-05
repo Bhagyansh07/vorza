@@ -93,8 +93,8 @@ time — where no baseline was measured, the row says so rather than guessing.
 
 | | Before this work | After |
 |---|---|---|
-| Backend tests | **not measured** — see note | **101 passing** |
-| Backend coverage | **could not run** (`pytest-cov` not a declared dependency) | **69.51%** (1725 statements) |
+| Backend tests | **not measured** — see note | **135 passing** |
+| Backend coverage | **could not run** (`pytest-cov` not a declared dependency) | **77.67%** |
 | Frontend tests | 26 across 6 files | **69 across 9 files** |
 | mypy (strict) | **47 errors in 17 files** | **0** (39 files checked) |
 | `ruff check` | **66 errors**, 50 auto-fixable | **clean** |
@@ -103,15 +103,16 @@ time — where no baseline was measured, the row says so rather than guessing.
 | eslint | 0 errors | **0 errors**, 4 pre-existing warnings |
 | CI on `master` | **red on 10/10 runs** | **3 jobs green** |
 | Indexable pages | **0** | **2** |
-| Coverage gate | 60%, never executed | 60%, passing at 69.51% |
+| Coverage gate | 60%, never executed | 60%, passing at 77.67% |
 | Commits in this pass | — | **8**, plus this documentation pass |
 
 **Note on the backend test baseline.** There is no honest "before" number for
 backend tests or coverage, because `pytest-cov` was not a declared dependency and
 the CI coverage step could not execute at all. The README *claimed* 23 tests;
 that was never verified until the install was fixed. The first real measurement
-after that fix was **62.01%**, then 70.38%, and now 69.51% after the migration and
-schema-bootstrap code was added. The gate was never lowered — see
+after that fix was **62.01%**, then 70.38%, then 69.51% after the migration and
+schema-bootstrap code was added, and now **77.67%** after the analysis-scoring
+tests. The gate was never lowered — see
 `docs/audit/04-test-strategy.md` rule 3.
 
 Bundle, unchanged by this work except for the landing page:
@@ -219,7 +220,7 @@ Recording it because the corrections are the useful part.
 | Live WebSocket delivery | Client and gateway are both unit-tested; two live browsers needed |
 | Neon connection from Render | URL normalisation verified with four real Neon URL shapes; a real connection needs real accounts |
 | Docker Compose stack | No Docker on this machine. The Dockerfile **is** built by CI on every push. |
-| Scoring correctness | `analysis.py` at **17%** coverage. The core of the product. `04-test-strategy.md` T1. |
+| Scoring correctness | **Much improved** — `analysis.py` 17% -> 90%, 34 tests. Still no recorded-model-response test for `ai_review.py`. |
 | Accessibility | No axe run. Source review only. `04-test-strategy.md` T5. |
 | Search indexing | Takes weeks. Cannot be forced. |
 | Keyword search volume | Needs a Keyword Planner account |
@@ -229,11 +230,17 @@ Recording it because the corrections are the useful part.
 
 ## If you only read one thing
 
-**The next commit that touches the backend should be tests for
-`services/analysis.py`.** It computes the three numbers the entire product exists
-to display, it is pure (source text in, floats out, no fixtures), and it has 17%
-coverage. A wrong complexity score means every user sees a wrong colour on a
-graph, and nothing in the suite would notice.
+**Done: `services/analysis.py` now has 90% coverage and the two import bugs
+behind it are fixed** (`be484fa`).
 
-Everything else in this audit was configuration, wiring, or a bug with an obvious
-symptom. That one is a silent wrong answer in the product's core output.
+It was the one item here that could produce a *silent wrong answer* rather than a
+visible failure, which is exactly why it was worth doing before anything else. It
+paid for itself immediately — the tests found that `from . import <name>` produced
+no import at all, and that a relative import of a Python package never resolved to
+its `__init__.py`. Both mean **edges missing from the graph**: the product renders,
+looks plausible, and is quietly wrong. Nothing in the suite would ever have said so.
+
+The next target is the same shape of problem: `services/ai_review.py` at 36%,
+which parses model output. Non-deterministic model responses mean the test must
+use recorded fixtures rather than a live call, and JSON extraction out of prose is
+exactly where that code will be fragile.

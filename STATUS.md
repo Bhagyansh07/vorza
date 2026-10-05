@@ -145,10 +145,14 @@ documented as normalised `0..1`, dual-shape `comment:new`.
   access. Not faked; written out in `docs/MANUAL_STEPS.md`.
 - **Docker Compose stack unverifiable locally** (no Docker). The Dockerfiles
   themselves are built by CI on every push, so the images are covered.
-- **`services/analysis.py` is at 17% coverage** and computes the three numbers
-  the whole product displays. It is pure, so the tests are cheap. This is the
-  next commit that should touch the backend — see
-  `docs/audit/04-test-strategy.md` T1.
+- ~~**`services/analysis.py` is at 17% coverage**~~ — **DONE** in `be484fa`.
+  34 tests, module coverage 17% -> 90%, project total 69.51% -> 77.67%. Found two
+  production bugs: `from . import <name>` produced no import at all, and a
+  relative import of a Python package never resolved to its `__init__.py`. Both
+  mean edges silently missing from the graph.
+- **`services/ai_review.py` is at 36%** and is now the same-shape risk: it parses
+  model output, which is non-deterministic, so it needs recorded-response
+  fixtures. See `docs/audit/04-test-strategy.md` T2.
 - **Accessibility unverified.** No axe run; source review only.
 - `npm audit` reports 10 advisories (6 high, 4 moderate). Unaddressed — see
   `docs/audit/01-code-audit.md`.

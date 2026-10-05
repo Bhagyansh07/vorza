@@ -7,8 +7,8 @@ add next.
 
 | | Count |
 |---|---|
-| Backend tests | 101 passing |
-| Backend coverage | 69.51% (1725 statements) |
+| Backend tests | **135 passing** |
+| Backend coverage | **77.67%** |
 | Frontend tests | 69 passing across 9 files |
 | Typecheck | `tsc` 0 errors, `eslint` 0 errors / 4 warnings |
 | Lint / format | `ruff check` clean, `ruff format --check` clean |
@@ -78,7 +78,7 @@ Backend, by file, worst first:
 
 | File | Coverage | Missing | Why |
 |---|---|---|---|
-| `services/analysis.py` | **17%** | 242-310, 314-352 | Complexity, churn and health scoring. The core of the product. |
+| `services/analysis.py` | **90%** | 83-95, 127, 183, 214-215, 251-264, 341, 370 | **Was 17%.** Now covered by 34 tests; the remaining lines are defensive branches. |
 | `services/ai_review.py` | **36%** | 85-89, 96-119, 167-224 | Prompting, parsing, flag extraction. |
 | `services/pipeline.py` | **35%** | 63-107 | Repo clone and checkout. Needs a git fixture. |
 | `alembic/versions/*` | 25% / 41% | `upgrade` / `downgrade` | Covered by `test_migrations.py` via a subprocess, which coverage does not see. |
@@ -90,8 +90,8 @@ Backend, by file, worst first:
 
 ### The one that matters most
 
-`analysis.py` at 17% is the worst gap in the project, because it computes the
-three numbers the entire product is built to display:
+`analysis.py` was the worst gap in the project, because it computes the three
+numbers the entire product is built to display:
 
 - cyclomatic complexity
 - churn over the last three months
@@ -100,14 +100,13 @@ three numbers the entire product is built to display:
 These have **exactly defined thresholds** (`>= 70` good, `>= 45` warn, else bad)
 and **one number wrong means every user sees a wrong colour on a graph.**
 
-This is the highest-value test target in the repository and it has not been done.
-Noted honestly here rather than glossed.
+**DONE** in `be484fa` — 17% to 90%, and it found two real bugs (below).
 
 ---
 
 ## Add next, in order
 
-### T1 — Pure-function tests for the scoring (highest value)
+### T1 — Pure-function tests for the scoring — **DONE**, `be484fa`
 
 `analysis.py`'s scoring is pure: source text in, three floats out. No database,
 no network, no fixtures. This is the cheapest meaningful test coverage available
@@ -118,7 +117,23 @@ and it guards the numbers users actually see.
 - Empty file, single-line file, file with only comments.
 - A pathological input (very long single line) to pin the behaviour.
 
-**This should be the next commit that touches the backend.**
+Done in `be484fa`: 34 tests, module coverage 17% -> 90%, project total 69.51% ->
+**77.67%**.
+
+**It found two production bugs**, both in the import graph, both meaning edges
+are silently missing from the graph:
+
+1. `from . import <name>` yielded **no import at all**. Python's AST sets
+   `module=None` and `level=1` for that form, so the `and node.module` guard on
+   `ast.ImportFrom` was False and the import was dropped.
+2. A relative import of a Python *package* resolved to the raw dotted string,
+   because `_resolve_relative_import` checked `name.<ext>` and `name/index.<ext>`
+   but never `name/__init__.py`. JS packages resolved; Python ones did not.
+
+Both were invisible: no exception, no wrong colour, just a graph quietly missing
+a meaningful share of its real dependency edges. This is the argument for T1 in
+one concrete instance — the tests were worth writing because the code under them
+was wrong, not merely untested.
 
 ### T2 — AI review parsing with a recorded model response
 
@@ -215,7 +230,7 @@ Credit where it is due — these are genuinely solid:
 | Live socket delivery | Client and gateway are both unit-tested; two live browsers needed. |
 | Neon connection from Render | URL normalisation verified with four real Neon URL shapes; a real connection needs real accounts. |
 | Accessibility | No automated axe run. Source review only. |
-| Scoring correctness | `analysis.py` at 17%. See T1. |
+| Scoring correctness | Much improved: `analysis.py` 17% -> 90%. See T1. |
 | Search indexing | Takes weeks. |
 | Performance under load | Never measured. The free tier is not a load target. |
 
@@ -228,9 +243,11 @@ Credit where it is due — these are genuinely solid:
 2. **A test that runs a subprocess does not contribute to coverage.** The
    migration test genuinely executes `alembic upgrade head`, and coverage does not
    see it. Not a reason to delete it — a reason to know what the number means.
-3. **Never lower a gate to go green.** The coverage gate stayed at 60% when the
-   measured value was 62% and is now 69.51%. It was never raised to a number the
-   suite did not earn, and it will not be lowered to a number it does not reach.
+3. **Never lower a gate to go green.** The coverage gate stayed at 60% while the
+   measured value moved 62% -> 69.51% -> 77.67%. It was never raised to a number
+   the suite did not earn, and it will not be lowered to a number it does not
+   reach. Note what the rising number cost: the 60% bar was not raised even at
+   77%, because raising it would add a second thing to fail and teach nothing.
 4. **Typecheck and lint are part of the gate, not a separate concern.** Vitest
    passing tells you nothing about types.
 5. **The production environment must be tested.** Bug 1 shipped a green suite. At

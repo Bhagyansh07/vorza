@@ -169,7 +169,7 @@ Measured at commit `2ee4816`:
 
 | | |
 |---|---|
-| Backend | **101 passing**, coverage **69.51%** (gate 60%) |
+| Backend | **135 passing**, coverage **77.67%** (gate 60%) |
 | Frontend | **69 passing** across 9 files |
 | `mypy` (strict) | **0 errors**, 39 files |
 | `ruff check` / `format --check` | **clean** |
@@ -180,10 +180,13 @@ Measured at commit `2ee4816`:
 Strategy, coverage gaps and what to add next:
 [`docs/audit/04-test-strategy.md`](docs/audit/04-test-strategy.md).
 
-**The next tests that should be written** are for `services/analysis.py`. It
-computes the three numbers the whole product exists to display, it is pure, and it
-is at 17% coverage. An untested function that produces the product's core output
-is the largest remaining risk here.
+`services/analysis.py` went from 17% to **90%** coverage in `be484fa`, and the
+tests found two production bugs: `from . import <name>` produced no import at
+all, and a relative import of a Python package never resolved to its
+`__init__.py`. Both mean edges silently missing from the graph.
+
+The same shape of risk remains in `services/ai_review.py` (36%), which parses
+model output. Recorded-response fixtures are the next test target.
 
 ---
 
@@ -235,7 +238,7 @@ Open, ordered by how much they matter.
 
 | Gap | Why it matters | Where |
 |---|---|---|
-| `services/analysis.py` at 17% coverage | It produces the product's core output. A wrong score means every user sees a wrong colour. | `04-test-strategy.md` T1 |
+| `services/ai_review.py` at 36% coverage | Parses model output. Non-deterministic, so it needs recorded fixtures. | `04-test-strategy.md` T2 |
 | No E2E or accessibility tests | Every route's behaviour is verified by reading code, not driving it. The graph is likely keyboard-hostile. | T4, T5 |
 | `charts-*.js` is 356.24 kB raw / 103.75 kB gzip | Larger than the entire app bundle (292.35 / 94.19), used by one component on one route. | roadmap F5 |
 | Missing empty states on 3 routes | A new user's second screen shows nothing. | roadmap F2 |
