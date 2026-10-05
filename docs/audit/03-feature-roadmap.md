@@ -261,6 +261,53 @@ docstring is how a real one gets missed later.
 
 ---
 
+### F12 — Upgrade `react-router-dom` 6 → 7
+
+**Why:** two moderate advisories affect `react-router` 6.0.0 – 7.17.0 (installed
+6.30.6), fixed in 7.18.4. One of them — `GHSA-wrjc-x8rr-h8h6`, open redirect
+via backslash — was a real chain through this app: `ProtectedRoute` stores
+`location.pathname` in `location.state.from`, and `Login.tsx` navigates to it
+after sign-in, so an attacker-supplied link could redirect a freshly
+authenticated user off-origin.
+
+**Already mitigated.** `features/auth/routes/safe-redirect.ts` rejects the
+payload and has 11 tests. The app no longer depends on the library's
+sanitisation. That guard should stay regardless — it is the app's own input
+control.
+
+**Scope:** the v6 → v7 migration. Every route in `app/router.tsx`, the auth
+redirect handling, and the tests that construct routers.
+
+**Done when:** `npm audit --omit=dev` is clean, `safeInternalPath` still has
+tests (and is still needed), and the router suite passes.
+
+**Why this is separate from the fix.** A major-version migration touches the
+entire router surface. Doing it in the same commit as a security fix invites a
+rushed change that breaks authentication — the one flow where a regression is
+both obvious to users and hardest to spot in review.
+
+---
+
+### F13 — Clear the dev-tree advisories
+
+**Why:** `braces` (high, stack-exhaustion DoS) reaches this repo through
+`tailwindcss` → `chokidar` → `micromatch`, and `@vitest/mocker` (moderate, path
+traversal) comes with vitest. Both are real advisories with real severity
+ratings. Neither can execute in a deployed browser — verified by scanning all
+four built JS chunks and finding zero matches — but both can execute on a
+developer's machine or a CI runner if an attacker controls glob patterns or test
+mocks. A compromised CI is a serious event, so "it does not ship" is a
+mitigation, not a dismissal.
+
+**Scope:** `tailwindcss` 3 → 4 and `vitest` 3 → 5, each a major migration.
+Tailwind 4 replaces the PostCSS plugin chain with a native Vite plugin, so this
+also touches the design-token setup in `docs/DESIGN_SYSTEM.md`.
+
+**Done when:** `npm audit` reports zero, and the visual output is unchanged —
+the token names in `DESIGN_SYSTEM.md` are the contract to hold on to.
+
+---
+
 ## Explicitly not planned
 
 Stating what is deliberately absent, with the reason, is more useful than a
@@ -292,6 +339,8 @@ F8  snapshot comparison
 F9  public share link        <- the best backlink play
 F10 cost and time budget
 F11 single-use OAuth state   <- not exploitable today; closes a false security claim
+F12 react-router 6 -> 7      <- app is guarded; this removes the dependency risk
+F13 clear dev-tree advisories<- tailwind 4 + vitest 5, two major migrations
 ```
 
 F1 is not a feature and it is first because without it none of the rest can be

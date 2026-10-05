@@ -10,6 +10,7 @@ import { useAuth } from '@/features/auth/hooks/use-auth';
 import { config, oauthRedirect } from '@/lib/config';
 import { toErrorMessage } from '@/lib/errors';
 import { useDocumentMeta } from '@/lib/seo';
+import { safeInternalPath } from './safe-redirect';
 
 interface QueryState {
   code: string | null;
@@ -55,7 +56,12 @@ export function LoginPage() {
   const { user, status, login, completeLogin } = useAuth();
   const [handling, setHandling] = useState(false);
 
-  const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
+  // `from` comes from `ProtectedRoute`, which sets it from `location.pathname`
+  // -- i.e. from the address bar, so it is attacker-supplied. Sanitised here
+  // rather than trusted: see safe-redirect.ts for the advisory this guards.
+  const from = safeInternalPath(
+    (location.state as { from?: string } | null)?.from
+  );
 
   const query = readQuery(location.search);
 

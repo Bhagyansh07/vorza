@@ -154,8 +154,15 @@ documented as normalised `0..1`, dual-shape `comment:new`.
   model output, which is non-deterministic, so it needs recorded-response
   fixtures. See `docs/audit/04-test-strategy.md` T2.
 - **Accessibility unverified.** No axe run; source review only.
-- `npm audit` reports 10 advisories (6 high, 4 moderate). Unaddressed — see
-  `docs/audit/01-code-audit.md`.
+- ~~`npm audit` reports 10 advisories, unaddressed.~~ **Triaged** in
+  `docs/audit/07-dependency-audit.md`. **2 of 10 were reachable.** One was a
+  real open-redirect chain through the login redirect
+  (`ProtectedRoute` → `Login.tsx:64`, GHSA-wrjc-x8rr-h8h6) — now guarded by
+  `safeInternalPath` with 11 tests. One (`deserializeErrors`) needs SSR this app
+  does not do. The other 8 are dev-tree, verified absent from all 4 built JS
+  chunks. `brace-expansion` fixed; now **9 advisories, 0 high at runtime**
+  (`npm audit --omit=dev`). Remaining fixes are roadmap F12 (react-router 7)
+  and F13 (tailwind 4, vitest 5).
 - ~~Chart library shipped to every visitor.~~ **DONE** in `fc69379`.
   `recharts` (103.75 kB gzip) is no longer in the initial bundle: the graph
   barrel's `TrendChart` re-export is gone and `manualChunks: { charts:

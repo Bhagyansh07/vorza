@@ -46,6 +46,15 @@ Audit, fix, SEO and deploy-hardening pass. Full write-up per phase in
   preloads. `hoistTransitiveImports` looked like the cause and setting it to
   `false` moved zero bytes. Pinned by 6 source-level tests
   (`frontend/src/features/graph/bundle-boundary.test.ts`).
+- Open redirect in the login redirect fixed. `ProtectedRoute` stored
+  `location.pathname` (attacker-controlled) in `location.state.from` and `Login`
+  navigated to it after sign-in, so `/\evil.com` redirected an authenticated
+  user off-origin (GHSA-wrjc-x8rr-h8h6, react-router 6.30.6). Guarded by
+  `safeInternalPath`, 11 tests. The dependency upgrade is a v6 -> v7 migration,
+  filed as F12 rather than rushed alongside the fix.
+- `npm audit` triaged in `docs/audit/07-dependency-audit.md`: 2 of 10 advisories
+  were reachable, 8 are dev-tree (verified absent from all 4 built JS chunks),
+  `brace-expansion` fixed.
 - `docs/MANUAL_STEPS.md`, `SEO_BACKLINKS.md`, `DESIGN_SYSTEM.md`,
   `RESUME_BULLETS.md`, and `docs/audit/02`-`06`.
 

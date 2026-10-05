@@ -156,7 +156,7 @@ Representative mypy failures, all real type-safety gaps rather than pedantry:
 | **CORS** | `main.py:42-48` allows exactly one origin (`settings.FRONTEND_HOST`), credentials on, methods/headers wildcarded. Correct shape. | pass |
 | **Rate limiting** | **Absent on all HTTP routes.** Only the AI analysis endpoint's cost is bounded by OpenAI's own limits. Login and connect-repo are unthrottled. `lib/rate-limit.ts` exists in *other* repos of this owner but not here. | **high** |
 | **Security headers** | **None.** No CSP, no HSTS, no `X-Content-Type-Options`, no `Referrer-Policy`, no `X-Frame-Options`. `frontend/vercel.json` sets only a rewrite. | **high** |
-| **Dependency vulns** | `npm audit`: **10 — 6 high, 4 moderate.** Runtime-reachable: `react-router` open redirect via backslash in `<Link>`/`useNavigate` (GHSA-wrjc-x8rr-h8h6) and `deserializeErrors()` constructor injection (GHSA-337j-9hxr-rhxg). Dev-only: `tailwindcss`→`chokidar`→`braces` stack-exhaustion DoS, `brace-expansion` quadratic DoS, `@vitest/mocker` traversal. | **high** |
+| **Dependency vulns** | Triaged in `07-dependency-audit.md`. **2 of 10 reachable.** One real open-redirect chain (`ProtectedRoute` → `Login.tsx:64` via GHSA-wrjc-x8rr-h8h6), now guarded in app code; one (`deserializeErrors`) needs SSR this app does not have. 8 are dev-tree, verified absent from all 4 built JS chunks. `brace-expansion` fixed; `braces`/`@vitest/mocker` filed as F13. `npm audit` now 9 (5 high, 4 moderate), all dev-tree except the mitigated react-router pair. | **medium** |
 | **Python deps** | `pip-audit` **NOT VERIFIED** — not run in this phase. | — |
 
 ### The `openai` dependency hole, in detail

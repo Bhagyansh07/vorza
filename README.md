@@ -244,7 +244,7 @@ Open, ordered by how much they matter.
 | No bundle-size gate in CI | Source-level guards exist (`bundle-boundary.test.ts`), but nothing measures actual bytes, so a future *quantitative* regression would not be caught. | `04-test-strategy.md` T6 |
 | Missing empty states on 3 routes | A new user's second screen shows nothing. | roadmap F2 |
 | No graph legend | Node colour means nothing without one. | roadmap F3 |
-| `npm audit`: 10 advisories (6 high, 4 moderate) | Unaddressed. | `01-code-audit.md` |
+| `npm audit`: 9 advisories (5 high, 4 moderate) | **All dev-tree, none ship to a browser** — verified by scanning all four built JS chunks. The 10th was a real open-redirect chain through the login redirect, now guarded. Fixes need major upgrades: `tailwindcss` 4, `vitest` 5, `react-router-dom` 7. | `07-dependency-audit.md` |
 | No repo deletion | Connected repos can never be removed. | roadmap F7 |
 | OAuth `state` is not single-use | The docstring claimed it was. Impact is limited (the GitHub `code` is single-use), but the claim did not match the code. Real fix filed as F11. | roadmap F11 |
 | 7 low-severity code findings | Worked through and closed. Two were not defects and one is blocked on your GitHub account. | `01-code-audit.md` |
@@ -269,6 +269,11 @@ The audit found things that reading the code would not have:
   could forge a signed webhook and queue PR reviews.
 - **A gateway impersonation hole** — a client could broadcast a comment as
   another user.
+- **An open redirect through the login flow.** `ProtectedRoute` remembered where
+  you were headed in `location.state.from` — which is just the address bar — and
+  `Login` navigated there after sign-in, so a link like `/\evil.com` could send
+  a freshly authenticated user off-origin. Guarded by `safeInternalPath` with 11
+  tests; the dependency fix is roadmap F12.
 - **A colour key named `panel` that silently made `shadow-panel` emit no shadow
   at all.** No error, no warning. Every floating overlay in the graph rendered
   without one and looked intentional.
