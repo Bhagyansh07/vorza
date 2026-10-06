@@ -366,6 +366,21 @@ export function Landing() {
               hides. These are real choices from the repo, in no particular
               order of importance.
             </p>
+            <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-stem border border-line bg-line sm:grid-cols-4">
+              {[
+                ['backend tests', '172'],
+                ['frontend tests', '127'],
+                ['backend coverage', '81%'],
+                ['live stack', 'Render + Vercel + Neon'],
+              ].map(([label, value]) => (
+                <div key={label} className="bg-surface px-4 py-3">
+                  <dt className="text-[10px] font-medium uppercase tracking-[0.08em] text-ink-faint">
+                    {label}
+                  </dt>
+                  <dd className="tabular mt-1 font-mono text-lg text-ink">{value}</dd>
+                </div>
+              ))}
+            </dl>
             <div className="mt-10 grid gap-x-12 gap-y-9 sm:grid-cols-2">
               {HOW_BUILT.map((note, i) => (
                 <div key={note.fact} className="border-t border-line pt-5">
