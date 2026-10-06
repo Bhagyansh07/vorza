@@ -92,9 +92,7 @@ codeatlas/
 │       ├── components/     (shared UI)
 │       └── lib/             (api client, hooks)
 ├── docs/
-├── tasks/
 ├── AGENTS.md
 ├── CONTRACTS.md
-├── STATUS.md
 └── docker-compose.yml
 ```

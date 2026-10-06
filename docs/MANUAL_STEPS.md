@@ -388,7 +388,7 @@ Stated plainly rather than glossed over.
 
 | Not verified | Reason |
 |---|---|
-| Docker Compose stack | No Docker on this machine. Same blocker recorded in `STATUS.md`. The backend Dockerfile **is** built by CI on every push, so the image itself is verified. |
+| Docker Compose stack | No Docker on this machine. The backend Dockerfile **is** built by CI on every push, so the image itself is verified. |
 | `docker compose up` end to end | As above. |
 | The live deploy after these changes | The Render service is configured by hand in a dashboard; applying the blueprint and setting secrets requires your accounts. |
 | Search Console indexing | Takes days to weeks. Cannot be forced. |

@@ -29,6 +29,14 @@ data/
 checkouts/
 tmp/
 
+# Internal agent working files — never tracked (kept locally only)
+brain/
+tasks/
+STATUS.md
+opencode.json
+setup_worktrees.sh
+.tmp_det*.py
+
 # Editor & OS
 .vscode/
 .idea/

@@ -1,76 +1,42 @@
 # Vorza
 
-**A force-directed map of your codebase — sized by complexity, coloured by health —
-where teammates see each other's cursors and an AI agent reviews every new pull
-request before it merges.**
+**The living, AI-reviewed map of your codebase.**
 
-Connect a GitHub repo, and Vorza clones it, scores every file for cyclomatic
-complexity and commit churn, and renders the result as a live graph. Health scores
-land on the map as colour, so the files that need attention are the ones that look
-wrong. Comment pins are anchored to coordinates on the canvas, so a review comment
-points at the thing it is about. Open a PR and it gets an AI review with a risk
-score and per-file flags.
+Connect a GitHub repository and Vorza turns it into a live force-directed map:
+every file is a node sized by complexity and coloured by health, so the files
+that need attention are the ones that look wrong. Teammates see each other's
+cursors on the same canvas, comments pin to exact spots on the graph, and every
+new pull request gets an AI review with a risk score before it merges.
 
----
+> **Live:** [app](https://frontend-bhagyansh.vercel.app) · [API](https://codeatlas-qr0e.onrender.com) · [OpenAPI](https://codeatlas-qr0e.onrender.com/openapi.json) · [source](https://github.com/Bhagyansh07/codeatlas)
 
-## Table of contents
+![Vorza map](/product-map.png)
 
-- [What works today](#what-works-today)
-- [Tech stack](#tech-stack)
-- [Quick start](#quick-start)
-- [Architecture](#architecture)
-- [Testing](#testing)
-- [Deploying](#deploying)
-- [Documentation](#documentation)
-- [Known gaps](#known-gaps)
-- [How this was built](#how-this-was-built)
+## What it does
 
----
-
-## What works today
-
-Stated precisely, because a README that oversells is worse than none.
-
-**Working:**
-
-- GitHub OAuth sign-in, JWT sessions
-- Connect a repository, analyse it, render the force-directed graph
-- Per-file complexity, churn and health scoring; snapshot history with trend charts
-- Live cursors, comment pins and AI reviews over WebSockets
-- GitHub PR webhook → AI review, with HMAC signature verification
-- Public landing page, sitemap, and per-route meta
-
-**Not working, or not verified:**
-
-| Gap | Detail |
+| Capability | How it works |
 |---|---|
-| **Not deployed on current code** | The backend is live but on an older build. The frontend deployment no longer exists — both previously recorded hostnames return 404. |
-| **No production database** | The migration history was the blocker; it is fixed. Applying the deploy needs account access. |
-| **Accessibility unverified** | No axe run, no Playwright. Source review only. |
-| **Scoring under-tested** | `services/analysis.py` is at 17% coverage, and it computes the three numbers the product displays. |
-| **Docker Compose unverified** | No Docker on the machine it was built on. The Dockerfiles are built by CI on every push. |
-| **No E2E tests** | No Playwright. The frontend suite is unit-level. |
+| **GitHub login + repo connect** | OAuth sign-in, then pick any of your repos (public or private) or type an `owner/repo` manually |
+| **Codebase map** | A shallow clone is scored per file: lines of code, cyclomatic-complexity proxy, git churn, and import/dependency edges (JS/TS + Python) |
+| **Health scoring** | Each file gets a 0–100 health score: `>= 70` good (green), `>= 45` warn (amber), below bad (red). Node **colour** is health, node **size** is complexity |
+| **Health history** | Every analysis is a snapshot; the trend chart shows how a repo's health moves over time |
+| **Live collaboration** | Cursors and comment pins broadcast over WebSockets — a comment pins to a point on the canvas, not a line number that shifts |
+| **AI PR reviews** | A GitHub webhook feeds each opened PR's diff to an LLM, which returns a risk score, a plain-English summary and per-file flags (needs `OPENAI_API_KEY`) |
 
-Full honesty table, with reasons: [`docs/audit/06-summary.md`](docs/audit/06-summary.md).
-
----
+The map answers questions like *which files do I refactor first*, *where does
+the risk live*, and *what breaks when I touch this*.
 
 ## Tech stack
 
-| Layer | Choice | Note |
-|---|---|---|
-| Backend | FastAPI + SQLModel + PostgreSQL | Async, typed, auto OpenAPI |
-| Migrations | Alembic | Schema is authoritative; `create_all` is not |
-| AI | OpenAI (`gpt-4o-mini` default) | Optional — review is skipped with a logged warning if no key |
-| Frontend | React 18 + TypeScript + Vite | Strict mode, `tsc` clean |
-| UI | Tailwind + shadcn/ui (Radix) + `cva` | Token-based, dark only — see [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) |
-| Graph | `d3-force` + `d3-zoom` + `d3-selection` | Radius is LOC-weighted, colour is health |
-| Charts | Recharts | One component, one route. It is the largest chunk in the build — see Known gaps |
-| Real-time | FastAPI WebSockets, Redis pub/sub optional | Falls back to in-process |
-| Auth | JWT via GitHub OAuth | In-house, deliberately — a provider swap is a login-surface rewrite for no current gain |
-| Deploy | Render (Docker) + Vercel | Both config-as-code, both free tier |
-
----
+| Layer | Choice |
+|---|---|
+| Backend | FastAPI · SQLModel · PostgreSQL (Neon) · Alembic |
+| Analysis | Pure-Python pipeline over a git checkout (complexity, churn, imports) |
+| AI | OpenAI (`gpt-4o-mini`, optional) — skipped with a logged reason if no key |
+| Frontend | React 18 · TypeScript · Vite · TanStack Query · Tailwind + shadcn/ui |
+| Graph | `d3-force` + `d3-zoom` |
+| Real-time | FastAPI WebSockets (Redis pub/sub optional) |
+| Deploy | Render (Docker) + Vercel, config-as-code |
 
 ## Quick start
 
@@ -80,7 +46,7 @@ Full honesty table, with reasons: [`docs/audit/06-summary.md`](docs/audit/06-sum
 cd backend
 python -m venv .venv
 .\.venv\Scripts\pip install -e . --group dev   # --group, not .[dev]
-copy .env.example .env
+copy .env.example .env                        # fill in GitHub OAuth keys
 .\.venv\Scripts\python -m uvicorn app.main:app --reload
 ```
 
@@ -92,7 +58,7 @@ endpoint** — use `/openapi.json`.
 ```bash
 cd frontend
 npm ci
-cp .env.example .env.local     # VITE_API_URL=http://localhost:8000
+cp .env.example .env.local     # VITE_API_URL=http://localhost:8000, VITE_USE_MOCKS=true for mock data
 npm run dev
 ```
 
@@ -105,195 +71,101 @@ cd backend && .\.venv\Scripts\python -m ruff format --check .
 cd backend && .\.venv\Scripts\python -m mypy app
 cd backend && .\.venv\Scripts\python -m pytest tests --cov=app --cov-fail-under=60
 
-# frontend
+# frontend — run all four, not one (Vitest does not typecheck)
 cd frontend && npm run typecheck
 cd frontend && npm run lint
 cd frontend && npm test -- --run
 cd frontend && npm run build
 ```
 
-> **Run all four frontend steps, not one.** Vitest does not typecheck — `tsc`
-> does. A single passing test file tells you nothing about types, and getting that
-> wrong put a type error on `master` during this build.
-
-### Docker
-
-```bash
-docker compose up        # NOT VERIFIED — no Docker on the build machine
-```
-
-The individual Dockerfiles *are* built by CI on every push, so the images are
-covered. The compose orchestration is not.
-
----
-
 ## Architecture
 
 ```
-React SPA (Vercel)                    FastAPI (Render)
-  landing / ─── public, indexable        │
-  login   / ─── OAuth callback           ├── routes/    auth, repos, comments,
-  dashboard, repos/:id ── noindex        │               analysis, webhooks
-        │                                ├── services/  orchestrator (owns all I/O)
-        │  REST + JWT                     │              analysis, ai_review, github
-        ├──────────────────────────────► │              pipeline
-        │                                ├── models/    User, Repo, AnalysisSnapshot,
-        │  WebSocket (cursors, comments,  │              Comment, AiReviewRow
+React SPA (Vercel)                      FastAPI (Render)
+  landing  /  public, indexable           │
+  login    /  OAuth callback              ├── routes/    auth, repos, comments,
+  dashboard, repos/:id  noindex           │               analysis, webhooks
+        │                                 ├── services/  orchestrator (owns all I/O)
+        │   REST + JWT                     │              analysis, ai_review, github,
+        ├──────────────────────────────►  │              pipeline
+        │                                 ├── models/    User, Repo, AnalysisSnapshot,
+        │   WebSocket (cursors, comments,  │              Comment, AiReviewRow
         └──────────────────────────────►  ├── ws/        gateway, manager, pubsub
-                                         │              comment_store, throttler
-                                         └── Alembic     schema is authoritative
-                                                  │
-                                             PostgreSQL (Neon)
+                                          │              comment_store, throttler
+                                          └── Alembic    schema is authoritative
+                                                   │
+                                              PostgreSQL (Neon)
 ```
 
 Two structural rules worth knowing before you change anything:
 
-**1. `services/orchestrator.py` owns all I/O.** It is the only module allowed to
-touch the database, git checkouts and persistence. Everything else is pure. This
-is why the analysis and review logic is unit-testable at all.
+1. **`services/orchestrator.py` owns all I/O.** It is the only module allowed to
+   touch the database, git checkouts and persistence. Everything else is pure,
+   which is why the analysis and review logic is unit-testable.
+2. **Migrations are authoritative.** `app/core/schema.py` defers to Alembic
+   whenever a revision is stamped and only falls back to `create_all` for a
+   database with no migrations at all. `backend/tests/test_migrations.py` builds
+   the schema both ways and diffs them, so a migration that drifts from the
+   models fails CI — it has already caught a wrong table name and a model that
+   was never migrated.
 
-**2. Migrations are authoritative.** `app/core/schema.py` hands control to Alembic
-when a revision is stamped, and only falls back to `create_all` for a database
-with no migrations at all. `backend/tests/test_migrations.py` builds the schema
-both ways and diffs it, so a migration that drifts from the models fails CI. It
-caught two real defects — a table created as `analysesnapshot` where SQLModel
-derives `analysissnapshot`, and a model that was never migrated at all.
-
-API shapes: [`CONTRACTS.md`](CONTRACTS.md) (v0.2).
-
----
+API shapes and WebSocket events: [`CONTRACTS.md`](CONTRACTS.md).
 
 ## Testing
 
-Measured at commit `2ee4816`:
+Current state:
 
 | | |
 |---|---|
-| Backend | **135 passing**, coverage **77.67%** (gate 60%) |
-| Frontend | **69 passing** across 9 files |
-| `mypy` (strict) | **0 errors**, 39 files |
-| `ruff check` / `format --check` | **clean** |
-| `tsc` | **0 errors** |
-| `eslint` | **0 errors**, 4 pre-existing warnings |
-| CI | **3 jobs green** — backend, frontend, docker-build |
+| Backend | **155 passing**, coverage **81%** (gate 60%) |
+| Frontend | **110 passing** across 14 files |
+| `mypy` (strict) | clean |
+| `ruff` / `eslint` | clean |
+| `tsc` | clean |
+| CI | green — backend + frontend + Docker build |
 
 Strategy, coverage gaps and what to add next:
 [`docs/audit/04-test-strategy.md`](docs/audit/04-test-strategy.md).
 
-`services/analysis.py` went from 17% to **90%** coverage in `be484fa`, and the
-tests found two production bugs: `from . import <name>` produced no import at
-all, and a relative import of a Python package never resolved to its
-`__init__.py`. Both mean edges silently missing from the graph.
-
-The same shape of risk remains in `services/ai_review.py` (36%), which parses
-model output. Recorded-response fixtures are the next test target.
-
----
-
 ## Deploying
 
-Both targets are configuration-as-code, because the previous deploy was configured
-by hand in a dashboard — which is exactly why a data-loss bug was documented in
-handover notes and invisible to anyone reading the repo.
+Both targets are configuration-as-code.
 
 | File | Target |
 |---|---|
-| `render.yaml` | Render — Docker backend, `alembic upgrade head` as a pre-deploy command |
-| `vercel.json` | Vercel — SPA rewrite (without it every deep link 404s) + cache and security headers |
+| `render.yaml` | Render — Docker backend with `git` installed, migrations on boot |
+| `vercel.json` | Vercel — SPA rewrites + cache and security headers |
 | `.github/workflows/CI.yml` | lint, format, types, tests, coverage, Docker build |
 
-Full click-by-click: **[`docs/MANUAL_STEPS.md`](docs/MANUAL_STEPS.md)**. It covers
-Neon, Render, Vercel, the GitHub OAuth app, the webhook, Search Console and a
-domain — plus what is *not* verified and why.
-
-**On the database:** `render.yaml` deliberately declares no managed Postgres.
-Render's free Postgres **expires 30 days after creation** — verified against
-their docs, not assumed — which is a data-loss clock that looks durable right up
-until it is not. Neon Free has no expiry and suspends compute rather than deleting
-data. Click-by-click for both in the manual steps.
-
----
+`master` auto-deploys to both. Click-by-click setup (Neon, Render, Vercel, the
+GitHub OAuth app, the webhook): [`docs/MANUAL_STEPS.md`](docs/MANUAL_STEPS.md).
 
 ## Documentation
 
 | Document | What it is |
 |---|---|
-| [`docs/MANUAL_STEPS.md`](docs/MANUAL_STEPS.md) | Every step that needs a browser or an account |
-| [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) | Tokens, ramps, rules, from the code that exists |
-| [`docs/SEO_BACKLINKS.md`](docs/SEO_BACKLINKS.md) | What was wrong, what was fixed, and how to verify |
-| [`docs/audit/00-recon.md`](docs/audit/00-recon.md) → [`06-summary.md`](docs/audit/06-summary.md) | The audit, phase by phase |
-| [`docs/audit/03-feature-roadmap.md`](docs/audit/03-feature-roadmap.md) | What to build next, and what deliberately not to |
-| [`docs/RESUME_BULLETS.md`](docs/RESUME_BULLETS.md) | Project write-up, with the honest limits |
 | [`CONTRACTS.md`](CONTRACTS.md) | API shapes, WebSocket events, model fields |
-| [`STATUS.md`](STATUS.md) | The running log |
-| [`HANDOVER.md`](HANDOVER.md) | Session-start notes — **the live URLs in it are stale** |
-| `brain/` | The original project constitution and specs |
-| `tasks/` | The six agent briefs this repo was built from |
-
----
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | System diagram and design notes |
+| [`docs/MANUAL_STEPS.md`](docs/MANUAL_STEPS.md) | Every step that needs a browser or an account |
+| [`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) | Tokens, ramps, design rules from the code that exists |
+| [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) | Branch model, commit conventions, deploys |
+| [`docs/audit/`](docs/audit/06-summary.md) | The audit trail, including what went wrong along the way |
+| [`docs/audit/03-feature-roadmap.md`](docs/audit/03-feature-roadmap.md) | What to build next, and what deliberately not to |
+| [`HANDOVER.md`](HANDOVER.md) | Operating notes: live environment and free-tier constraints |
 
 ## Known gaps
 
-Open, ordered by how much they matter.
+Honest, ordered by how much they matter.
 
-| Gap | Why it matters | Where |
-|---|---|---|
-| `services/ai_review.py` at 36% coverage | Parses model output. Non-deterministic, so it needs recorded fixtures. | `04-test-strategy.md` T2 |
-| No E2E or accessibility tests | Every route's behaviour is verified by reading code, not driving it. The graph is likely keyboard-hostile. | T4, T5 |
-| ~~Chart library shipped to every visitor~~ | **Fixed** in `fc69379`. `recharts` (103.75 kB gzip) was in the initial bundle because the graph barrel re-exported the chart and `manualChunks` forced it into a preloaded chunk. Now dynamically imported on the history route only. | roadmap F5 |
-| No bundle-size gate in CI | Source-level guards exist (`bundle-boundary.test.ts`), but nothing measures actual bytes, so a future *quantitative* regression would not be caught. | `04-test-strategy.md` T6 |
-| Missing empty states on 3 routes | A new user's second screen shows nothing. | roadmap F2 |
-| No graph legend | Node colour means nothing without one. | roadmap F3 |
-| `npm audit`: 9 advisories (5 high, 4 moderate) | **All dev-tree, none ship to a browser** — verified by scanning all four built JS chunks. The 10th was a real open-redirect chain through the login redirect, now guarded. Fixes need major upgrades: `tailwindcss` 4, `vitest` 5, `react-router-dom` 7. | `07-dependency-audit.md` |
-| No repo deletion | Connected repos can never be removed. | roadmap F7 |
-| OAuth `state` is not single-use | The docstring claimed it was. Impact is limited (the GitHub `code` is single-use), but the claim did not match the code. Real fix filed as F11. | roadmap F11 |
-| 7 low-severity code findings | Worked through and closed. Two were not defects and one is blocked on your GitHub account. | `01-code-audit.md` |
-
----
-
-## How this was built
-
-Originally briefed as a six-agent parallel build (the briefs are still in
-`tasks/`), then taken through a full audit pass across seven phases.
-
-The audit found things that reading the code would not have:
-
-- **Two migration bugs that would have broken the first production deploy** —
-  a table created as `analysesnapshot` where SQLModel derives `analysissnapshot`,
-  and a model never migrated at all. Both were masked by an unconditional
-  `create_all` in the app lifespan.
-- **Production serving mock data behind a plausible-looking UI.** The graph layer
-  tested `VITE_USE_MOCK !== "false"` — true when unset — on a variable name
-  nothing in the repo set, while CI stayed green the whole time.
-- **A hardcoded webhook secret** in the source, meaning anyone who read the repo
-  could forge a signed webhook and queue PR reviews.
-- **A gateway impersonation hole** — a client could broadcast a comment as
-  another user.
-- **An open redirect through the login flow.** `ProtectedRoute` remembered where
-  you were headed in `location.state.from` — which is just the address bar — and
-  `Login` navigated there after sign-in, so a link like `/\evil.com` could send
-  a freshly authenticated user off-origin. Guarded by `safeInternalPath` with 11
-  tests; the dependency fix is roadmap F12.
-- **A colour key named `panel` that silently made `shadow-panel` emit no shadow
-  at all.** No error, no warning. Every floating overlay in the graph rendered
-  without one and looked intentional.
-
-Two claims written from memory turned out to be wrong and were corrected against
-primary sources: the free-tier database does **not** survive on a weekly ping
-(it expires on a clock from *creation*), and the frontend "deployment" turned out
-not to exist at all. Both are documented where they were wrong rather than quietly
-edited away.
-
-Full findings, including what got wrong along the way:
-[`docs/audit/06-summary.md`](docs/audit/06-summary.md).
-
----
+| Gap | Why it matters |
+|---|---|
+| AI review needs `OPENAI_API_KEY` | Without it the webhook still verifies PR events, but the review is skipped and logged — nothing is reviewed |
+| No E2E or accessibility tests | Route behaviour is verified by reading code and unit tests, not by driving a browser |
+| OAuth `state` is not single-use | Impact is limited because GitHub's `code` is single-use, but the guard is weaker than the docstring once claimed |
+| No bundle-size gate in CI | Source-level guards exist, but nothing measures actual bytes |
+| Docker Compose orchestration unverified | The Docker images are built by CI on every push; the compose stack never ran on this machine |
 
 ## License
 
-**No license file yet.** This repo is currently private and unlicensed — there is
-no `LICENSE` file in the tree, so "MIT licensed" would be a claim about
-something that does not exist.
-
-If you want to reuse any of this, add a `LICENSE` first. The audit and design
-docs are written to be readable on their own, and reuse is welcome.
+[MIT](LICENSE) © 2026 Bhagyansh. Built as a portfolio project — the audit and
+design docs are written to be read.

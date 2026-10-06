@@ -1,64 +1,38 @@
-# Running 6 agents on one repo without them colliding
+# Git workflow
 
-**Never point 6 OpenCode sessions at the same folder at the same time.** Two
-agents editing the same working directory simultaneously will overwrite each
-other's uncommitted changes — this is a filesystem, not a merge tool.
+How this repository is managed. The short version: small commits, one area per
+commit, everything green before it lands.
 
-The fix is one repo, six **git worktrees** — each is a separate folder on disk
-checked out to its own branch, all pointing at the same underlying `.git`
-history. Every agent gets an isolated folder to work in, but they all share
-the same `AGENTS.md`, `CONTRACTS.md`, and `STATUS.md` once they pull `master`.
+## Branch model
 
-## One-time setup
+- `master` is the only long-lived branch and is what deploys. Both Render
+  (backend) and Vercel (frontend) auto-deploy from it.
+- Feature work happens on a short-lived branch, then merges into `master` via a
+  pull request. PRs run the CI workflow before they can merge.
+- Never commit secrets, `.env` files, `node_modules/` or `__pycache__/` (see
+  `.gitignore`).
 
-```bash
-cd codeatlas          # your main clone, on branch `master`
-bash setup_worktrees.sh
-```
+## Commit conventions
 
-This creates:
+- Commit messages follow `<area>: <short description>`, e.g.
+  `backend: add repo model` or `frontend: render snapshot health colors`.
+- One logical change per commit. If a change touches an API shape, update
+  `CONTRACTS.md` in the same commit.
+- Keep `master` deployable at every commit: run the checks in `README.md`
+  before pushing if the change touches runtime code.
 
-```
-../codeatlas-agent1-backend      (branch: agent-1-backend)
-../codeatlas-agent2-ai           (branch: agent-2-ai)
-../codeatlas-agent3-frontend     (branch: agent-3-frontend)
-../codeatlas-agent4-ui-ux        (branch: agent-4-ui-ux)
-../codeatlas-agent5-realtime     (branch: agent-5-realtime)
-../codeatlas-agent6-devops       (branch: agent-6-devops)
-```
+## Pull requests
 
-## Running the 6 sessions
+- Open the PR against `master`. CI runs three jobs: backend (lint, format,
+  mypy, pytest with coverage), frontend (typecheck, eslint, vitest) and a
+  Docker build of the backend image.
+- Do not merge a PR with red CI. The merge should be a clean, ideally
+  squash-merged change so `master` history stays readable.
 
-Open 6 terminal tabs. In each one:
+## Deploys
 
-```bash
-cd ../codeatlas-agent1-backend   # (or agent2, agent3, ... — one per tab)
-opencode
-```
+| Commit → | Target |
+|---|---|
+| `master` push | Render rebuilds the Docker backend (migrations run on boot), Vercel rebuilds the SPA |
 
-Then paste the matching prompt from `docs/KICKOFF_PROMPTS.md` into that
-session.
-
-## Keeping everyone in sync
-
-Contracts and status only help if everyone reads the latest version. A few
-times a day (or whenever an agent reports something in `STATUS.md` that
-affects others), from your main clone:
-
-```bash
-git checkout master && git pull
-# for each worktree that needs the update:
-cd ../codeatlas-agent3-frontend && git merge master
-```
-
-This is manual on purpose for a solo-person project — it gives you (the
-human) a natural checkpoint to skim `STATUS.md` and catch conflicts early,
-instead of six agents silently diverging for days.
-
-## Merging back to the default branch
-
-Agents open PRs from their branch; they do not merge themselves (rule in
-`AGENTS.md`). The **DevOps & QA Lead (Agent 6)** is the one who reviews and
-merges PRs into the default branch, resolving any contract mismatches using
-`CONTRACTS.md` as the tiebreaker. As the human, you're the final approver —
-skim each PR before it merges, especially early on.
+There are no other change paths into production.

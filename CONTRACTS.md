@@ -1,14 +1,14 @@
 # CONTRACTS.md — v0.2 (living document)
 
-This is the single source of truth for shapes every agent codes against.
-**Edit this file the moment you change any of these** — and say so in
-`STATUS.md`. Anyone who built against the old shape needs to know.
+This is the single source of truth for the shapes the frontend and backend code
+against. **Edit this file the moment you change any of them.** Anyone who built
+against the old shape needs to know.
 
 > **v0.2 corrects v0.1 in several places.** Where v0.1 was wrong about the live
 > server, that is now stated below rather than quietly fixed. The changes that
 > would break an existing consumer are listed in the change log.
 
-## Core data models (owned by Agent 1)
+## Core data models
 
 ```
 User        { id, email, github_username, created_at }
@@ -33,7 +33,7 @@ AiReviewRow { id, repo_id, pr_number, risk_score, summary, flags, updated_files,
 | `Comment.x` / `.y` | unlabelled | Normalised `0..1` fractions of the canvas, **not** pixels. A pin therefore survives a resize and a zoom change, and the gateway rejects non-finite coordinates. |
 | `AnalysisSnapshot.files` | `[ FileNode ]` | Correct. Stored as JSON per snapshot, so historical snapshots each carry their own file set — which is what makes snapshot diffing possible later. |
 
-## REST API surface (owned by Agent 1, consumed by Agents 2, 3, 4, 6)
+## REST API surface
 
 | Method | Path | Purpose |
 |---|---|---|
@@ -46,8 +46,8 @@ AiReviewRow { id, repo_id, pr_number, risk_score, summary, flags, updated_files,
 | DELETE | `/repos/{id}` | **New in v0.3.** Disconnect a repo; snapshots, comments and reviews cascade-delete |
 | GET | `/repos/{id}/snapshots/latest` | Latest analysis snapshot (the graph data) |
 | GET | `/repos/{id}/snapshots/history` | Trend data for charts |
-| POST | `/repos/{id}/analyze` | Trigger a manual re-analysis (Agent 2's job) |
-| POST | `/webhooks/github` | GitHub PR webhook receiver → triggers Agent 2's review pipeline |
+| POST | `/repos/{id}/analyze` | Trigger a manual re-analysis |
+| POST | `/webhooks/github` | GitHub PR webhook receiver → triggers the AI review pipeline |
 | GET/POST | `/repos/{id}/comments` | List / create comment pins |
 | GET | `/openapi.json` | OpenAPI schema. **This is the deploy health check path** — there is no `/health` route. |
 
@@ -89,7 +89,7 @@ trend endpoint, because it is chart data and the file set can be large.
   `Referrer-Policy`, `Strict-Transport-Security`) are on every response, and
   HTTP rate limiting returns **429** past the threshold.
 
-## AI review output shape (owned by Agent 2, consumed by Agent 1 + Agent 4)
+## AI review output shape
 
 ```json
 {
@@ -104,7 +104,7 @@ trend endpoint, because it is chart data and the file set can be large.
 Persisted as `AiReviewRow` above. With no `OPENAI_API_KEY` set, the orchestrator
 **skips the review and logs an explicit warning** rather than failing the run.
 
-## WebSocket events (owned by Agent 5, consumed by Agent 4)
+## WebSocket events
 
 | Event | Direction | Payload |
 |---|---|---|
@@ -131,13 +131,13 @@ Persisted as `AiReviewRow` above. With no `OPENAI_API_KEY` set, the orchestrator
   jitter window is applied to each value, so a retry is never exactly on the
   nominal delay.
 
-## Frontend route map (owned by Agent 3, consumed by Agent 4)
+## Frontend route map
 
 ```
 /                       → public landing page. INDEXABLE.
 /login                  → GitHub sign-in + OAuth callback handler. INDEXABLE.
 /dashboard              → list of connected repos          noindex
-/repos/:id              → the live graph (Agent 4's component mounts here)  noindex
+/repos/:id              → the live graph                    noindex
 /repos/:id/history      → trend charts                    noindex
 *                       → 404                             noindex
 ```
