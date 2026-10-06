@@ -255,6 +255,58 @@ class TestPublishHelpersAreCalled:
         assert node.imports == ["src/b.py"]
 
     @pytest.mark.asyncio
+    async def test_analyze_broadcast_failure_does_not_mark_analyze_failed(
+        self, db_session: Session
+    ) -> None:
+        """A failed snapshot:updated broadcast must not set last_analyze_error.
+
+        Regression: the publish ran inside the error-recording try, so the
+        first live analyze persisted a good snapshot and then stored
+        "ws pub/sub hub is not configured" as its last_analyze_error, showing
+        a red failure banner next to a healthy map.
+        """
+        user = create_user(db_session)
+        repo = create_repo(db_session, user)
+        repo.last_analyze_error = "stale error from a previous run"
+        db_session.add(repo)
+        db_session.commit()
+
+        fake_snapshot = schemas.AnalysisSnapshot(
+            overall_health_score=71.0, files=[]
+        )
+
+        with (
+            patch(
+                "app.services.orchestrator._resolve_repo_and_token",
+                return_value=(repo, "tok"),
+            ),
+            patch(
+                "app.services.orchestrator._ensure_checkout",
+                return_value="/tmp/checkout",
+            ),
+            patch(
+                "app.services.orchestrator._pure_analyze",
+                return_value=fake_snapshot,
+            ),
+            patch("app.services.orchestrator.Session") as mock_session,
+            patch(
+                "app.services.orchestrator.publish_snapshot_updated",
+                new=AsyncMock(side_effect=RuntimeError("hub down")),
+            ),
+        ):
+            mock_session.return_value.__enter__.return_value = db_session
+            await analyze_repo(repo.id)
+
+        row = db_session.exec(
+            select(AnalysisSnapshot).where(AnalysisSnapshot.repo_id == repo.id)
+        ).one()
+        assert row.overall_health_score == 71.0
+        # The success path cleared the stale error, and the broadcast failure
+        # must not have re-set it.
+        db_session.refresh(repo)
+        assert repo.last_analyze_error is None
+
+    @pytest.mark.asyncio
     async def test_review_publishes_review_new(self, db_session: Session) -> None:
         from app.services.schemas import AiReview
 

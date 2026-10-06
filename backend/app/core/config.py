@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # Bump on every deploy that changes the runtime behaviour. Surfaced via
     # `/openapi.json` (info.version) so an operator can confirm which build is
     # live without dashboard access.
-    APP_VERSION: str = "2026.10.06.6"
+    APP_VERSION: str = "2026.10.06.7"
     SECRET_KEY: str
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
@@ -79,8 +79,11 @@ class Settings(BaseSettings):
     # See docs/audit/01-code-audit.md finding C1.
     GITHUB_WEBHOOK_SECRET: str | None = None
 
-    # Redis for the realtime gateway (see backend/app/ws/pubsub.py)
-    REDIS_URL: str = "redis://localhost:6379/0"
+    # Redis for the realtime gateway (see backend/app/ws/pubsub.py). Empty
+    # means "no Redis" and the app uses the in-process hub, which is correct
+    # for a single-instance deployment (Render free has no managed Redis and
+    # the blueprint sets no REDIS_URL). Set it to use cross-instance pub/sub.
+    REDIS_URL: str = ""
 
     # AI PR review (services/ai_review.py). Both optional: without a key the
     # review is skipped with a logged reason instead of raising at import.

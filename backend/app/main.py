@@ -26,12 +26,18 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     # let a wrong table name in 0001_initial go unnoticed for so long.
     from app.core.db import engine
     from app.core.schema import ensure_schema
+    from app.ws.pubsub import configure_hub
 
     ensure_schema(engine)
     # Bind the persistent comment store. init_runtime() leaves the in-memory
     # DummyCommentStore bound when called with no argument, so comments posted
     # from the graph were broadcast to other viewers and then dropped.
     init_runtime(SqlCommentStore())
+    # The pub/sub hub has to exist before anything publishes or a socket
+    # connects, or get_hub() raises RuntimeError and the first analyze marks
+    # itself failed at the broadcast step. No REDIS_URL -> in-process hub,
+    # which is right for a single instance; set REDIS_URL to fan out.
+    configure_hub(in_memory=not settings.REDIS_URL, redis_url=settings.REDIS_URL)
     yield
 
 

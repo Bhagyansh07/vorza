@@ -113,12 +113,19 @@ async def analyze_repo(repo_id: uuid.UUID) -> None:
 
         _clear_analyze_error(repo_id)
 
-        # Tell every open graph about the new snapshot. This is the only place
-        # the event could come from, and it had no caller -- so `snapshot:updated`
-        # was declared in CONTRACTS.md and in app.ws.events but never emitted.
-        await publish_snapshot_updated(
-            str(repo_id), db_snapshot.model_dump(mode="json")
-        )
+        # Tell every open graph about the new snapshot. The broadcast is a
+        # nicety, not the success signal: the snapshot is already committed, so
+        # a failed publish must not fall into the error handler and overwrite
+        # the cleared last_analyze_error with a red banner over a good map.
+        try:
+            await publish_snapshot_updated(
+                str(repo_id), db_snapshot.model_dump(mode="json")
+            )
+        except Exception:
+            logger.exception(
+                "orchestrator.analyze_repo(%s): snapshot:updated broadcast failed",
+                repo_id,
+            )
 
         logger.info(
             "orchestrator.analyze_repo(%s): done (health=%.1f, files=%d)",
@@ -188,10 +195,17 @@ async def review_pull_request(repo_id: uuid.UUID, pr_number: int) -> None:
             review.risk_score,
         )
 
-        # Broadcast the review. Same story as snapshot:updated: the helper
-        # existed, was exported, and had no caller, so ReviewBanner could never
-        # fire no matter how long the webhook took to run.
-        await publish_review_new(str(repo_id), review.model_dump(mode="json"))
+        # Broadcast the review. Same rule as the snapshot broadcast: the review
+        # row is already committed, so a publish failure is logged, not raised
+        # into the exception handlers that would blame the AI provider.
+        try:
+            await publish_review_new(str(repo_id), review.model_dump(mode="json"))
+        except Exception:
+            logger.exception(
+                "orchestrator.review_pull_request(%s, #%s): review:new broadcast failed",
+                repo_id,
+                pr_number,
+            )
     except RepoCheckoutError as exc:
         logger.error(
             "orchestrator.review_pull_request(%s, #%s): %s", repo_id, pr_number, exc

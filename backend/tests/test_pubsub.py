@@ -7,7 +7,31 @@ from typing import Any
 import pytest
 
 from app.ws import publish_comment_new, publish_review_new, publish_snapshot_updated
-from app.ws.pubsub import InMemoryPubSubBackend, PubSubHub, channel_for, reset_hub
+from app.ws.pubsub import (
+    InMemoryPubSubBackend,
+    PubSubHub,
+    channel_for,
+    get_hub,
+    reset_hub,
+)
+
+
+def test_lifespan_configures_the_pubsub_hub() -> None:
+    """Regression: the hub was never configured at startup.
+
+    main's lifespan only called init_runtime(); nothing called
+    configure_hub(), so get_hub() raised RuntimeError on the first real
+    publish and the first analyze stored that RuntimeError as its error.
+    """
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    reset_hub()  # prove lifespan is what re-establishes the hub
+    with TestClient(app):
+        hub = get_hub()
+    assert hub is not None
+    assert hub.backend is not None
 
 
 @pytest.mark.asyncio
