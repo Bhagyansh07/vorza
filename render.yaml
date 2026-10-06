@@ -84,7 +84,13 @@ services:
     # alembic.ini live; the paths below are relative to the context.
     dockerContext: ./backend
     dockerfilePath: ./Dockerfile
-    dockerCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # Run migrations before the app takes traffic. `preDeployCommand` below is
+    # the primary hook, but a service created by hand before this blueprint
+    # existed does not honour it, so the runtime command applies pending
+    # migrations itself. Both paths are idempotent: `alembic upgrade head` on
+    # an already-current database is a no-op, and schema.py keeps a fresh
+    # database stamped so the two never collide.
+    dockerCommand: sh -c "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port $PORT"
 
     # `preDeployCommand` runs against the *new* release before it takes
     # traffic, so a failing migration stops the deploy instead of booting an

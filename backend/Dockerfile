@@ -22,4 +22,8 @@ RUN pip install --no-cache-dir .
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Apply pending Alembic migrations before serving. Render overrides this with
+# its own dockerCommand (also migration-first), but the Dockerfile stays
+# correct for anyone running the image directly. ${PORT:-8000} picks up the
+# port Render injects while defaulting to 8000 outside Render.
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
