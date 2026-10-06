@@ -221,3 +221,18 @@ Exposed: Nothing new on the wire.
 Blocked on: nothing.
 Next: confirm deploy, verify CORS from all aliases, then finish live E2E +
 product-map.png + final report.
+
+### [Prod-Complete Agent] 2026-10-06 Analyze never produced a snapshot on Render
+Did: User logged in on live site (login now works), connected clauseit + SWARM,
+but every POST /repos/{id}/analyze ended with no snapshot -> UI stuck on
+"Map unavailable" / Health -analyzing with only a backend log line. Root cause:
+backend/Dockerfile is python:3.13-slim, which ships NO git, and
+services/pipeline._ensure_checkout clones repos with git clone. So the
+background analyze silently failed on Render (orchestrator logs only).
+Verified locally: the exact pipeline (git clone with gh token + pure analyze)
+produces health=67.36 / 78 files for Bhagyansh07/clauseit. Fix: install git in
+the Docker image. Also fixed the en-dash "–" health placeholder in GraphView
+(side task T-70x). Redep1oyed; needs one manual "Re-analyze" click to verify.
+Exposed: nothing new on the wire.
+Blocked on: nothing; waiting on user click to confirm snapshot lands in Neon.
+Next: verify snapshot row in Neon after user re-clicks Analyze; then final report.

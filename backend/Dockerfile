@@ -5,7 +5,15 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /backend
 
-# Install dependencies first for better layer caching
+# Install dependencies first for better layer caching.
+#
+# git is NOT present in python:3.13-slim, and services/pipeline.py clones
+# connected repos to disk so the analyzer has a durable checkout. Without
+# it every POST /repos/{id}/analyze failed silently (the orchestrator only
+# logs) and no snapshot was ever created.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
 COPY pyproject.toml alembic.ini ./
 COPY app ./app
 COPY scripts ./scripts

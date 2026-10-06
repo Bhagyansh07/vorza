@@ -162,7 +162,7 @@ export function GraphView({
 
         <StatBadge
           label="Health"
-          value={model.snapshot ? `${Math.round(model.snapshot.overall_health_score)}` : "–"}
+          value={model.snapshot ? `${Math.round(model.snapshot.overall_health_score)}` : "-"}
           tone={model.snapshot ? healthTone(model.snapshot.overall_health_score) : "bad"}
           sub={model.snapshot ? healthLabel(model.snapshot.overall_health_score) : "analyzing"}
         />
