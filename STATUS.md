@@ -204,3 +204,20 @@ gracefully by design.
 Next: Push to master, CI + Vercel deploy, re-point aliases, register GitHub
 webhooks, capture the real graph screenshot for the landing hero, full live E2E
 audit, then final report.
+
+### [Prod-Complete Agent] 2026-10-06 GitHub connect fix
+Did: User reported "connect with GitHub" not working. Root cause: backend CORS
+allowlist was only settings.FRONTEND_HOST (frontend-bhagyansh.vercel.app), so
+the login grant fetch from every other alias (vorza-app, getvorza, vorza-sigma)
+was CORS-blocked and "Continue with GitHub" failed before reaching GitHub.
+Verified OAuth itself is healthy: authorize URL builds, GitHub accepts the
+registered redirect_uri (probe showed the GitHub sign-in page), and the code
+exchange returns GitHub's "code incorrect or expired" for a garbage code,
+which proves GITHUB_CLIENT_SECRET is valid. Fix: added CORS_ORIGINS setting
+(aliases, comma-separated, default) + allow_origin_regex for vorza-<hash>-
+bhagyansh.vercel.app preview URLs. Also re-pointed vorza-app/getvorza/
+frontend-bhagyansh aliases to the current deployment.
+Exposed: Nothing new on the wire.
+Blocked on: nothing.
+Next: confirm deploy, verify CORS from all aliases, then finish live E2E +
+product-map.png + final report.

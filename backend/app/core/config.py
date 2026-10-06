@@ -21,6 +21,17 @@ class Settings(BaseSettings):
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     FRONTEND_HOST: str = "http://localhost:5173"
+    # Browser origins allowed to call the API in addition to FRONTEND_HOST.
+    # GitHub OAuth starts with the login grant fetch from the browser, so any
+    # origin that serves the app must be here or "Continue with GitHub" fails
+    # with a CORS-blocked request before the user ever reaches GitHub.
+    # Comma-separated; keep in sync with docs/DESIGN_SYSTEM.md.
+    CORS_ORIGINS: str = (
+        "https://vorza-app.vercel.app,"
+        "https://getvorza.vercel.app,"
+        "https://vorza-sigma.vercel.app,"
+        "https://vorza-bhagyansh.vercel.app"
+    )
     FASTAPI_ENV: Literal["development", "production"] | None = None
 
     # Optional so the free Render/boilerplate tier works without a managed

@@ -47,9 +47,21 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# CORS. FRONTEND_HOST plus the product's aliases and deployment hosts.
+# GitHub OAuth starts with the login grant fetch from the browser, so an
+# origin serving the app that is missing from this list gets CORS-blocked and
+# "Continue with GitHub" never reaches GitHub. Keep CORS_ORIGINS in
+# app/core/config.py in sync with the live domains.
+_cors_origins = [
+    settings.FRONTEND_HOST,
+    *(origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()),
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_HOST],
+    allow_origins=_cors_origins,
+    # Preview/deployment URLs (vorza-<hash>-bhagyansh.vercel.app) rotate per
+    # deploy; a regex keeps previews working without editing the allowlist.
+    allow_origin_regex=r"^https://vorza-[a-z0-9]+-bhagyansh\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
