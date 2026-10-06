@@ -41,7 +41,7 @@ app = FastAPI(
         "Vorza backend \u2014 GitHub OAuth, repo management, analysis "
         "snapshots, comment pins and PR webhooks."
     ),
-    version="0.1.0",
+    version=settings.APP_VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     generate_unique_id_function=custom_generate_unique_id,
     lifespan=lifespan,

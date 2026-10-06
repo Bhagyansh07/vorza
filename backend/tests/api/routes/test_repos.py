@@ -11,7 +11,7 @@ from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.models.repo import Repo
 from app.models.snapshot import AnalysisSnapshot
@@ -45,11 +45,13 @@ def test_connect_repo_returns_public_shape_not_raw_orm(
         "github_full_name",
         "default_branch",
         "connected_at",
+        "last_analyze_error",
     }
     assert body["github_full_name"] == "octocat/Hello-World"
     # The metadata default_branch wins over the RepoCreate default.
     assert body["default_branch"] == "trunk"
     assert body["connected_at"] is not None
+    assert body["last_analyze_error"] is None
 
 
 def test_connect_repo_rejects_duplicate(
@@ -125,6 +127,108 @@ def test_list_repos_is_newest_first_and_scoped_to_the_owner(
 
 def test_list_repos_requires_auth(client: TestClient) -> None:
     assert client.get("/repos").status_code == 401
+
+
+def test_list_github_repos_returns_picker_shape(
+    client: TestClient, db_session: Session
+) -> None:
+    """GET /github/repos powers the connect picker with a small projection."""
+    user = create_user(db_session, github_access_token="tok")
+    payload = [
+        {
+            "full_name": "octocat/Hello-World",
+            "private": False,
+            "default_branch": "trunk",
+            "description": "My example repo",
+            "language": "Python",
+            "updated_at": "2026-09-01T12:00:00Z",
+        },
+        {
+            "full_name": "octocat/secret",
+            "private": True,
+            "default_branch": "main",
+            "description": None,
+            "language": None,
+            "updated_at": None,
+        },
+    ]
+
+    with patch(
+        "app.api.routes.repos.fetch_user_repos",
+        new=AsyncMock(return_value=payload),
+    ):
+        response = client.get("/github/repos", headers=auth_headers(user))
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert [r["full_name"] for r in body] == [
+        "octocat/Hello-World",
+        "octocat/secret",
+    ]
+    assert set(body[0]) == {
+        "full_name",
+        "private",
+        "default_branch",
+        "description",
+        "language",
+        "updated_at",
+    }
+    assert body[1] == {
+        "full_name": "octocat/secret",
+        "private": True,
+        "default_branch": "main",
+        "description": None,
+        "language": None,
+        "updated_at": None,
+    }
+
+
+def test_list_github_repos_requires_a_github_token(
+    client: TestClient, db_session: Session
+) -> None:
+    user = create_user(db_session, github_access_token="")
+    response = client.get("/github/repos", headers=auth_headers(user))
+    assert response.status_code == 401
+
+
+def test_list_github_repos_requires_auth(client: TestClient) -> None:
+    assert client.get("/github/repos").status_code == 401
+
+
+def test_disconnect_repo_deletes_it_and_cascades(
+    client: TestClient, db_session: Session
+) -> None:
+    """DELETE /repos/{id} removes the repo and its snapshots in one go."""
+    user = create_user(db_session)
+    repo = create_repo(db_session, user)
+    db_session.add(AnalysisSnapshot(repo_id=repo.id, overall_health_score=90.0))
+    db_session.commit()
+
+    response = client.delete(
+        f"/repos/{repo.id}", headers=auth_headers(user)
+    )
+
+    assert response.status_code == 204, response.text
+    assert client.get("/repos", headers=auth_headers(user)).json()["count"] == 0
+    snapshot_count = db_session.exec(
+        select(AnalysisSnapshot).where(AnalysisSnapshot.repo_id == repo.id)
+    ).all()
+    assert snapshot_count == []
+
+
+def test_disconnect_someone_elses_repo_is_a_404(
+    client: TestClient, db_session: Session
+) -> None:
+    owner = create_user(db_session)
+    intruder = create_user(db_session)
+    repo = create_repo(db_session, owner)
+
+    response = client.delete(
+        f"/repos/{repo.id}", headers=auth_headers(intruder)
+    )
+
+    assert response.status_code == 404
+    assert client.get("/repos", headers=auth_headers(owner)).json()["count"] == 1
 
 
 def test_list_comments_newest_first_with_public_shape(

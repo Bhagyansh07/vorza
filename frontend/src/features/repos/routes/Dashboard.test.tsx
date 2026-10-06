@@ -48,7 +48,7 @@ describe('Dashboard', () => {
     renderDashboard();
 
     await user.click(screen.getByRole('button', { name: /connect repo/i }));
-    await user.type(await screen.findByLabelText(/repository/i), 'octocat/hello');
+    await user.type(await screen.findByLabelText(/owner\/repo/i), 'octocat/hello');
     await user.click(screen.getByRole('button', { name: /^connect$/i }));
 
     expect(await screen.findByText('octocat/hello')).toBeInTheDocument();

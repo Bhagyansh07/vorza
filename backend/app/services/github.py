@@ -236,9 +236,49 @@ async def fetch_repo_metadata(
     return cast("dict[str, Any]", resp.json())
 
 
-# ---------------------------------------------------------------------------
-# Webhook helpers
-# ---------------------------------------------------------------------------
+async def fetch_user_repos(access_token: str) -> list[dict[str, Any]]:
+    """List GitHub repos the authenticated user can access, newest first.
+
+    Used by the connect picker (`GET /github/repos`). Returns a small
+    projection of each repo: enough to search and display, nothing that Vorza
+    does not need. Raises ``GithubOAuthError`` on failure.
+    """
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(
+            f"{GITHUB_API_BASE}/user/repos",
+            params={
+                "affiliation": "owner,collaborator",
+                "sort": "updated",
+                "per_page": 100,
+            },
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Accept": "application/json",
+            },
+            timeout=15,
+        )
+    if resp.status_code >= 400:
+        raise GithubOAuthError(
+            f"GitHub repo listing failed ({resp.status_code})"
+        )
+    data: Any = resp.json()
+    if not isinstance(data, list):
+        raise GithubOAuthError("Unexpected GitHub response for repo listing")
+    repos: list[dict[str, Any]] = []
+    for item in data:
+        if not isinstance(item, dict) or not item.get("full_name"):
+            continue
+        repos.append(
+            {
+                "full_name": item["full_name"],
+                "private": bool(item.get("private")),
+                "default_branch": str(item.get("default_branch") or "main"),
+                "description": (item.get("description") or "")[:200],
+                "language": item.get("language"),
+                "updated_at": item.get("updated_at"),
+            }
+        )
+    return repos
 
 
 def verify_webhook_signature(

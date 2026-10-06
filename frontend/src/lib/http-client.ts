@@ -4,6 +4,7 @@ import type {
   AnalysisSnapshot,
   AnalyzeQueuedResponse,
   CommentPin,
+  GithubRepoLite,
   ListEnvelope,
   Repo,
   SnapshotSummary,
@@ -92,6 +93,15 @@ export const httpApiClient: ApiClient = {
   async connectRepo(input: ConnectRepoInput): Promise<Repo> {
     const { data } = await http.post<Repo>('/repos', input);
     return data;
+  },
+
+  async listGithubRepos(): Promise<GithubRepoLite[]> {
+    const { data } = await http.get<GithubRepoLite[]>('/github/repos');
+    return data;
+  },
+
+  async deleteRepo(repoId: string | number): Promise<void> {
+    await http.delete(`/repos/${repoId}`);
   },
 
   async getLatestSnapshot(

@@ -24,6 +24,7 @@ import uuid
 from sqlmodel import Session
 
 from app.core.db import engine
+from app.models.repo import Repo
 from app.models.snapshot import AiReviewRow
 from app.models.snapshot import AnalysisSnapshot as AnalysisSnapshotRow
 from app.models.snapshot import FileNode as FileNodeRow
@@ -43,6 +44,35 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------
 # Analyze (POST /repos/{repo_id}/analyze background task)
 # ------------------------------------------------------------------
+
+
+def _record_analyze_error(repo_id: uuid.UUID, message: str) -> None:
+    """Persist why the latest analyze attempt failed for the UI to surface."""
+    try:
+        with Session(engine) as session:
+            repo = session.get(Repo, repo_id)
+            if repo is not None:
+                repo.last_analyze_error = message[:1000]
+                session.add(repo)
+                session.commit()
+    except Exception:
+        logger.exception(
+            "orchestrator: could not record analyze error for %s", repo_id
+        )
+
+
+def _clear_analyze_error(repo_id: uuid.UUID) -> None:
+    try:
+        with Session(engine) as session:
+            repo = session.get(Repo, repo_id)
+            if repo is not None and repo.last_analyze_error:
+                repo.last_analyze_error = None
+                session.add(repo)
+                session.commit()
+    except Exception:
+        logger.exception(
+            "orchestrator: could not clear analyze error for %s", repo_id
+        )
 
 
 async def analyze_repo(repo_id: uuid.UUID) -> None:
@@ -74,6 +104,8 @@ async def analyze_repo(repo_id: uuid.UUID) -> None:
             session.commit()
             session.refresh(db_snapshot)
 
+        _clear_analyze_error(repo_id)
+
         # Tell every open graph about the new snapshot. This is the only place
         # the event could come from, and it had no caller -- so `snapshot:updated`
         # was declared in CONTRACTS.md and in app.ws.events but never emitted.
@@ -89,8 +121,11 @@ async def analyze_repo(repo_id: uuid.UUID) -> None:
         )
     except RepoCheckoutError as exc:
         logger.error("orchestrator.analyze_repo(%s): %s", repo_id, exc)
-    except Exception:
+        _record_analyze_error(repo_id, f"Checkout failed: {exc}")
+    except Exception as exc:
         logger.exception("orchestrator.analyze_repo(%s): unexpected error", repo_id)
+        detail = f"{type(exc).__name__}: {exc}" if str(exc) else "Unexpected analysis error"
+        _record_analyze_error(repo_id, detail)
 
 
 # ------------------------------------------------------------------

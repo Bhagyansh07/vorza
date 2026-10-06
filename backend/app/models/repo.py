@@ -20,6 +20,10 @@ def _validate_full_name(value: str) -> str:
 class RepoBase(SQLModel):
     github_full_name: str = Field(max_length=255)
     default_branch: str = Field(default="main", max_length=255)
+    # Set when the most recent analysis attempt failed, cleared on the next
+    # success. Exposed on RepoPublic so the UI can say *why* the map is missing
+    # instead of sitting on "no snapshot yet" forever.
+    last_analyze_error: str | None = Field(default=None, max_length=1000)
 
     @field_validator("github_full_name")
     @classmethod
@@ -64,3 +68,19 @@ class RepoPublic(RepoBase):
 class ReposPublic(SQLModel):
     data: list[RepoPublic]
     count: int
+
+
+class GitHubRepoLite(SQLModel):
+    """One entry of the `GET /github/repos` connect picker.
+
+    A deliberately small projection of GitHub's `/user/repos` payload: enough
+    for the UI to list, search and connect a repo, nothing that Vorza does not
+    need. `updated_at` stays a raw ISO string; the UI formats it.
+    """
+
+    full_name: str
+    private: bool = False
+    default_branch: str = "main"
+    description: str | None = None
+    language: str | None = None
+    updated_at: str | None = None

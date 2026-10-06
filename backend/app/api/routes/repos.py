@@ -1,13 +1,16 @@
+import uuid
+
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
-from app.api.deps import CurrentUser, SessionDep
+from app.api.deps import CurrentUser, SessionDep, get_owned_repo
 from app.core.sql import order_desc
-from app.models.repo import Repo, RepoCreate, RepoPublic, ReposPublic
+from app.models.repo import GitHubRepoLite, Repo, RepoCreate, RepoPublic, ReposPublic
 from app.services.github import (
     GithubOAuthError,
     GithubRepoNotFound,
     fetch_repo_metadata,
+    fetch_user_repos,
 )
 
 router = APIRouter(tags=["repos"])
@@ -73,3 +76,47 @@ def list_repos(session: SessionDep, current_user: CurrentUser) -> ReposPublic:
         data=[RepoPublic.model_validate(r, from_attributes=True) for r in repos],
         count=len(repos),
     )
+
+
+@router.get("/github/repos", response_model=list[GitHubRepoLite])
+async def list_github_repos(
+    current_user: CurrentUser,
+) -> list[GitHubRepoLite]:
+    """List the current user's GitHub repos, for the connect picker.
+
+    Repos already connected are still returned; the client marks them as
+    "connected" against its own /repos list. Raises 401 when no GitHub token is
+    stored (the user signed in without completing OAuth) and 400 when GitHub
+    rejects the listing.
+    """
+    if not current_user.github_access_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Connect via GitHub login first",
+        )
+    try:
+        repos = await fetch_user_repos(current_user.github_access_token)
+    except GithubOAuthError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+    return [GitHubRepoLite.model_validate(repo) for repo in repos]
+
+
+@router.delete(
+    "/repos/{repo_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def disconnect_repo(
+    repo_id: uuid.UUID,
+    session: SessionDep,
+    current_user: CurrentUser,
+) -> None:
+    """Disconnect a repo and delete its snapshots, comments and reviews.
+
+    Cascade is enforced at the DB level (ondelete="CASCADE"), so deleting the
+    row is sufficient while remaining a single transaction.
+    """
+    repo = get_owned_repo(session, repo_id, current_user)
+    session.delete(repo)
+    session.commit()

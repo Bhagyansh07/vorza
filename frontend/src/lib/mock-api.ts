@@ -10,6 +10,7 @@ import type {
   AnalysisSnapshot,
   CommentPin,
   FileNode,
+  GithubRepoLite,
   Repo,
   SnapshotSummary,
   User,
@@ -106,6 +107,41 @@ const mockComments: CommentPin[] = [
   },
 ];
 
+const mockGithubRepos: GithubRepoLite[] = [
+  {
+    full_name: 'facebook/react',
+    private: false,
+    default_branch: 'main',
+    description: 'The library for web and native user interfaces.',
+    language: 'JavaScript',
+    updated_at: '2026-09-28T10:00:00Z',
+  },
+  {
+    full_name: 'axios/axios',
+    private: false,
+    default_branch: 'v1.x',
+    description: 'Promise based HTTP client for the browser and node.js.',
+    language: 'JavaScript',
+    updated_at: '2026-09-20T08:00:00Z',
+  },
+  {
+    full_name: 'vitejs/vite',
+    private: false,
+    default_branch: 'main',
+    description: 'Next generation frontend tooling.',
+    language: 'TypeScript',
+    updated_at: '2026-09-15T12:00:00Z',
+  },
+  {
+    full_name: 'Vorza-dev/private-lab',
+    private: true,
+    default_branch: 'master',
+    description: 'Private experiments.',
+    language: 'Python',
+    updated_at: '2026-08-30T09:00:00Z',
+  },
+];
+
 export const mockApiClient: ApiClient = {
   async loginWithGitHubCode(
     _input: LoginWithGitHubCodeInput
@@ -145,6 +181,19 @@ export const mockApiClient: ApiClient = {
     };
     mockRepos.push(repo);
     return repo;
+  },
+
+  async listGithubRepos(): Promise<GithubRepoLite[]> {
+    await delay();
+    return [...mockGithubRepos];
+  },
+
+  async deleteRepo(repoId: string | number): Promise<void> {
+    await delay();
+    const index = mockRepos.findIndex((r) => String(r.id) === String(repoId));
+    if (index >= 0) {
+      mockRepos.splice(index, 1);
+    }
   },
 
   async getLatestSnapshot(

@@ -2,6 +2,7 @@ import type {
   AnalysisSnapshot,
   AnalyzeQueuedResponse,
   CommentPin,
+  GithubRepoLite,
   Repo,
   SnapshotSummary,
   User,
@@ -13,6 +14,7 @@ export type {
   AnalyzeQueuedResponse,
   CommentPin,
   FileNode,
+  GithubRepoLite,
   ListEnvelope,
   Repo,
   SnapshotSummary,
@@ -86,6 +88,10 @@ export interface ApiClient {
   // repos
   listRepos(): Promise<Repo[]>;
   connectRepo(input: ConnectRepoInput): Promise<Repo>;
+  /** Repos from the user's GitHub account, for the connect picker. */
+  listGithubRepos(): Promise<GithubRepoLite[]>;
+  /** Disconnect a repo; snapshots/comments/reviews cascade-delete. */
+  deleteRepo(repoId: string | number): Promise<void>;
 
   // snapshots / analysis
   getLatestSnapshot(repoId: string | number): Promise<AnalysisSnapshot>;

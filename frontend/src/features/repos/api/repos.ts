@@ -5,6 +5,7 @@ import type {
   CommentPin,
   ConnectRepoInput,
   CreateCommentInput,
+  GithubRepoLite,
   Repo,
   SnapshotSummary,
 } from '@/lib/api-types';
@@ -17,6 +18,14 @@ export function listConnectedRepos(): Promise<Repo[]> {
 
 export function connectNewRepo(input: ConnectRepoInput): Promise<Repo> {
   return api.connectRepo(input);
+}
+
+export function listGithubRepos(): Promise<GithubRepoLite[]> {
+  return api.listGithubRepos();
+}
+
+export function deleteConnectedRepo(repoId: string | number): Promise<void> {
+  return api.deleteRepo(repoId);
 }
 
 export function fetchLatestSnapshot(

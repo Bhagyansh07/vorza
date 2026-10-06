@@ -138,7 +138,26 @@ export function RepoDetail() {
         ) : snapshot.isError ? (
           <Card className="sm:col-span-3">
             <CardContent className="py-4 text-sm text-muted-foreground">
-              Latest snapshot isn't ready yet, so there is nothing to compare.
+              {repo?.last_analyze_error ? (
+                <div className="flex flex-col items-start gap-2">
+                  <p className="font-medium text-foreground">
+                    The last analysis didn't complete
+                  </p>
+                  <p className="max-w-2xl">{repo.last_analyze_error}</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-1"
+                    onClick={runAnalysis}
+                    disabled={analyzeRepo.isPending}
+                  >
+                    <RefreshCcw />
+                    Try again
+                  </Button>
+                </div>
+              ) : (
+                "Latest snapshot isn't ready yet, so there is nothing to compare."
+              )}
             </CardContent>
           </Card>
         ) : snapshot.data ? (

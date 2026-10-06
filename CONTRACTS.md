@@ -12,7 +12,8 @@ This is the single source of truth for shapes every agent codes against.
 
 ```
 User        { id, email, github_username, created_at }
-Repo        { id, owner_id, github_full_name, connected_at, default_branch }
+Repo        { id, owner_id, github_full_name, connected_at, default_branch,
+              last_analyze_error }  # null until the latest analyze attempt failed
 AnalysisSnapshot {
   id, repo_id, created_at,
   files: [ FileNode ],
@@ -41,6 +42,8 @@ AiReviewRow { id, repo_id, pr_number, risk_score, summary, flags, updated_files,
 | GET | `/me` | Current user |
 | POST | `/repos` | Connect a new GitHub repo |
 | GET | `/repos` | List connected repos |
+| GET | `/github/repos` | **New in v0.3.** List the user's GitHub repos for the connect picker (small projection of `GET /user/repos`) |
+| DELETE | `/repos/{id}` | **New in v0.3.** Disconnect a repo; snapshots, comments and reviews cascade-delete |
 | GET | `/repos/{id}/snapshots/latest` | Latest analysis snapshot (the graph data) |
 | GET | `/repos/{id}/snapshots/history` | Trend data for charts |
 | POST | `/repos/{id}/analyze` | Trigger a manual re-analysis (Agent 2's job) |

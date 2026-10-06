@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     # verbatim (e.g. `/repos`, `/me`).
     API_V1_STR: str = ""
     PROJECT_NAME: str = "Vorza"
+    # Bump on every deploy that changes the runtime behaviour. Surfaced via
+    # `/openapi.json` (info.version) so an operator can confirm which build is
+    # live without dashboard access.
+    APP_VERSION: str = "2026.10.06.4"
     SECRET_KEY: str
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8

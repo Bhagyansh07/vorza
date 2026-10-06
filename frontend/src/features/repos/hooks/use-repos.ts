@@ -11,16 +11,19 @@ import type {
   CommentPin,
   ConnectRepoInput,
   CreateCommentInput,
+  GithubRepoLite,
   Repo,
   SnapshotSummary,
 } from '@/lib/api-types';
 
 import {
   connectNewRepo,
+  deleteConnectedRepo,
   fetchComments,
   fetchLatestSnapshot,
   fetchSnapshotHistory,
   listConnectedRepos,
+  listGithubRepos,
   postComment,
   triggerAnalysis,
 } from '@/features/repos/api/repos';
@@ -34,6 +37,7 @@ export const queryKeys = {
     ['repos', String(repoId), 'snapshots', 'history'] as const,
   repoComments: (repoId: string | number) =>
     ['repos', String(repoId), 'comments'] as const,
+  githubRepos: ['github', 'repos'] as const,
 };
 
 export function useRepos(): UseQueryResult<Repo[]> {
@@ -57,12 +61,46 @@ export function useConnectRepo(): UseMutationResult<
   });
 }
 
+export function useGithubRepos(): UseQueryResult<GithubRepoLite[]> {
+  return useQuery({
+    queryKey: queryKeys.githubRepos,
+    queryFn: listGithubRepos,
+  });
+}
+
+export function useDeleteRepo(): UseMutationResult<
+  void,
+  Error,
+  string | number
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteConnectedRepo,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.repos });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.githubRepos });
+    },
+  });
+}
+
 export function useLatestSnapshot(
   repoId: string | number | undefined
 ): UseQueryResult<AnalysisSnapshot> {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: queryKeys.repoSnapshot(repoId ?? ''),
-    queryFn: () => fetchLatestSnapshot(repoId as string | number),
+    queryFn: async () => {
+      try {
+        return await fetchLatestSnapshot(repoId as string | number);
+      } catch (error) {
+        // While the snapshot is missing, keep the connected-repo row in sync
+        // too: the backend records WHY the latest analysis failed on
+        // Repo.last_analyze_error, and refreshing the list surfaces that
+        // reason in the "Map unavailable" state.
+        void queryClient.invalidateQueries({ queryKey: queryKeys.repos });
+        throw error;
+      }
+    },
     enabled: repoId !== undefined,
     // Until the first snapshot exists the endpoint 404s and the page sits on
     // "Map unavailable" with no way to learn the analyze task finished (the
@@ -90,7 +128,10 @@ export function useAnalyzeRepo(
   return useMutation({
     mutationFn: () => triggerAnalysis(repoId),
     onSuccess: () => {
+      // Refresh the repo row (clears/stale-picks last_analyze_error) and let
+      // the snapshot poll pick up the new map.
       void queryClient.invalidateQueries({ queryKey: queryKeys.repo(repoId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.repos });
     },
   });
 }

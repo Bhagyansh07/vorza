@@ -20,6 +20,24 @@ export interface Repo {
   github_full_name: string;
   connected_at: string;
   default_branch: string;
+  /**
+   * Set when the most recent analysis attempt failed, cleared on the next
+   * success. `null` when there is nothing to report.
+   */
+  last_analyze_error?: string | null;
+}
+
+/**
+ * One entry of the `GET /github/repos` connect picker — a small projection
+ * of the user's GitHub repos (see CONTRACTS.md REST API surface).
+ */
+export interface GithubRepoLite {
+  full_name: string;
+  private: boolean;
+  default_branch: string;
+  description: string | null;
+  language: string | null;
+  updated_at: string | null;
 }
 
 /** `FileNode` in CONTRACTS.md. */
