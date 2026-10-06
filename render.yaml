@@ -59,11 +59,15 @@ services:
       - key: GITHUB_WEBHOOK_SECRET
         sync: false
       # Optional. With no key the orchestrator skips AI review and logs an
-      # explicit warning instead of failing the run.
+      # explicit warning instead of failing the run. Any OpenAI-compatible
+      # provider works: set OPENAI_BASE_URL to its /v1 base (e.g. Groq
+      # https://api.groq.com/openai/v1) and OPENAI_MODEL to its model id.
       - key: OPENAI_API_KEY
         sync: false
       - key: OPENAI_MODEL
         value: gpt-4o-mini
+      - key: OPENAI_BASE_URL
+        sync: false
       # Must match the frontend origin exactly: CORS here is an explicit
       # allowlist, and this also builds GITHUB_OAUTH_CALLBACK_URL as
       # "{FRONTEND_HOST}/login". Update it to the new Vercel URL before

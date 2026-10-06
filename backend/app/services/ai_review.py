@@ -96,7 +96,13 @@ class OpenAIReviewClient:
         if self._client is None:
             if not self.api_key:
                 raise LLMError("OPENAI_API_KEY is not set")
-            self._client = OpenAI(api_key=self.api_key)
+            # base_url lets any OpenAI-compatible endpoint stand in for the
+            # OpenAI API (Groq, GitHub Models, OpenRouter, ...), so a free or
+            # self-hosted provider works with no code change -- see
+            # settings.OPENAI_BASE_URL.
+            self._client = OpenAI(
+                api_key=self.api_key, base_url=settings.OPENAI_BASE_URL or None
+            )
         return self._client
 
     def chat_json(self, *, system: str, user: str) -> tuple[str, LlmUsage]:

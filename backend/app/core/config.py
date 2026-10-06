@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # Bump on every deploy that changes the runtime behaviour. Surfaced via
     # `/openapi.json` (info.version) so an operator can confirm which build is
     # live without dashboard access.
-    APP_VERSION: str = "2026.10.06.7"
+    APP_VERSION: str = "2026.10.06.8"
     SECRET_KEY: str
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
@@ -89,6 +89,13 @@ class Settings(BaseSettings):
     # review is skipped with a logged reason instead of raising at import.
     OPENAI_API_KEY: str | None = None
     OPENAI_MODEL: str = "gpt-4o-mini"
+    # OpenAI-compatible endpoint for the review LLM. Empty means the default
+    # OpenAI API. Set it to a free provider's OpenAI-compatible base URL (Groq:
+    # https://api.groq.com/openai/v1, GitHub Models:
+    # https://models.github.ai/inference, OpenRouter:
+    # https://openrouter.ai/api/v1) and point OPENAI_MODEL at that provider's
+    # model. The client is the openai SDK either way.
+    OPENAI_BASE_URL: str = ""
 
     # Persistent repo checkouts for analysis (see services/pipeline.py)
     REPO_CHECKOUTS_DIR: str = str(
