@@ -88,7 +88,7 @@ export function RepoCard({ repo }: RepoCardProps) {
           Connected {formatDate(repo.connected_at)}
         </Badge>
         {repo.last_analyze_error ? (
-          <p className="text-xs text-amber-600 dark:text-amber-400">
+          <p className="text-xs text-signal-warn">
             Last analysis failed — open the map to retry.
           </p>
         ) : null}
