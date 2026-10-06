@@ -24,7 +24,16 @@ function shortPath(path: string): string {
   return i === -1 ? path : path.slice(i + 1);
 }
 
+/** "src/core/engine.ts:12-14" chip text, or bare path when no lines given. */
+function citeText(flag: ReviewResult["flags"][number]): string {
+  if (flag.line_start != null && flag.line_end != null) {
+    return `${shortPath(flag.file)}:${flag.line_start}${flag.line_end === flag.line_start ? "" : `-${flag.line_end}`}`;
+  }
+  return shortPath(flag.file);
+}
+
 export function ReviewBanner({ review, onJump, onDismiss }: Props) {
+  const dropped = review.dropped_flags ?? 0;
   return (
     <div className="pointer-events-auto w-[22rem] rounded-stem border border-line bg-surface shadow-panel">
       <header className="flex items-center gap-2 border-b border-line/60 px-4 py-2.5">
@@ -53,7 +62,7 @@ export function ReviewBanner({ review, onJump, onDismiss }: Props) {
           <ul className="mt-3 flex flex-col gap-2">
             {review.flags.map((flag) => (
               <li
-                key={`${flag.file}-${flag.note}`}
+                key={`${flag.file}-${flag.line_start ?? 0}-${flag.note}`}
                 className="rounded-stem border border-line/60 bg-raised/40 px-3 py-2"
               >
                 <div className="flex items-center gap-2">
@@ -69,7 +78,7 @@ export function ReviewBanner({ review, onJump, onDismiss }: Props) {
                     className="truncate font-mono text-[11px] text-ink transition-colors hover:text-primary"
                     title={flag.file}
                   >
-                    {shortPath(flag.file)}
+                    {citeText(flag)}
                   </button>
                 </div>
                 <p className="mt-1 text-[11px] leading-relaxed text-ink-dim">
@@ -78,6 +87,12 @@ export function ReviewBanner({ review, onJump, onDismiss }: Props) {
               </li>
             ))}
           </ul>
+        )}
+
+        {dropped > 0 && (
+          <p className="mt-2 font-mono text-[10px] text-ink-faint">
+            {dropped} finding{dropped === 1 ? "" : "s"} dropped: not in the diff
+          </p>
         )}
 
         {review.updated_files.length > 0 && (

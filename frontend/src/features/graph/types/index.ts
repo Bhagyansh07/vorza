@@ -61,8 +61,11 @@ export interface ReviewResult {
     file: string;
     severity: "low" | "medium" | "high";
     note: string;
+    line_start?: number;
+    line_end?: number;
   }>;
   updated_files: string[];
+  dropped_flags?: number;
 }
 
 export interface GraphNode {

@@ -111,12 +111,17 @@ export interface AiReviewResult {
   summary: string;
   flags: AiReviewFlag[];
   updated_files: string[];
+  /** Server-computed: findings dropped because the file was not in the diff. */
+  dropped_flags?: number;
 }
 
 export interface AiReviewFlag {
   file: string;
   severity: 'low' | 'medium' | 'high';
   note: string;
+  /** Optional; validated against the diff's hunks before persistence. */
+  line_start?: number;
+  line_end?: number;
 }
 
 /** Health tone derived from a 0-100 health score. Uses the health.* design tokens. */

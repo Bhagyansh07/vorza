@@ -103,13 +103,18 @@ export class MockRealtimeSource implements RealtimeSource {
               file: "src/core/engine.ts",
               severity: "high",
               note: "A mutex now guards every snapshot write; consider a lock-free ring buffer.",
+              line_start: 12,
+              line_end: 14,
             },
             {
               file: "src/lib/http.ts",
               severity: "medium",
               note: "Retry loop re-enters after backoff exhaustion; cap total attempts at 5.",
+              line_start: 41,
+              line_end: 42,
             },
           ],
+          dropped_flags: 1,
           updated_files: [
             "src/core/engine.ts",
             "src/lib/http.ts",
