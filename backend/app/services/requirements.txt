@@ -1,6 +1,0 @@
-# Dependencies for the analysis + AI review services (Agent 2's lane).
-# Consumed by Agent 6 when assembling the backend image/venv.
-# NOTE: only pydantic is needed for tests — `openai` is imported lazily and
-# only required at runtime when the real PR review endpoints are used.
-pydantic>=2.9
-openai>=1.50
