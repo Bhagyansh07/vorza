@@ -224,7 +224,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-svh items-center justify-center bg-background px-4">
+    <main className="flex min-h-svh items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md border-border shadow-panel">
         <CardHeader className="items-center text-center">
           <LogoMark className="mb-3 h-9 w-9 text-primary" />
@@ -296,6 +296,6 @@ export function LoginPage() {
           ) : null}
         </CardFooter>
       </Card>
-    </div>
+    </main>
   );
 }
