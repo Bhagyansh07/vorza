@@ -23,7 +23,8 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, select
 
 from app.models.comment import Comment
-from app.models.snapshot import AnalysisSnapshot
+from app.models.snapshot import AnalysisSnapshot, FileNode
+from app.services import schemas
 from app.services.orchestrator import analyze_repo, review_pull_request
 from app.ws.comment_store import SqlCommentStore
 from tests.utils.user import auth_headers, create_repo, create_user
@@ -191,6 +192,67 @@ class TestPublishHelpersAreCalled:
         assert publish.await_args is not None
         assert publish.await_args.args[0] == str(repo.id)
         assert "overall_health_score" in publish.await_args.args[1]
+
+    @pytest.mark.asyncio
+    async def test_analyze_persists_file_nodes_as_json(self, db_session: Session) -> None:
+        """FileNode values land in the JSON column as dicts, not model objects.
+
+        Regression: the orchestrator stored FileNode *models* in the JSON
+        column and the first non-empty live analyze on Postgres failed with
+        "TypeError: Object of type FileNode is not JSON serializable". Every
+        earlier test used files=[], which serializes fine and hid the bug.
+        """
+        user = create_user(db_session)
+        repo = create_repo(db_session, user)
+
+        # Mirror what the real _pure_analyze returns: a domain schema snapshot.
+        fake_snapshot = schemas.AnalysisSnapshot(
+            overall_health_score=88.0,
+            files=[
+                schemas.FileNode(
+                    path="src/a.py",
+                    loc=42,
+                    complexity_score=10.0,
+                    churn_score=5.0,
+                    health_score=90.0,
+                    imports=["src/b.py"],
+                )
+            ],
+        )
+
+        with (
+            patch(
+                "app.services.orchestrator._resolve_repo_and_token",
+                return_value=(repo, "tok"),
+            ),
+            patch(
+                "app.services.orchestrator._ensure_checkout",
+                return_value="/tmp/checkout",
+            ),
+            patch(
+                "app.services.orchestrator._pure_analyze",
+                return_value=fake_snapshot,
+            ),
+            patch("app.services.orchestrator.Session") as mock_session,
+            patch(
+                "app.services.orchestrator.publish_snapshot_updated",
+                new=AsyncMock(),
+            ),
+        ):
+            mock_session.return_value.__enter__.return_value = db_session
+            # Raises TypeError pre-fix: FileNode is not JSON serializable.
+            await analyze_repo(repo.id)
+
+        row = db_session.exec(
+            select(AnalysisSnapshot).where(AnalysisSnapshot.repo_id == repo.id)
+        ).one()
+        assert row.overall_health_score == 88.0
+        assert len(row.files) == 1
+        # Accept either a dict (raw JSON column) or a coerced FileNode.
+        stored = row.files[0]
+        node = stored if isinstance(stored, FileNode) else FileNode.model_validate(stored)
+        assert node.path == "src/a.py"
+        assert node.imports == ["src/b.py"]
 
     @pytest.mark.asyncio
     async def test_review_publishes_review_new(self, db_session: Session) -> None:

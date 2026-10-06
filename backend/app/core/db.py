@@ -28,7 +28,7 @@ if str(settings.DATABASE_URL).startswith("sqlite"):
     from sqlalchemy import event
 
     @event.listens_for(engine, "connect")
-    def _enable_sqlite_foreign_keys(dbapi_connection, _connection_record) -> None:
+    def _enable_sqlite_foreign_keys(dbapi_connection: Any, _connection_record: Any) -> None:
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()

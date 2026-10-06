@@ -38,9 +38,11 @@ class AnalysisSnapshot(AnalysisSnapshotBase, table=True):
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),
     )
-    # Stored as plain dicts (FileNode.model_dump()); pydantic coerces them
-    # back to FileNode on the way out. See CONTRACTS.md Core data models.
-    files: list[FileNode] = Field(default_factory=list, sa_column=Column(JSON))
+    # Stored as plain dicts (FileNode.dict / model_dump()); the API boundary
+    # (AnalysisSnapshotPublic.files: list[FileNode]) coerces them back to
+    # FileNode on the way out. The type is dicts here because the JSON column
+    # serializes with json.dumps and pydantic models are not JSON serializable.
+    files: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
 
 
 class AnalysisSnapshotPublic(AnalysisSnapshotBase):

@@ -96,9 +96,16 @@ async def analyze_repo(repo_id: uuid.UUID) -> None:
                 overall_health_score=snapshot.overall_health_score,
                 # Two FileNode types exist on purpose: services.schemas is the
                 # DB-free domain shape, models.snapshot is the JSON column type.
-                # Convert at this boundary rather than relying on either side to
-                # coerce, so a field added to one and not the other fails here.
-                files=[FileNodeRow.model_validate(f) for f in snapshot.files],
+                # Validate at this boundary so a field added to one and not the
+                # other fails here -- then store the *dumped dicts*, not the
+                # FileNode objects. The JSON column serializes with json.dumps
+                # and pydantic models are not JSON serializable; storing the
+                # models made every non-empty analyze fail on Postgres with
+                # "TypeError: Object of type FileNode is not JSON serializable".
+                files=[
+                    FileNodeRow.model_validate(f).model_dump(mode="json")
+                    for f in snapshot.files
+                ],
             )
             session.add(db_snapshot)
             session.commit()
