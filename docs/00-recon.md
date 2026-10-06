@@ -16,7 +16,7 @@ Audience: a 4th-year student's portfolio piece that has to survive a 60-second
 look by a recruiter (`README.md:45-54`), plus engineers who want a fast read on
 an unfamiliar repo.
 
-Live: frontend https://frontend-bhagyansh.vercel.app (Vercel), backend
+Live: frontend https://vorza-sigma.vercel.app (Vercel), backend
 https://codeatlas-qr0e.onrender.com (Render), Postgres on Neon. The GitHub repo
 is still named `codeatlas` and is **private**.
 

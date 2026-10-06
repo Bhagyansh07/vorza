@@ -9,7 +9,7 @@ review with a risk score.
 
 | Thing | Where |
 |---|---|
-| App | https://frontend-bhagyansh.vercel.app |
+| App | https://vorza-sigma.vercel.app (older `frontend-bhagyansh.vercel.app` serves a stale build — do not link it) |
 | API | https://codeatlas-qr0e.onrender.com |
 | OpenAPI | https://codeatlas-qr0e.onrender.com/openapi.json (also the deploy health check) |
 | Repository | https://github.com/Bhagyansh07/codeatlas |

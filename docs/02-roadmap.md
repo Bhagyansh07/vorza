@@ -14,7 +14,7 @@ during Phase 0/1.
 
 | F-item | Status | Evidence |
 | --- | --- | --- |
-| F1 deploy end-to-end | **done** | live: frontend-bhagyansh.vercel.app, codeatlas-qr0e.onrender.com, Neon Postgres |
+| F1 deploy end-to-end | **done** | live: vorza-sigma.vercel.app (frontend), codeatlas-qr0e.onrender.com, Neon Postgres |
 | F2 empty states that teach | **done** | `components/empty/EmptyState.tsx`, `graph/components/StateViews.tsx:66`, used at `RepoDetail.tsx:100`, `GraphView.tsx:204` |
 | F3 graph legend | **done** | `GraphLegend.tsx` imports thresholds from `lib/health-thresholds.ts` (single source) |
 | F4 analysis feedback | **done** | button pending state + disabled (`RepoDetail.tsx:124-126`), queued toast, `last_analyze_error` surface (`:141`), `snapshot:updated` socket refresh |

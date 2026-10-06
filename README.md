@@ -8,7 +8,7 @@ that need attention are the ones that look wrong. Teammates see each other's
 cursors on the same canvas, comments pin to exact spots on the graph, and every
 new pull request gets an AI review with a risk score before it merges.
 
-> **Live:** [app](https://frontend-bhagyansh.vercel.app) · [API](https://codeatlas-qr0e.onrender.com) · [OpenAPI](https://codeatlas-qr0e.onrender.com/openapi.json) · [source](https://github.com/Bhagyansh07/codeatlas)
+> **Live:** [app](https://vorza-sigma.vercel.app) · [API](https://codeatlas-qr0e.onrender.com) · [OpenAPI](https://codeatlas-qr0e.onrender.com/openapi.json) · [source](https://github.com/Bhagyansh07/codeatlas)
 
 ![Vorza map](/product-map.png)
 
