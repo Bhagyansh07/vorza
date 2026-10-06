@@ -64,6 +64,12 @@ export function useLatestSnapshot(
     queryKey: queryKeys.repoSnapshot(repoId ?? ''),
     queryFn: () => fetchLatestSnapshot(repoId as string | number),
     enabled: repoId !== undefined,
+    // Until the first snapshot exists the endpoint 404s and the page sits on
+    // "Map unavailable" with no way to learn the analyze task finished (the
+    // realtime snapshot:updated event needs Redis, which the free Render tier
+    // does not have). Poll every few seconds while the snapshot is missing so
+    // "Analyze now" visibly flips the page to the map without a manual refresh.
+    refetchInterval: (query) => (query.state.data ? false : 4000),
   });
 }
 
