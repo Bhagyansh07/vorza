@@ -56,9 +56,7 @@ def _record_analyze_error(repo_id: uuid.UUID, message: str) -> None:
                 session.add(repo)
                 session.commit()
     except Exception:
-        logger.exception(
-            "orchestrator: could not record analyze error for %s", repo_id
-        )
+        logger.exception("orchestrator: could not record analyze error for %s", repo_id)
 
 
 def _clear_analyze_error(repo_id: uuid.UUID) -> None:
@@ -70,9 +68,7 @@ def _clear_analyze_error(repo_id: uuid.UUID) -> None:
                 session.add(repo)
                 session.commit()
     except Exception:
-        logger.exception(
-            "orchestrator: could not clear analyze error for %s", repo_id
-        )
+        logger.exception("orchestrator: could not clear analyze error for %s", repo_id)
 
 
 async def analyze_repo(repo_id: uuid.UUID) -> None:
@@ -138,7 +134,9 @@ async def analyze_repo(repo_id: uuid.UUID) -> None:
         _record_analyze_error(repo_id, f"Checkout failed: {exc}")
     except Exception as exc:
         logger.exception("orchestrator.analyze_repo(%s): unexpected error", repo_id)
-        detail = f"{type(exc).__name__}: {exc}" if str(exc) else "Unexpected analysis error"
+        detail = (
+            f"{type(exc).__name__}: {exc}" if str(exc) else "Unexpected analysis error"
+        )
         _record_analyze_error(repo_id, detail)
 
 

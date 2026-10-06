@@ -204,9 +204,7 @@ def test_disconnect_repo_deletes_it_and_cascades(
     db_session.add(AnalysisSnapshot(repo_id=repo.id, overall_health_score=90.0))
     db_session.commit()
 
-    response = client.delete(
-        f"/repos/{repo.id}", headers=auth_headers(user)
-    )
+    response = client.delete(f"/repos/{repo.id}", headers=auth_headers(user))
 
     assert response.status_code == 204, response.text
     assert client.get("/repos", headers=auth_headers(user)).json()["count"] == 0
@@ -223,9 +221,7 @@ def test_disconnect_someone_elses_repo_is_a_404(
     intruder = create_user(db_session)
     repo = create_repo(db_session, owner)
 
-    response = client.delete(
-        f"/repos/{repo.id}", headers=auth_headers(intruder)
-    )
+    response = client.delete(f"/repos/{repo.id}", headers=auth_headers(intruder))
 
     assert response.status_code == 404
     assert client.get("/repos", headers=auth_headers(owner)).json()["count"] == 1

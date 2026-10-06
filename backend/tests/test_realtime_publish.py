@@ -194,7 +194,9 @@ class TestPublishHelpersAreCalled:
         assert "overall_health_score" in publish.await_args.args[1]
 
     @pytest.mark.asyncio
-    async def test_analyze_persists_file_nodes_as_json(self, db_session: Session) -> None:
+    async def test_analyze_persists_file_nodes_as_json(
+        self, db_session: Session
+    ) -> None:
         """FileNode values land in the JSON column as dicts, not model objects.
 
         Regression: the orchestrator stored FileNode *models* in the JSON
@@ -250,7 +252,9 @@ class TestPublishHelpersAreCalled:
         assert len(row.files) == 1
         # Accept either a dict (raw JSON column) or a coerced FileNode.
         stored = row.files[0]
-        node = stored if isinstance(stored, FileNode) else FileNode.model_validate(stored)
+        node = (
+            stored if isinstance(stored, FileNode) else FileNode.model_validate(stored)
+        )
         assert node.path == "src/a.py"
         assert node.imports == ["src/b.py"]
 
@@ -271,9 +275,7 @@ class TestPublishHelpersAreCalled:
         db_session.add(repo)
         db_session.commit()
 
-        fake_snapshot = schemas.AnalysisSnapshot(
-            overall_health_score=71.0, files=[]
-        )
+        fake_snapshot = schemas.AnalysisSnapshot(overall_health_score=71.0, files=[])
 
         with (
             patch(

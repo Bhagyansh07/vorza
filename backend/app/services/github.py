@@ -258,9 +258,7 @@ async def fetch_user_repos(access_token: str) -> list[dict[str, Any]]:
             timeout=15,
         )
     if resp.status_code >= 400:
-        raise GithubOAuthError(
-            f"GitHub repo listing failed ({resp.status_code})"
-        )
+        raise GithubOAuthError(f"GitHub repo listing failed ({resp.status_code})")
     data: Any = resp.json()
     if not isinstance(data, list):
         raise GithubOAuthError("Unexpected GitHub response for repo listing")
