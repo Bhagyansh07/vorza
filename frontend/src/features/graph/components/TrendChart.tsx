@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import type { SnapshotHistoryPoint } from "../types";
 import { fetchSnapshotHistory } from "../api";
-import { healthColor } from "../lib/encoding";
+import { healthColor, healthFillLightness } from "../lib/encoding";
 import { formatDay } from "../lib/format";
 
 interface Props {
@@ -21,6 +21,7 @@ interface Props {
 type LoadState = "loading" | "success" | "error";
 
 export function TrendChart({ repoId, height = 320 }: Props) {
+  const fillLightness = healthFillLightness();
   const [points, setPoints] = useState<SnapshotHistoryPoint[]>([]);
   const [state, setState] = useState<LoadState>("loading");
   const [error, setError] = useState<string>();
@@ -116,13 +117,13 @@ export function TrendChart({ repoId, height = 320 }: Props) {
           >
             <defs>
               <linearGradient id="atlas-health" x1="0" y1="1" x2="0" y2="0">
-                <stop offset="0%" stopColor={healthColor(0)} />
-                <stop offset="50%" stopColor={healthColor(50)} />
-                <stop offset="100%" stopColor={healthColor(100)} />
+                <stop offset="0%" stopColor={healthColor(0, fillLightness)} />
+                <stop offset="50%" stopColor={healthColor(50, fillLightness)} />
+                <stop offset="100%" stopColor={healthColor(100, fillLightness)} />
               </linearGradient>
               <linearGradient id="atlas-area" x1="0" y1="1" x2="0" y2="0">
-                <stop offset="0%" stopColor={healthColor(0)} stopOpacity={0.02} />
-                <stop offset="100%" stopColor={healthColor(lastValue)} stopOpacity={0.18} />
+                <stop offset="0%" stopColor={healthColor(0, fillLightness)} stopOpacity={0.02} />
+                <stop offset="100%" stopColor={healthColor(lastValue, fillLightness)} stopOpacity={0.18} />
               </linearGradient>
             </defs>
             <CartesianGrid

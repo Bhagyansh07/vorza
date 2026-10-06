@@ -7,14 +7,17 @@
  * Tailwind theme maps onto them (see tailwind.config.ts). Never use a raw hex
  * or hsl value in a component; add a token here instead.
  *
- * The app is light-only by design: one theme, locked, no toggle, and no
- * `dark:` utility anywhere in src/. The palette is a cool neutral ramp with a
- * single enterprise blue accent and three status colours. Every step below is
- * contrast-checked against the surface it is used on (WCAG AA, 4.5:1 for body
- * text, 3:1 for graph axis strokes).
- *
- * Adding a dark mode later is a second block here plus a `.dark` class, not a
- * component rewrite, because components only reference theme classes.
+ * The app follows the OS theme: a light palette in `:root`, a dark palette in
+ * the `prefers-color-scheme: dark` block below. No `.dark` class and no
+ * `dark:` utility exists anywhere in src/ -- components only reference theme
+ * classes, so the flip is a pure token swap in this file. The palette is a
+ * cool neutral ramp with a single blue accent and three status colours.
+ * Every step is contrast-checked against the surface it is used on (WCAG AA,
+ * 4.5:1 for body text, 3:1 for graph axis strokes) in BOTH themes: the dark
+ * block lightens the accent so it carries dark text, lifts the status colours
+ * so they read as small text on a dark surface, and decouples
+ * `--destructive` from `--signal-bad` because buttons need white text while
+ * the signal colour needs surface contrast.
  */
 @layer base {
   :root {
@@ -100,6 +103,12 @@
     --complexity-medium: 40 100% 30%;
     --complexity-high: 356 72% 47%;
 
+    /* Graph node fill lightness. encoding.ts renders health nodes at this
+     * lightness instead of a hard-coded 50% so the same ramp reads on both
+     * canvases: 50% on the near-white light canvas, 58% on the dark canvas.
+     * The value is read at render time from this var. */
+    --health-fill-lightness: 50%;
+
     /* ---------------------------------------------------------------------
      * Shape. `stem` is Vorza's signature radius, applied to every floating
      * layer (comment bubbles, tooltips, the legend, chart cards) so overlay
@@ -112,6 +121,90 @@
      * then a soft ambient drop tinted with the ink hue, never pure black. */
     --shadow-panel: 0 1px 2px 0 hsl(222 25% 11% / 0.06),
       0 12px 28px -12px hsl(222 25% 11% / 0.2);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Dark palette. Same hues, same ramp meanings, flipped lightness. Set by the
+ * OS, so no toggle and no persisted preference exist. White text must never
+ * sit on --primary or a status colour here: they are lighter than their light
+ * theme selves and carry dark ink instead (see the accent note above).
+ *
+ * --destructive is deliberately NOT an alias of --signal-bad in dark: a
+ * destructive button fill must carry white text (~5.3:1), while signal-bad as
+ * small text on a dark surface needs a lighter red (~4.7:1). Two jobs, two
+ * lightnesses -- the same trick --primary uses against --primary-foreground.
+ * ------------------------------------------------------------------------- */
+@layer base {
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+
+      /* Surfaces: background is the canvas, surface lifts off it, raised is
+       * hover/nested, panel rides the same step as surface and separates via
+       * border + shadow (mirror of light, where panel and surface are both
+       * white). Hairlines sit a step above raised so they read as edges, not
+       * fills. */
+      --background: 222 24% 8%;
+      --surface: 222 20% 12%;
+      --raised: 222 17% 16%;
+      --panel: 222 20% 12%;
+      --line: 222 14% 24%;
+
+      /* Ink ramp flipped: foreground ~12.7:1 on surface, dim ~7.2:1, faint
+       * ~4.6:1 on raised (must stay legible on the lightest step it sits on). */
+      --foreground: 220 30% 94%;
+      --ink: 220 22% 88%;
+      --ink-dim: 220 13% 66%;
+      --ink-faint: 220 13% 58%;
+
+      /* Accent: 62% blue carries near-black ink at ~7.6:1; soft chip fill is
+       * a dark tinted blue that keeps text-primary at ~6.8:1. */
+      --primary: 212 94% 62%;
+      --primary-foreground: 222 40% 8%;
+      --primary-soft: 212 75% 17%;
+
+      /* Status: lifted so each reads as text on surface (good ~5:1, warn
+       * ~6.3:1, bad ~4.7:1). */
+      --signal-good: 143 66% 46%;
+      --signal-warn: 40 100% 52%;
+      --signal-bad: 356 68% 62%;
+
+      /* shadcn surface roles, aliased onto the ramp above */
+      --card: var(--surface);
+      --card-foreground: var(--ink);
+      --popover: var(--panel);
+      --popover-foreground: var(--ink);
+      --secondary: var(--raised);
+      --secondary-foreground: var(--ink);
+      --muted: var(--raised);
+      --muted-foreground: var(--ink-dim);
+      --accent: var(--raised);
+      --accent-foreground: var(--ink);
+      --border: var(--line);
+      --input: 222 14% 28%;
+      --ring: var(--primary);
+      --destructive: 356 74% 44%;
+      --destructive-foreground: 0 0% 100%;
+
+      /* health score ramp: FileNode.health_score 0-100 (alias of signal-*) */
+      --health-good: var(--signal-good);
+      --health-medium: var(--signal-warn);
+      --health-bad: var(--signal-bad);
+
+      /* complexity ramp: FileNode.complexity_score (node radius + fill hue) */
+      --complexity-low: 214 75% 62%;
+      --complexity-medium: 40 100% 55%;
+      --complexity-high: 356 74% 60%;
+
+      /* Graph node fill lightness for the dark canvas (see encoding.ts). */
+      --health-fill-lightness: 58%;
+
+      /* Floating-layer shadow: pure black with higher alpha (dark canvases
+       * hide grey-tinted ambient), the hairline border does most of the lift. */
+      --shadow-panel: 0 1px 2px 0 hsl(0 0% 0% / 0.5),
+        0 12px 28px -12px hsl(0 0% 0% / 0.7);
+    }
   }
 }
 

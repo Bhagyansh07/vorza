@@ -23,7 +23,23 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
-export function healthColor(health: number): string {
+/**
+ * Theme-aware lightness for graph fills, read from `--health-fill-lightness`
+ * in index.css (50% light / 58% dark). The graph canvas and legend card both
+ * sit on the theme's darkest surface, so a fixed 50% -- tuned for the
+ * near-white canvas -- reads flat on the dark one. Evaluated at call time
+ * (default argument) so no theme state has to thread through the renderer.
+ */
+export function healthFillLightness(): number {
+  if (typeof document === "undefined") return 50;
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue("--health-fill-lightness")
+    .trim();
+  const parsed = Number.parseFloat(raw);
+  return Number.isFinite(parsed) ? parsed : 50;
+}
+
+export function healthColor(health: number, lightness = 50): string {
   const h = clamp(health, 0, HEALTH_MAX);
   let hue: number;
   if (h <= 50) {
@@ -31,14 +47,17 @@ export function healthColor(health: number): string {
   } else {
     hue = lerp(38, 152, (h - 50) / 50);
   }
-  // Lightness is tuned for the light canvas the graph sits on: 56% (the dark
-  // theme's value) left nodes washed out against #fafbfc, and node fill is the
-  // only thing carrying the health value in the legend's gradient.
-  return `hsl(${hue} 62% 50%)`;
+  // Lightness defaults to the light-canvas value and is overridden per-theme
+  // via healthFillLightness(); node fill is the only thing carrying the health
+  // value in the legend's gradient, so it must hold contrast on both canvases.
+  return `hsl(${hue} 62% ${lightness}%)`;
 }
 
-export function healthFill(health: number): string {
-  return healthColor(health);
+export function healthFill(
+  health: number,
+  lightness: number = healthFillLightness(),
+): string {
+  return healthColor(health, lightness);
 }
 
 export type HealthTone = "good" | "warn" | "bad";
@@ -99,21 +118,22 @@ export interface LegendStop {
  * changes evenly.
  */
 export function legendStops(): LegendStop[] {
+  const lightness = healthFillLightness();
   return [
-    { health: 0, color: healthColor(0), label: healthLabel(0) },
+    { health: 0, color: healthColor(0, lightness), label: healthLabel(0) },
     {
       health: HEALTH_WARN_MIN,
-      color: healthColor(HEALTH_WARN_MIN),
+      color: healthColor(HEALTH_WARN_MIN, lightness),
       label: healthLabel(HEALTH_WARN_MIN),
     },
     {
       health: HEALTH_GOOD_MIN,
-      color: healthColor(HEALTH_GOOD_MIN),
+      color: healthColor(HEALTH_GOOD_MIN, lightness),
       label: healthLabel(HEALTH_GOOD_MIN),
     },
     {
       health: HEALTH_MAX,
-      color: healthColor(HEALTH_MAX),
+      color: healthColor(HEALTH_MAX, lightness),
       label: healthLabel(HEALTH_MAX),
     },
   ];

@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 export function Toaster({ className, ...props }: React.ComponentProps<typeof SonnerToaster>) {
   return (
     <SonnerToaster
-      theme="light"
+      theme="system"
       position="bottom-right"
       toastOptions={{
         classNames: {

@@ -36,7 +36,10 @@ import animate from 'tailwindcss-animate';
  * features/graph can stay translucent without a second token per step.
  */
 export default {
-  darkMode: ['class'],
+  // The theme flip is driven by `prefers-color-scheme` in index.css, not a
+  // `.dark` class -- there is no toggle. Kept as media so the config matches
+  // the mechanism; no `dark:` utility is ever used in src/.
+  darkMode: ['media'],
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
