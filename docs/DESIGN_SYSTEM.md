@@ -28,23 +28,35 @@ constants; changing a token and then regenerating keeps every format in lockstep
 
 ---
 
-## Light only
+## System preference: light and dark
 
-There is no dark theme. Verified, not assumed: **zero** `dark:` utilities exist
-in `src/`, `color-scheme: light` is set on `:root` and in `index.html`, and the
-`sonner` toaster is pinned to `theme="light"`. `darkMode: ['class']` is retained
-so a future dark theme has a hook, but nothing uses it.
+The app follows the OS theme. One token block in `index.css` defines the light
+palette on `:root`; a second block under `@media (prefers-color-scheme: dark)`
+flips every token. Verified, not assumed: **zero** `dark:` utilities exist in
+`src/`, components reference theme classes only, so the flip is a pure token
+swap in one file. `color-scheme` is `light` on `:root` and `dark` under the
+media query; `index.html` carries matching `color-scheme` and `theme-color`
+pairs; the `sonner` toaster is `theme="system"`; `tailwind.config.ts` sets
+`darkMode: ['media']`.
 
-This was a deliberate change, not an accident: on 2026-10-06 the app was
-re-skinned from dark-only-with-cyan-accent to a **light enterprise theme** --
-cool neutral ramp, single enterprise blue, Primer-style status colours, Geist
-Sans + Geist Mono Variable (self-hosted via fontsource). The health-status ramp,
-the graph node palette (`healthColor` renders at 50% lightness so it reads on a
-near-white canvas) and the brand assets were all retuned in the same pass, and
-the dashboard/graph health thresholds were unified to a single 70/45 pair in
-`src/lib/health-thresholds.ts`.
+Because both palettes must hold WCAG AA on their own surfaces, the dark block
+does not simply lighten the tokens: the accent is lifted to 62% lightness and
+carries **dark ink** (white fails AA on it), the status colours are lifted so
+they read as small text on a dark surface, and `--destructive` is decoupled
+from `--signal-bad` (a button fill must carry white text at ~5.9:1 while the
+signal colour needs ~4.8:1 as text on a surface -- two lightnesses). Graph
+fills (`healthColor` in `features/graph/lib/encoding.ts`) read their lightness
+from the `--health-fill-lightness` var: 50% on the near-white canvas, 58% on
+the dark canvas, evaluated at call time so no theme state threads through the
+renderer.
 
-Do not add `dark:` variants. If you need contrast that the ramp does not give
+The dark-with-cyan-accent theme this replaced was retired on 2026-10-06 along
+with the light re-skin; what remains is the same enterprise identity in both
+themes -- cool neutral ramp, single blue accent, Primer-style status colours,
+Geist Sans + Geist Mono Variable (self-hosted via fontsource) -- plus one
+70/45 health bound in `src/lib/health-thresholds.ts`.
+
+Do not add `dark:` variants. If you need contrast that the ramps do not give
 you, the answer is a new token, not a `dark:` prefix.
 
 ---
@@ -54,13 +66,13 @@ you, the answer is a new token, not a `dark:` prefix.
 Background to foreground, four steps plus a hairline. Each step exists because
 something needed it; do not add steps for one-off components.
 
-| Token | Value | Use |
-|---|---|---|
-| `--background` | `220 20% 98%` | Page backdrop, graph canvas |
-| `--surface` | `0 0% 100%` | Panels, cards, side panels, comment bubbles |
-| `--raised` | `220 16% 96%` | Hover/active, nested cards, tooltips |
-| `--panel` | `0 0% 100%` | Popovers, dropdowns, floating overlays |
-| `--line` | `220 13% 89%` | Hairline borders and separators |
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--background` | `220 20% 98%` | `222 24% 8%` | Page backdrop, graph canvas |
+| `--surface` | `0 0% 100%` | `222 20% 12%` | Panels, cards, side panels, comment bubbles |
+| `--raised` | `220 16% 96%` | `222 17% 16%` | Hover/active, nested cards, tooltips |
+| `--panel` | `0 0% 100%` | `222 20% 12%` | Popovers, dropdowns, floating overlays |
+| `--line` | `220 13% 89%` | `222 14% 24%` | Hairline borders and separators |
 
 > ### `--panel` is not a Tailwind colour
 >
@@ -78,12 +90,12 @@ something needed it; do not add steps for one-off components.
 
 ## Ink ramp
 
-| Token | Value | Use |
-|---|---|---|
-| `--foreground` | `222 25% 11%` | Headings, highest-emphasis text |
-| `--ink` | `222 18% 15%` | Body text on a surface |
-| `--ink-dim` | `220 10% 38%` | Labels, secondary copy (5.9:1 on white) |
-| `--ink-faint` | `220 7% 49%` | Placeholders, axis ticks (4.5:1 on white) |
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--foreground` | `222 25% 11%` | `220 30% 94%` | Headings, highest-emphasis text |
+| `--ink` | `222 18% 15%` | `220 22% 88%` | Body text on a surface |
+| `--ink-dim` | `220 10% 38%` | `220 13% 66%` | Labels, secondary copy (5.9:1 light / 6.8:1 dark) |
+| `--ink-faint` | `220 7% 49%` | `220 13% 58%` | Placeholders, axis ticks (4.5:1 light / 4.7:1 dark) |
 
 Four levels. If a piece of copy does not fit, it usually wants to be deleted
 rather than promoted to a new weight.
@@ -92,17 +104,18 @@ rather than promoted to a new weight.
 
 ## Accent
 
-| Token | Value |
-|---|---|
-| `--primary` | `212 87% 44%` |
-| `--primary-foreground` | `0 0% 100%` |
-| `--primary-soft` | `213 85% 95%` |
+| Token | Light | Dark |
+|---|---|---|
+| `--primary` | `212 87% 44%` | `212 94% 62%` |
+| `--primary-foreground` | `0 0% 100%` | `222 40% 8%` |
+| `--primary-soft` | `213 85% 95%` | `212 80% 20%` |
 
-Enterprise blue (≈ `#0e6ad2`), the single accent for the whole product. It was
-chosen so that `--primary` carries white text at 5.2:1 **and** -- like the cyan
-it replaced -- sits on a hue no status colour occupies: the health ramp is
-green/amber/red and the complexity ramp is blue/amber/red, so a focus ring or a
-selection state can never be mistaken for a health signal.
+Enterprise blue (≈ `#0e6ad2`), the single accent for the whole product. In
+light it carries white text at 5.2:1; in dark the same blue is lifted to 62%
+and carries near-black ink at ~6.4:1 (white fails AA on a lighter blue). Both
+sit on a hue no status colour occupies: the health ramp is green/amber/red and
+the complexity ramp is blue/amber/red, so a focus ring or a selection state can
+never be mistaken for a health signal.
 
 `--primary-soft` is a tinted chip fill. Pair it with `text-primary`; never use it
 as a standalone text colour.
@@ -117,17 +130,21 @@ as a standalone text colour.
 Three canonical colours. These are the only three that mean "good / at risk /
 critical".
 
-| Token | Value | Meaning | Threshold |
-|---|---|---|---|
-| `--signal-good` | `143 72% 29%` | healthy | `health_score >= 70` |
-| `--signal-warn` | `40 100% 30%` | at risk | `45 <= health_score < 70` |
-| `--signal-bad` | `356 72% 47%` | critical | `health_score < 45` |
+| Token | Light | Dark | Meaning | Threshold |
+|---|---|---|---|---|
+| `--signal-good` | `143 72% 29%` | `143 66% 46%` | healthy | `health_score >= 70` |
+| `--signal-warn` | `40 100% 30%` | `40 100% 52%` | at risk | `45 <= health_score < 70` |
+| `--signal-bad` | `356 72% 47%` | `356 68% 62%` | critical | `health_score < 45` |
 
-These are the lighter-canvas re-tunes of the dark theme's ramp: each is darker
-than its predecessor (good was `152 58% 48%`, now `143 72% 29%`) so the status
-colours hold WCAG AA on white at body size, and the graph's node fill stays
-legible on the near-white canvas (`healthColor` in
-`features/graph/lib/encoding.ts` renders at 50% lightness for the same reason).
+Light values are the darker re-tunes of the original dark ramp so the status
+colours hold WCAG AA on white at body size. Dark values are lifted the other
+way: each must read as **text on a dark surface** (good ~7.3:1, warn ~9.1:1,
+bad ~4.8:1). `--destructive` follows `--signal-bad` in light but is decoupled in
+dark (`356 74% 44%`) because a button fill carries white text (~5.3:1), a
+different job from small text on a surface. Node fill reads its lightness from
+`--health-fill-lightness` (`healthColor` in
+`features/graph/lib/encoding.ts` renders at 50% on the light canvas, 58% on
+the dark one).
 
 The thresholds are **one pair, defined once**: `HEALTH_GOOD_MIN = 70`,
 `HEALTH_WARN_MIN = 45` live in `src/lib/health-thresholds.ts`, re-exported by

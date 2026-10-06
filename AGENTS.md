@@ -50,8 +50,8 @@ CONTRACTS.md  Single source of truth for API shapes and WebSocket events.
   and note that Vitest does not typecheck, so run `tsc -b --noEmit` too.
 - **Health thresholds:** `>= 70` good, `>= 45` warn, below bad. These are the
   single source of truth for node colour.
-- **Design:** light theme only, token-based (see `docs/DESIGN_SYSTEM.md`).
-  No em dashes in visible copy.
+- **Design:** system-preference light + dark, token-based (see
+  `docs/DESIGN_SYSTEM.md`). No `dark:` utilities, no em dashes in visible copy.
 
 ## Definition of done
 
