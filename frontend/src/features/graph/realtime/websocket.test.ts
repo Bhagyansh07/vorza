@@ -55,17 +55,12 @@ class FakeSocket implements SocketLike {
   }
 }
 
-function makeScope(): RealtimeScope & {
-  onSnapshotUpdated: ReturnType<typeof vi.fn>;
-  onCursor: ReturnType<typeof vi.fn>;
-  onComment: ReturnType<typeof vi.fn>;
-  onReview: ReturnType<typeof vi.fn>;
-} {
+function makeScope(): RealtimeScope {
   return {
-    onSnapshotUpdated: vi.fn(),
-    onCursor: vi.fn(),
-    onComment: vi.fn(),
-    onReview: vi.fn(),
+    onSnapshotUpdated: vi.fn<RealtimeScope['onSnapshotUpdated']>(),
+    onCursor: vi.fn<RealtimeScope['onCursor']>(),
+    onComment: vi.fn<RealtimeScope['onComment']>(),
+    onReview: vi.fn<RealtimeScope['onReview']>(),
   };
 }
 
