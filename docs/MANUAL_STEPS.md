@@ -7,18 +7,18 @@ be done from a commit. It is written click-by-click on purpose.
 against that provider's own documentation on **2026-10-05** and is linked. Where
 something could not be verified, it says so.
 
-Current state, verified 2026-10-05:
+Current state, verified 2026-10-06:
 
 | Thing | State |
 |---|---|
-| Backend on Render | **Live** at `https://codeatlas-qr0e.onrender.com` (`/openapi.json` returns 200) |
-| Frontend on Vercel | **Gone.** Both `frontend-bhagyansh.vercel.app` and `frontend-mu-jet-18.vercel.app` return 404 |
-| Database | **None.** The live backend is on SQLite on an ephemeral disk |
-| Deploy config | `render.yaml` (backend) and `vercel.json` (frontend) written and reviewable |
+| Backend on Render | **Live** at `https://codeatlas-qr0e.onrender.com` (Free tier, ~50 s cold start after idle) |
+| Frontend on Vercel | **Live** at `https://vorza-sigma.vercel.app` (project `vorza`, linked to `master`, auto-deploy on push) |
+| Database | **Neon Postgres** (Free); the live DB URL is a Render env var (`DATABASE_URL`), not committed |
+| Deploy config | `render.yaml` (backend) and Vercel project settings (frontend, root dir `frontend`) |
+| Site origin | `VITE_SITE_URL=https://vorza-sigma.vercel.app` on Vercel prod; canonical/`og:url` follow it |
 
-> The frontend has to be redeployed from scratch. Both previously recorded Vercel
-> URLs 404, so there is no live frontend to update -- you are creating a new
-> project, not redeploying an existing one. Section 4 covers it.
+> The old domains `frontend-bhagyansh.vercel.app` and `frontend-mu-jet-18.vercel.app`
+> 404 or serve stale builds. Do not link, log in, or deploy against them.
 
 ---
 

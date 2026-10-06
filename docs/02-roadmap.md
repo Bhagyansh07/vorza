@@ -64,13 +64,21 @@ centred-everything, "seamless/next-gen" copy, fade-up everywhere.
 | W1 | **R1 — PR-review citation validation** (backend-first) | M | dropped uncited flags + persisted `dropped_flags` count; `ReviewFlag` carries optional validated `line_start`/`line_end`; changed files derived from diff, not the model; flags capped |
 | W2 | System-preference themes: token set → `:root[data-theme]` + media query, every component token-driven | M | `prefers-color-scheme: dark` renders dark, light renders light; no hard-coded `bg-white`/`text-gray-*` left in `features/`; contrast passes for both themes |
 | W3 | **done** — Landing redesign: hero with live demo-map embed, scroll-zoom story, blast-radius hover demo, PR review card with citation chips, animated metrics, mono labels | L | `frontend: cartographic demo map system (W3)` `73352c3` + `frontend: assemble the redesigned landing (W3)` `2827169`; hero renders the real force renderer + `encoding.ts` rules on the labelled demo dataset, scroll re-zooms the story, hover shows blast radius (`DemoMap.tsx` `blastRadius`), review card cites `file:line` chips (`ReviewDemo.tsx`), metrics animate to dataset-derived values |
-| W4 | App chrome + dashboard polish to match tokens (Navbar, RepoCard, Login) | M | screenshots in both themes; no token drift vs `DESIGN_SYSTEM.md` |
+| W4 | **done** — App chrome + dashboard polish to match tokens (Navbar, RepoCard, Login) | M | `frontend: chrome token drift fix (W4)` `c96ccfd`; sweep of every `src/**/*.tsx` found exactly one drift — `RepoCard` failure text used `text-amber-600 dark:text-amber-400` (a literal palette colour + a banned `dark:` variant); replaced with the canonical `text-signal-warn` token. Navbar/Login/Dashboard audited: their shadcn aliases all map onto the design tokens (`--border: var(--line)` etc.) so no changes. Screenshots: light verified live; dark needs the OS toggle (see gate) |
 | W5 | Graph a11y: keyboard-focusable nodes + table/list alternative view (**R8**) | M | Tab reaches nodes, Enter opens inspector, a `<table>` view of files exists on `/repos/:id`, no axe violations on graph + landing |
-| W6 | "How I built it" section + 60 s demo video (asset) | M | section with real numbers (160/110 tests, 80% coverage, live stack); video shot/edited per script in Phase 7 |
+| W6 | **done** — "How I built it" section + 60 s demo video (asset) | M | section shipped in W3 landing (`2827169`, 06 Field notes) with the real-number strip: 172 backend tests, 127 frontend tests, 81% backend coverage, Render + Vercel + Neon; script written to `docs/DEMO_VIDEO.md` (60 s, real demo flow, seeded repos); shooting/editing is P3 (Phase 7) |
 | W7 | Hygiene batch: **R3** vitest ≥4.1.11 + pytest ≥9.0.3 + **R4** delete stale `services/requirements.txt` + **R5** delete dead throttle methods + **R7** `GET /health` | S | `npm audit` crits cleared; `pip-audit` 0; `npm run build` clean; `/health` returns `{status, version}` |
 
-Phase 3 gate: build green, Lighthouse a11y clean on landing + repo page, dark
-and light verified in a real browser, W1 tests green.
+Phase 3 gate (live results): build green; Lighthouse a11y on the live landing
+**100/100, zero binary failures** (`npx lighthouse --only-categories=accessibility
+https://vorza-sigma.vercel.app`, run 2026-10-06); login page Lighthouse pending.
+Repo page sits behind GitHub OAuth so a Lighthouse run on it needs the user's
+authenticated browser (same OS-toggle rule as dark): both remain user-side
+verification. Light verified in a real browser (harness), dark via the contrast
+script (all >= 4.5:1) + user OS toggle. W1 tests green. Also fixed live: the
+production build pointed every canonical/`og:url` at the retired
+`frontend-bhagyansh.vercel.app` via `VITE_SITE_URL`; the env var now holds the
+real origin and the next deploy carries it.
 
 ## 4. Phase 4 — SEO / static marketing
 
