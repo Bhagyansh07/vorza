@@ -18,8 +18,11 @@ an unfamiliar repo.
 
 Live: frontend https://frontend-bhagyansh.vercel.app (Vercel), backend
 https://codeatlas-qr0e.onrender.com (Render), Postgres on Neon. The GitHub repo
-is still named `codeatlas` and is **private** — the public name of the repo vs.
-product name is a decision still open (see section 9).
+is still named `codeatlas` and is **private**.
+
+**Branding decision (2026-10-06):** the product name is **Vorza**. The GitHub
+repo/folder name `codeatlas` will be renamed and domains consolidated in the
+Phase 6/7 deploy pass, not in this recon.
 
 ## 2. Repo tree (depth 3, tracked files only)
 
