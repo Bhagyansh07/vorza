@@ -2,12 +2,12 @@
 
 Why this exists
 ---------------
-The product is dark-only and its accent was retuned from stock shadcn violet
-(`258 90% 70%`) to cyan `190 72% 52%` so that focus rings and selection states
-would not fight the health-score palette. That retune did not reach the icons,
-which left `favicon.svg` advertising a violet brand while the running app was
-cyan. Hardcoding colours in three places is what caused the drift, so this
-script owns them: edit the token constants below and every raster asset follows.
+The product is light-only with a single enterprise-blue accent, and every
+raster asset has to agree with the running app down to the hex: a favicon
+advertising one brand while the page renders another is exactly the drift this
+file was written to prevent. Hardcoding colours in three places is what caused
+it, so this script owns them: edit the token constants below and every raster
+asset follows.
 
 It also produces `og-image.png`, which was previously referenced by nothing.
 Pointing `og:image` at a file that does not exist is worse than omitting the
@@ -33,19 +33,19 @@ PUBLIC = ROOT / "frontend" / "public"
 
 # ---------------------------------------------------------------------------
 # Tokens, mirrored from frontend/src/index.css and frontend/tailwind.config.ts.
-# --panel was removed from the Tailwind colour theme because it shadowed the
-# `panel` box shadow, so these are the resolved RGB values rather than HSL.
+# Resolved to RGB rather than HSL because Pillow draws in RGB; the HSL in the
+# comment is the token's actual value so a retune stays checkable by eye.
 # ---------------------------------------------------------------------------
-BACKGROUND = (11, 13, 20)  # --background  224 32% 6%
-SURFACE = (22, 26, 38)  # --surface     224 26% 10%
-RAISED = (45, 48, 62)  # --raised      224 22% 18%
-LINE = (56, 60, 76)  # --line        220 16% 22%
-INK = (245, 247, 250)  # --ink         210 40% 96%
-INK_DIM = (168, 176, 190)  # --ink-muted
-PRIMARY = (49, 199, 220)  # --primary     190 72% 52%
-SIGNAL_GOOD = (52, 199, 123)
-SIGNAL_WARN = (240, 170, 50)
-SIGNAL_BAD = (235, 84, 104)
+BACKGROUND = (249, 250, 251)  # --background  220 20% 98%
+SURFACE = (255, 255, 255)  # --surface     0 0% 100%
+RAISED = (243, 244, 246)  # --raised      220 16% 96%
+LINE = (223, 225, 231)  # --line        220 13% 89%
+INK = (26, 29, 36)  # --ink         222 18% 15%
+INK_DIM = (87, 100, 107)  # --ink-dim     220 10% 38%
+PRIMARY = (14, 106, 210)  # --primary     212 87% 44%
+SIGNAL_GOOD = (21, 127, 61)  # --signal-good 143 72% 29%
+SIGNAL_WARN = (153, 102, 0)  # --signal-warn 40 100% 30%
+SIGNAL_BAD = (206, 34, 45)  # --signal-bad  356 72% 47%
 
 OG_SIZE = (1200, 630)
 WORDMARK_FONT_SIZE = 104
@@ -191,6 +191,65 @@ def blend(base: tuple[int, int, int], over: tuple[int, int, int], alpha: float):
 
 
 # ---------------------------------------------------------------------------
+# The mark
+# ---------------------------------------------------------------------------
+
+
+def draw_mark(
+    draw: ImageDraw.ImageDraw,
+    box: tuple[int, int, int, int],
+    *,
+    fg: tuple[int, int, int],
+) -> None:
+    """Draw the Vorza mark: two graph edges meeting at a vertex, a node at each.
+
+    Geometry is `frontend/public/favicon.svg` scaled into `box`, so the PNG
+    icons and the SVG favicon are the same drawing rather than two guesses at
+    the same logo.
+    """
+    left, top, right, bottom = box
+    width = right - left
+    height = bottom - top
+
+    def at(x: float, y: float) -> tuple[float, float]:
+        return (left + x * width, top + y * height)
+
+    p1 = at(0.266, 0.281)
+    p2 = at(0.500, 0.734)
+    p3 = at(0.734, 0.281)
+
+    stroke = max(2, int(width * 0.109))
+    draw.line([p1, p2, p3], fill=fg, width=stroke, joint="curve")
+    for x, y in (p1, p3):
+        draw.ellipse((x - stroke, y - stroke, x + stroke, y + stroke), fill=fg)
+
+
+def mark_tile(
+    px: int,
+    *,
+    plate: tuple[int, int, int] = PRIMARY,
+    fg: tuple[int, int, int] = (255, 255, 255),
+    radius_frac: float = 0.22,
+    inset_frac: float = 0.09,
+) -> Image.Image:
+    """The mark on its plate, rendered at 4x and downsampled for clean edges."""
+    scale = 4
+    side = px * scale
+    tile = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(tile)
+    draw.rounded_rectangle(
+        (0, 0, side - 1, side - 1), radius=int(side * radius_frac), fill=plate + (255,)
+    )
+    inset = side * inset_frac
+    draw_mark(
+        draw,
+        (int(inset), int(inset), int(side - inset), int(side - inset)),
+        fg=fg,
+    )
+    return tile.resize((px, px), Image.LANCZOS)
+
+
+# ---------------------------------------------------------------------------
 # Open Graph card
 # ---------------------------------------------------------------------------
 
@@ -205,17 +264,19 @@ def build_og_image() -> Path:
         t = y / OG_SIZE[1]
         draw.line(
             (0, y, OG_SIZE[0], y),
-            fill=blend(BACKGROUND, SURFACE, t * 0.6),
+            fill=blend(BACKGROUND, RAISED, t * 0.7),
         )
 
     draw.rectangle((0, 0, OG_SIZE[0], 6), fill=PRIMARY)
     draw_graph(draw, (690, 96, 1140, 552), glow=True)
 
-    draw.text((90, 150), "Vorza", font=_font(WORDMARK_FONT_SIZE, bold=True), fill=INK)
-    draw.rectangle((90, 274, 168, 280), fill=PRIMARY)
+    wordmark_tile = mark_tile(96, radius_frac=0.22)
+    img.paste(wordmark_tile, (90, 150), wordmark_tile)
+    draw.text((214, 156), "Vorza", font=_font(WORDMARK_FONT_SIZE, bold=True), fill=INK)
+    draw.rectangle((90, 288, 168, 294), fill=PRIMARY)
 
     draw.text(
-        (90, 306),
+        (90, 318),
         "The living, AI-reviewed map of your codebase.",
         font=_font(TAGLINE_FONT_SIZE),
         fill=INK_DIM,
@@ -247,60 +308,28 @@ def build_og_image() -> Path:
 
 
 def build_icon(size: int, *, maskable: bool = False) -> Path:
-    """The mark: a node cluster on a rounded, near-black plate.
+    """The mark: a white Vorza V on a rounded brand-blue plate.
 
     Maskable icons get their art scaled into the inner 80% safe zone, because
     Android will crop a full-bleed square to whatever shape the launcher uses
     and anything outside that circle can be cut away.
     """
-    scale = 4  # supersample, then downscale, so the circles have no jaggies
-    side = size * scale
-    img = Image.new("RGBA", (side, side), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-
-    radius = int(side * (0.5 if maskable else 0.22))
-    plate = BACKGROUND + (255,)
-    draw.rounded_rectangle((0, 0, side - 1, side - 1), radius=radius, fill=plate)
-
-    # Accent hairline along the top edge, the same cue as the OG card.
-    draw.rounded_rectangle(
-        (0, 0, side - 1, int(side * 0.035)),
-        radius=radius,
-        fill=PRIMARY + (255,),
+    tile = mark_tile(
+        size,
+        radius_frac=0.5 if maskable else 0.22,
+        inset_frac=0.12 if maskable else 0.09,
     )
-
-    inset = side * (0.30 if maskable else 0.20)
-    draw_graph(
-        draw,
-        (int(inset), int(inset), int(side - inset), int(side - inset)),
-        seed=7,
-        line_color=RAISED,
-        glow=not maskable,
-    )
-
-    out = img.resize((size, size), Image.LANCZOS)
     name = f"icon-maskable-{size}.png" if maskable else f"icon-{size}.png"
     path = PUBLIC / name
-    out.save(path, format="PNG", optimize=True)
+    tile.save(path, format="PNG", optimize=True)
     return path
 
 
 def build_apple_touch_icon() -> Path:
-    """iOS does not apply transparency, so this one is filled solid."""
-    side = 180 * 4
-    img = Image.new("RGB", (side, side), BACKGROUND)
-    draw = ImageDraw.Draw(img)
-    inset = side * 0.22
-    draw_graph(
-        draw,
-        (int(inset), int(inset), int(side - inset), int(side - inset)),
-        seed=7,
-        line_color=RAISED,
-        glow=True,
-    )
-    out = img.resize((180, 180), Image.LANCZOS)
+    """iOS does not apply transparency or corner radii, so this one is solid."""
+    tile = mark_tile(180, radius_frac=0.0, inset_frac=0.11)
     path = PUBLIC / "apple-touch-icon.png"
-    out.save(path, format="PNG", optimize=True)
+    tile.convert("RGB").save(path, format="PNG", optimize=True)
     return path
 
 

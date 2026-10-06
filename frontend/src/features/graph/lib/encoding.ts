@@ -1,21 +1,23 @@
+import { HEALTH_GOOD_MIN, HEALTH_WARN_MIN } from '@/lib/health-thresholds';
+
 export const HEALTH_MAX = 100;
 
 /**
  * Health thresholds, in one place.
  *
- * These were retyped as bare literals in three places -- `healthTone`,
- * `healthLabel`, and `snapshotHealthBreakdown` -- and the legend's stop labels
- * implied a fourth set that agreed with none of them. A legend that disagrees
- * with the renderer is worse than no legend, because it is the
- * authoritative-looking thing and the wrong one. F3 in
- * `docs/audit/03-feature-roadmap.md`.
+ * Now defined once in `src/lib/health-thresholds.ts` and re-exported here,
+ * because this module is where the graph, the legend and their tests have
+ * always read them from. Before that they were retyped as bare literals in
+ * three places -- `healthTone`, `healthLabel`, and
+ * `snapshotHealthBreakdown` -- and the dashboard's badges carried a second,
+ * disagreeing copy at 80/50. A legend that disagrees with the renderer is
+ * worse than no legend, because it is the authoritative-looking thing and the
+ * wrong one. F3 in `docs/audit/03-feature-roadmap.md`.
  *
- * Also documented in `CONTRACTS.md` and `docs/DESIGN_SYSTEM.md`. The frontend
- * assertions live in `lib/health-thresholds.test.ts`; the backend assertion is
- * `backend/tests/services/test_analysis_scoring.py`.
+ * The frontend assertions live in `lib/health-thresholds.test.ts`; the
+ * backend assertion is `backend/tests/services/test_analysis_scoring.py`.
  */
-export const HEALTH_GOOD_MIN = 70;
-export const HEALTH_WARN_MIN = 45;
+export { HEALTH_GOOD_MIN, HEALTH_WARN_MIN };
 
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
@@ -29,7 +31,10 @@ export function healthColor(health: number): string {
   } else {
     hue = lerp(38, 152, (h - 50) / 50);
   }
-  return `hsl(${hue} 62% 56%)`;
+  // Lightness is tuned for the light canvas the graph sits on: 56% (the dark
+  // theme's value) left nodes washed out against #fafbfc, and node fill is the
+  // only thing carrying the health value in the legend's gradient.
+  return `hsl(${hue} 62% 50%)`;
 }
 
 export function healthFill(health: number): string {

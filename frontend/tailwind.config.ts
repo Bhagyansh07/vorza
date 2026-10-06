@@ -47,8 +47,16 @@ export default {
           '2xl': '1400px',
         },
       },
+      /*
+       * Geist Sans for interface text, Geist Mono for anything the machine
+       * produced (paths, branches, hashes, scores). Both are self-hosted via
+       * fontsource -- no third-party font request at runtime. The system stack
+       * stays as the fallback so a blocked font still renders an interface
+       * rather than a flash of Times.
+       */
       fontFamily: {
         sans: [
+          'Geist Sans',
           'ui-sans-serif',
           'system-ui',
           '-apple-system',
@@ -58,7 +66,13 @@ export default {
           'Arial',
           'sans-serif',
         ],
-        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        mono: [
+          'Geist Mono Variable',
+          'ui-monospace',
+          'SFMono-Regular',
+          'Menlo',
+          'monospace',
+        ],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -154,10 +168,18 @@ export default {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
+        // Loading affordance only: the graph's "mapping files" illustration
+        // and the history chart's loading dots. Not used decoratively, and
+        // collapsed by the prefers-reduced-motion rule in index.css.
+        'soft-blink': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.3' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'soft-blink': 'soft-blink 1.4s ease-in-out infinite',
       },
     },
   },

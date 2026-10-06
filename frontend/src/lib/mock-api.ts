@@ -67,7 +67,7 @@ function buildFileNodes(): FileNode[] {
     { path: 'src/lib/api.ts', loc: 310, complexity_score: 44, churn_score: 61, health_score: 48, imports: ['src/types.ts'] },
     { path: 'src/lib/utils.ts', loc: 95, complexity_score: 8, churn_score: 12, health_score: 94, imports: [] },
     { path: 'src/components/dashboard.tsx', loc: 260, complexity_score: 22, churn_score: 33, health_score: 81, imports: ['src/app.tsx', 'src/lib/api.ts'] },
-    { path: 'src/lib/api.ts', loc: 310, complexity_score: 44, churn_score: 61, health_score: 48, imports: ['src/types.ts'] },
+    { path: 'src/lib/http.ts', loc: 150, complexity_score: 12, churn_score: 18, health_score: 88, imports: ['src/lib/utils.ts'] },
   ];
 }
 
@@ -99,7 +99,7 @@ const mockComments: CommentPin[] = [
     snapshot_id: 'snap_r_1_0',
     file_path: 'src/lib/api.ts',
     author_id: 'u_1',
-    body: 'This module is getting hard to reason about — worth a refactor.',
+    body: 'This module is getting hard to reason about, worth a refactor.',
     x: 120,
     y: 80,
     created_at: '2026-09-10T10:00:00Z',

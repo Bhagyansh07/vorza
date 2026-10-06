@@ -25,11 +25,11 @@ export function PresenceLayer({ cursors, usernames }: Props) {
             >
               <path
                 d="M2 1h9a3 3 0 0 1 3 3v12l-4.5 4V16H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2Z"
-                fill="hsl(var(--atlas-accent))"
+                fill="hsl(var(--primary))"
               />
-              <circle cx="6.5" cy="5.5" r="1.4" fill="hsl(var(--atlas-bg))" />
+              <circle cx="6.5" cy="5.5" r="1.4" fill="hsl(var(--background))" />
             </svg>
-            <span className="absolute left-4 top-0 whitespace-nowrap rounded-md border border-primary/50 bg-surface/90 px-1.5 py-0.5 text-[11px] font-medium text-primary backdrop-blur-sm">
+            <span className="absolute left-4 top-0 whitespace-nowrap rounded-md border border-primary/50 bg-surface px-1.5 py-0.5 text-[11px] font-medium text-primary">
               {name}
             </span>
           </div>

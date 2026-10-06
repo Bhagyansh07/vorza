@@ -126,15 +126,15 @@ export function TrendChart({ repoId, height = 320 }: Props) {
               </linearGradient>
             </defs>
             <CartesianGrid
-              stroke="hsl(var(--atlas-line) / 0.5)"
+              stroke="hsl(var(--line) / 0.5)"
               strokeDasharray="3 4"
               vertical={false}
             />
             <XAxis
               dataKey="created_at"
               tickFormatter={formatDay}
-              stroke="hsl(var(--atlas-text-faint))"
-              tick={{ fontSize: 11, fill: "hsl(var(--atlas-text-faint))" }}
+              stroke="hsl(var(--ink-faint))"
+              tick={{ fontSize: 11, fill: "hsl(var(--ink-faint))" }}
               axisLine={false}
               tickLine={false}
               minTickGap={32}
@@ -142,14 +142,14 @@ export function TrendChart({ repoId, height = 320 }: Props) {
             <YAxis
               domain={[0, 100]}
               ticks={[0, 25, 50, 75, 100]}
-              stroke="hsl(var(--atlas-text-faint))"
-              tick={{ fontSize: 11, fill: "hsl(var(--atlas-text-faint))" }}
+              stroke="hsl(var(--ink-faint))"
+              tick={{ fontSize: 11, fill: "hsl(var(--ink-faint))" }}
               axisLine={false}
               tickLine={false}
               width={38}
             />
             <Tooltip
-              cursor={{ stroke: "hsl(var(--atlas-line))", strokeDasharray: "3 3" }}
+              cursor={{ stroke: "hsl(var(--line))", strokeDasharray: "3 3" }}
               content={customTooltip as (props: Record<string, unknown>) => React.ReactNode}
             />
             <Area
@@ -158,7 +158,7 @@ export function TrendChart({ repoId, height = 320 }: Props) {
               stroke="url(#atlas-health)"
               strokeWidth={2}
               fill="url(#atlas-area)"
-              dot={{ r: 2, fill: "hsl(var(--atlas-text-dim))", stroke: "none" }}
+              dot={{ r: 2, fill: "hsl(var(--ink-dim))", stroke: "none" }}
               activeDot={{ r: 4, strokeWidth: 0 }}
               isAnimationActive={false}
             />

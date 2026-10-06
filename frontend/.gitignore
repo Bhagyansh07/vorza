@@ -4,10 +4,11 @@ dist-ssr
 *.local
 coverage
 
-# env files (never commit secrets)
+# env files (never commit secrets), but keep the build-time production env
+# tracked so the Vercel build reads VITE_API_URL from the repo.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.production
 
 # logs
 npm-debug.log*

@@ -1,14 +1,18 @@
 import type { ComplexityTone, HealthTone } from '@/types';
+import { HEALTH_GOOD_MIN, HEALTH_WARN_MIN } from '@/lib/health-thresholds';
 import { cn } from '@/lib/utils';
 
 /**
- * Health/complexity → design-token helpers. Agent 4's graph should reuse these
- * so node colors match the rest of the app (see tailwind.config.ts health.*).
+ * Health/complexity → design-token helpers.
+ *
+ * The thresholds are the shared ones (`src/lib/health-thresholds.ts`), which
+ * are the same numbers the graph legend and `healthLabel` bucket on, so a
+ * score cannot read one tone here and another one on the map.
  */
 
 export function healthTone(score: number): HealthTone {
-  if (score >= 80) return 'good';
-  if (score >= 50) return 'medium';
+  if (score >= HEALTH_GOOD_MIN) return 'good';
+  if (score >= HEALTH_WARN_MIN) return 'medium';
   return 'bad';
 }
 

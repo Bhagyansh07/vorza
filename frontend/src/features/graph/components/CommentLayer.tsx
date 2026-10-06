@@ -66,7 +66,7 @@ export function CommentLayer({
               aria-label={`Comment by ${name}: ${c.body}`}
               data-comment-pin
             >
-              <span className="block h-3 w-3 rounded-t-sm rounded-bl-sm border border-primary/60 bg-primary shadow-[0_1px_4px_rgb(0_0_0/0.45)] transition-transform group-hover:-translate-y-0.5" />
+              <span className="block h-3 w-3 rounded-t-sm rounded-bl-sm border border-primary/60 bg-primary shadow-[0_1px_3px_rgb(0_0_0/0.2)] transition-transform group-hover:-translate-y-0.5" />
               <span className="absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full border border-line/80 bg-surface px-1 py-0.5 font-medium text-primary opacity-0 shadow-panel transition-opacity group-hover:opacity-100">
                 {name}
               </span>

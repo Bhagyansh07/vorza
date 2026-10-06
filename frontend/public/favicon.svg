@@ -1,20 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Vorza">
-  <!--
-    Kept in step with scripts/make_brand_assets.py and the token values in
-    frontend/src/index.css. This file used to carry a stock shadcn violet
-    gradient (#8b5cf6 -> #4f46e5) from before the accent was retuned to cyan
-    190 72% 52%, so the tab icon advertised a different brand than the app.
-  -->
-  <rect width="32" height="32" rx="7" fill="#0b0d14" />
-  <path d="M0 0h32v2.4H0z" fill="#31c7dc" />
-  <g stroke="#383c4c" stroke-width="1.1" stroke-linecap="round">
-    <line x1="10.4" y1="10.6" x2="16" y2="16" />
-    <line x1="16" y1="16" x2="22.4" y2="22.2" />
-    <line x1="22.4" y1="22.2" x2="11.6" y2="19.4" />
-    <line x1="10.4" y1="10.6" x2="22.4" y2="22.2" opacity="0.55" />
-  </g>
-  <circle cx="16" cy="16" r="4.6" fill="#34c77b" />
-  <circle cx="10.4" cy="10.6" r="2.5" fill="#f0aa32" />
-  <circle cx="22.4" cy="22.2" r="2.5" fill="#34c77b" />
-  <circle cx="11.6" cy="19.4" r="1.8" fill="#eb5468" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Vorza">
+  <rect width="64" height="64" rx="14" fill="#0e6ad2" />
+  <path
+    d="M17 18 32 47l15-29"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="17" cy="18" r="7" fill="#ffffff" />
+  <circle cx="47" cy="18" r="7" fill="#ffffff" />
 </svg>

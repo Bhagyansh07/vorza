@@ -26,7 +26,7 @@ function shortPath(path: string): string {
 
 export function ReviewBanner({ review, onJump, onDismiss }: Props) {
   return (
-    <div className="pointer-events-auto w-[22rem] rounded-stem border border-line/70 bg-surface/95 shadow-panel backdrop-blur-sm">
+    <div className="pointer-events-auto w-[22rem] rounded-stem border border-line bg-surface shadow-panel">
       <header className="flex items-center gap-2 border-b border-line/60 px-4 py-2.5">
         <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-faint">
           AI review

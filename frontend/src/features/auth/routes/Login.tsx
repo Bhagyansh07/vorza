@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Github, LoaderCircle, MapIcon } from 'lucide-react';
+import { Github, LoaderCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { LogoMark } from '@/components/brand/Logo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -224,15 +225,15 @@ export function LoginPage() {
 
   return (
     <div className="flex min-h-svh items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md border-border/60 bg-card/60 backdrop-blur">
+      <Card className="w-full max-w-md border-border shadow-panel">
         <CardHeader className="items-center text-center">
-          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-md bg-primary/20">
-            <MapIcon className="h-6 w-6 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Vorza</CardTitle>
+          <LogoMark className="mb-3 h-9 w-9 text-primary" />
+          <CardTitle className="text-xl tracking-[-0.01em]">
+            Sign in to Vorza
+          </CardTitle>
           <CardDescription>
-            The living, AI-reviewed map of your codebase. Sign in with GitHub to
-            see your repos.
+            The living, AI-reviewed map of your codebase. Continue with GitHub
+            to see your repos.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3">
@@ -258,7 +259,7 @@ export function LoginPage() {
               <div className="flex items-center gap-3">
                 <Separator className="flex-1" />
                 <span className="text-xs text-muted-foreground">
-                  backend not wired — demo mode
+                  backend not wired, demo mode
                 </span>
                 <Separator className="flex-1" />
               </div>

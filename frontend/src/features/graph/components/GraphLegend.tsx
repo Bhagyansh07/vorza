@@ -12,7 +12,7 @@ export function GraphLegend() {
 
   return (
     <div
-      className="flex items-center gap-6 rounded-stem border border-line/70 bg-surface/90 px-4 py-2.5 shadow-panel backdrop-blur-sm"
+      className="flex items-center gap-6 rounded-stem border border-line bg-surface px-4 py-2.5 shadow-panel"
       role="group"
       aria-label="Legend"
     >
@@ -72,7 +72,7 @@ function Circle({ r }: { r: number }) {
       style={{
         width: size,
         height: size,
-        background: "hsl(var(--atlas-accent) / 0.85)",
+        background: "hsl(var(--primary) / 0.85)",
       }}
     />
   );

@@ -10,7 +10,7 @@ export function AppShell() {
         <Outlet />
       </main>
       <footer className="border-t border-border py-4 text-center text-xs text-muted-foreground">
-        Vorza — the living, AI-reviewed map of your codebase
+        Vorza, the living, AI-reviewed map of your codebase
       </footer>
     </div>
   );

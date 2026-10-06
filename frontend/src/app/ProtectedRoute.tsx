@@ -1,14 +1,14 @@
 import { useEffect } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { MapIcon } from 'lucide-react';
 
+import { LogoMark } from '@/components/brand/Logo';
 import { useAuthStatus } from '@/features/auth/hooks/use-auth';
 import { useAuthStore } from '@/features/auth/store';
 
 function LoadingScreen() {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-3 bg-background">
-      <MapIcon className="h-8 w-8 animate-pulse text-primary" />
+      <LogoMark className="h-8 w-8 text-primary" />
       <p className="text-sm text-muted-foreground">Checking your session…</p>
     </div>
   );

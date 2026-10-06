@@ -11,12 +11,12 @@ export function GraphLoadingState() {
       aria-label="Loading graph"
     >
       <svg width="120" height="90" viewBox="0 0 120 90" aria-hidden="true" className="opacity-80">
-        <circle cx="28" cy="30" r="9" fill="hsl(var(--atlas-line))" className="animate-soft-blink" />
-        <circle cx="78" cy="22" r="13" fill="hsl(var(--atlas-line))" className="animate-soft-blink" style={{ animationDelay: "0.2s" }} />
-        <circle cx="70" cy="62" r="8" fill="hsl(var(--atlas-line))" className="animate-soft-blink" style={{ animationDelay: "0.4s" }} />
-        <circle cx="100" cy="52" r="6" fill="hsl(var(--atlas-line))" className="animate-soft-blink" style={{ animationDelay: "0.6s" }} />
-        <circle cx="46" cy="70" r="5" fill="hsl(var(--atlas-line))" className="animate-soft-blink" style={{ animationDelay: "0.8s" }} />
-        <g stroke="hsl(var(--atlas-line))" strokeWidth="1.5" fill="none">
+        <circle cx="28" cy="30" r="9" fill="hsl(var(--line))" className="animate-soft-blink" />
+        <circle cx="78" cy="22" r="13" fill="hsl(var(--line))" className="animate-soft-blink" style={{ animationDelay: "0.2s" }} />
+        <circle cx="70" cy="62" r="8" fill="hsl(var(--line))" className="animate-soft-blink" style={{ animationDelay: "0.4s" }} />
+        <circle cx="100" cy="52" r="6" fill="hsl(var(--line))" className="animate-soft-blink" style={{ animationDelay: "0.6s" }} />
+        <circle cx="46" cy="70" r="5" fill="hsl(var(--line))" className="animate-soft-blink" style={{ animationDelay: "0.8s" }} />
+        <g stroke="hsl(var(--line))" strokeWidth="1.5" fill="none">
           <path d="M28 30 L70 62 M28 30 L78 22 M28 30 L46 70 M78 22 L100 52 M70 62 L100 52" />
         </g>
       </svg>
@@ -35,13 +35,13 @@ export function GraphErrorState({ message = "Could not reach the analysis servic
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
           <path
             d="M12 3a9 9 0 1 0 9 9"
-            stroke="hsl(var(--atlas-bad))"
+            stroke="hsl(var(--signal-bad))"
             strokeWidth="2"
             strokeLinecap="round"
           />
           <path
             d="M12 8v5m0 3h.01"
-            stroke="hsl(var(--atlas-bad))"
+            stroke="hsl(var(--signal-bad))"
             strokeWidth="2"
             strokeLinecap="round"
           />
@@ -68,7 +68,7 @@ export function GraphEmptyState({ onRetry }: CommonProps) {
     <div className="flex h-full min-h-[320px] flex-col items-center justify-center gap-5 px-6 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-stem border border-line bg-surface">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <g stroke="hsl(var(--atlas-accent))" strokeWidth="1.5" strokeLinecap="round">
+          <g stroke="hsl(var(--primary))" strokeWidth="1.5" strokeLinecap="round">
             <circle cx="6" cy="17" r="2" />
             <circle cx="12" cy="6" r="2" />
             <circle cx="18" cy="13" r="2" />

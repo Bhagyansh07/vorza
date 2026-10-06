@@ -103,8 +103,11 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
     const fontSize = Math.min(12, 10 / k);
     select(world)
       .selectAll<SVGGElement, SimNode>("g[data-node]")
-      .each(function (d) {
-        const keep = d.id === selected || d.id === hoveredNow;
+      .each(function () {
+        // Same rule as the tick maps: these are React-owned elements with no
+        // d3 datum, so read the id from the attribute, not from a bound `d`.
+        const path = this.dataset.nodeId ?? "";
+        const keep = path === selected || path === hoveredNow;
         const label = select(this).select<SVGTextElement>("text[data-label]");
         label.attr("display", keep || k >= 0.7 ? "" : "none");
         label.attr("font-size", `${fontSize}`);
@@ -221,18 +224,22 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
       .velocityDecay(0.36);
     simRef.current = sim;
 
+    // These elements are React-owned, so they carry no d3-bound `__data__`:
+    // a `selection.each` callback would receive `undefined` as the datum and
+    // crash (`n.id` on `undefined`). Read the ids the SVG already carries
+    // (`data-node-id` / `data-link-id`) and key the maps on those instead.
     const nodeEls = new Map<string, SVGGElement>();
-    select(world)
-      .selectAll<SVGGElement, SimNode>("g[data-node]")
-      .each(function (n) {
-        nodeEls.set(n.id, this);
-      });
+    for (const el of Array.from(
+      world.querySelectorAll<SVGGElement>("g[data-node-id]"),
+    )) {
+      nodeEls.set(el.dataset.nodeId ?? "", el);
+    }
     const linkEls = new Map<string, SVGLineElement>();
-    select(world)
-      .selectAll<SVGLineElement, SimLink>("line[data-link]")
-      .each(function (l) {
-        linkEls.set(l.id, this);
-      });
+    for (const el of Array.from(
+      world.querySelectorAll<SVGLineElement>("line[data-link-id]"),
+    )) {
+      linkEls.set(el.dataset.linkId ?? "", el);
+    }
 
     sim.on("tick", () => {
       for (const link of validLinks) {
@@ -324,7 +331,7 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
     >
       <defs>
         <pattern id="atlas-dots" width="26" height="26" patternUnits="userSpaceOnUse">
-          <circle cx="1.25" cy="1.25" r="1" fill="hsl(var(--atlas-line) / 0.35)" />
+          <circle cx="1.25" cy="1.25" r="1" fill="hsl(var(--line) / 0.35)" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill="url(#atlas-dots)" pointerEvents="none" />
@@ -334,7 +341,8 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
             <line
               key={stampKey(l.source, l.target)}
               data-link
-              stroke="hsl(var(--atlas-line) / 0.55)"
+              data-link-id={stampKey(l.source, l.target)}
+              stroke="hsl(var(--line) / 0.55)"
               strokeWidth="1"
             />
           ))}
@@ -374,7 +382,7 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
                   r={r}
                   fill={healthFill(f.health_score)}
                   opacity={isHovered || isSelected ? 1 : 0.88}
-                  stroke={isSelected ? "hsl(var(--atlas-accent))" : "none"}
+                  stroke={isSelected ? "hsl(var(--primary))" : "none"}
                   strokeWidth={isSelected ? 2 : 0}
                   pointerEvents="none"
                 />
@@ -383,7 +391,7 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
                     data-label
                     y={-r - 5}
                     textAnchor="middle"
-                    fill="hsl(var(--atlas-text-dim))"
+                    fill="hsl(var(--ink-dim))"
                     fontSize="10"
                     pointerEvents="none"
                   >

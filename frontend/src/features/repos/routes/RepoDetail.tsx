@@ -138,7 +138,7 @@ export function RepoDetail() {
         ) : snapshot.isError ? (
           <Card className="sm:col-span-3">
             <CardContent className="py-4 text-sm text-muted-foreground">
-              Latest snapshot isn't ready yet — no analysis available.
+              Latest snapshot isn't ready yet, so there is nothing to compare.
             </CardContent>
           </Card>
         ) : snapshot.data ? (
