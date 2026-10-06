@@ -44,6 +44,15 @@ Audit, fix, SEO and deploy-hardening pass. Full write-up per phase in
   boot; tables verified present in Neon.
 - `GITHUB_WEBHOOK_SECRET` set in Render so the fail-closed webhook receiver can
   authenticate real GitHub deliveries (registered in the GitHub UI).
+- **Live login broke on every alias except the canonical one.** The backend CORS
+  allowlist was a single origin (`FRONTEND_HOST`), so the login grant fetch from
+  `vorza-app` / `getvorza` / `vorza-sigma` was CORS-blocked and "Continue with
+  GitHub" failed before reaching GitHub. Added a `CORS_ORIGINS` setting (the
+  live aliases) plus `allow_origin_regex` for `vorza-<hash>-bhagyansh.vercel.app`
+  preview URLs. OAuth itself was verified healthy: GitHub accepts the registered
+  redirect URI and the code exchange fails only with GitHub's own "code
+  incorrect or expired" for a garbage code, which proves the client secret is
+  valid.
 - Mock repo fixture had a duplicate `src/lib/api.ts` path (React duplicate-key
   warning + ambiguous graph data); replaced with a distinct fixture file.
 
