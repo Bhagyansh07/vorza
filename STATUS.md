@@ -183,3 +183,24 @@ documented as normalised `0..1`, dual-shape `comment:new`.
 - Neon connectivity from Render. URL normalisation **was** verified against four
   real Neon URL shapes.
 - Search indexing (weeks).
+
+### [Prod-Complete Agent] 2026-10-06 production-hardening pass
+Did: Frontend re-skinned to a light-only enterprise theme (cool neutral ramp,
+single blue accent, Primer-style status colours, Geist Sans + Geist Mono
+self-hosted, V-mark logo + regenerated favicon/icons/og-image, landing page
+rewrite with real-product figure). Health thresholds unified to one 70/45 pair
+(src/lib/health-thresholds.ts) — dashboard badges and the graph legend now
+bucket identically. Fixed a P0 graph crash: ForceDirectedGraph read d3-bound
+datum off React-owned SVG via `selection.each` and threw "Cannot read
+properties of undefined (reading 'id')" on every mount; tick maps now key off
+data-node-id/data-link-id, with a regression test
+(ForceDirectedGraph.test.tsx). Mock repo fixture had a duplicate path (fixed).
+Backend durability: DATABASE_URL (Neon pooled URI) + GITHUB_WEBHOOK_SECRET set
+in Render; deploy live; Alembic 0002 applied — repo/user/analysissnapshot/
+aireviewrow/comment tables verified present in Neon via psycopg.
+Exposed: Nothing new on the wire (no contract change).
+Blocked on: OPENAI_API_KEY (needs user's OpenAI account) — AI review degrades
+gracefully by design.
+Next: Push to master, CI + Vercel deploy, re-point aliases, register GitHub
+webhooks, capture the real graph screenshot for the landing hero, full live E2E
+audit, then final report.

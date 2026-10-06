@@ -8,6 +8,45 @@ Update this every time a task from `15_MICROTASKS.md` is completed.
 Audit, fix, SEO and deploy-hardening pass. Full write-up per phase in
 `docs/audit/00-recon.md` through `docs/audit/06-summary.md`.
 
+### Production-complete pass — 2026-10-06
+
+#### Changed
+- **Light-only enterprise theme.** The frontend moved from dark-only/cyan to a
+  light cool-neutral ramp with a single enterprise blue accent and Primer-style
+  status colours. Token *names* are unchanged so no component class renames were
+  needed; the graph node palette (`healthColor`) retuned to 50% lightness for
+  the near-white canvas. Landing, login, nav, footer de-slopped; landing now
+  shows a real-product screenshot with a scope disclosure.
+- **Typography:** Geist Sans + Geist Mono Variable, self-hosted via fontsource
+  (no runtime font request). Mono reserved for machine output (paths, hashes,
+  scores).
+- **Health thresholds unified to one 70/45 pair** in `src/lib/health-thresholds.ts`
+  (re-exported by the graph's `encoding.ts`). The dashboard badges bucketed at
+  80/50 while the graph legend used 70/45, so the same file could read "Medium"
+  and "Healthy" on one page. Both now bucket identically; tests pin the bounds.
+
+#### Added
+- `frontend/src/components/brand/Logo.tsx` (LogoMark + lockup) and a new V-mark
+  favicon; `scripts/make_brand_assets.py` now draws the blue-plate/white-V mark
+  for all raster icons and a light OG card; `scripts/check_brand_assets.py`
+  pixel-verifies them.
+- `ForceDirectedGraph.test.tsx` regression for the mount crash below.
+
+#### Fixed
+- **P0: the graph crashed on every mount.** `ForceDirectedGraph` built its
+  tick-lookup maps with d3's `selection.each`, which hands React-owned SVG
+  elements an `undefined` datum, so `n.id` threw "Cannot read properties of
+  undefined" and the error boundary replaced the map with "Something went
+  wrong". Maps now read `data-node-id`/`data-link-id` from the DOM instead.
+- **P0: connected repos were wiped on every backend deploy.** Render free tier
+  wipes the ephemeral disk; the backend's SQLite lived there. `DATABASE_URL`
+  (Neon Postgres, pooled) is now set in Render and Alembic `0002` applies on
+  boot; tables verified present in Neon.
+- `GITHUB_WEBHOOK_SECRET` set in Render so the fail-closed webhook receiver can
+  authenticate real GitHub deliveries (registered in the GitHub UI).
+- Mock repo fixture had a duplicate `src/lib/api.ts` path (React duplicate-key
+  warning + ambiguous graph data); replaced with a distinct fixture file.
+
 ### Added
 - Public landing page at `/` — the only indexable page. `/dashboard` is unmoved.
 - Per-route document meta (`src/lib/seo.ts`) plus 15 tests: title, description,

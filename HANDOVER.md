@@ -43,23 +43,31 @@ vercel.json                # rootDirectory: frontend
 ## 3. STATUS — Deployed & LIVE
 | Runtime | URL | Notes |
 |---|---|---|
-| Backend (Render, free) | `https://codeatlas-qr0e.onrender.com` | /docs 200, 9 routes, CORS green, OAuth OK |
-| Frontend (Vercel) | `https://frontend-bhagyansh.vercel.app` | Serves "Vorza" (title check), /login + /dashboard 200, mocks OFF + bundle has Render URL |
+| Backend (Render, free) | `https://codeatlas-qr0e.onrender.com` | /docs 200, CORS green, OAuth OK, Postgres on Neon (Alembic `0002`) |
+| Frontend (Vercel) | `https://frontend-bhagyansh.vercel.app` | Light enterprise theme, Geist, real brand mark; aliases `vorza-app`, `vorza-sigma` point here |
 
-Verified (last check): GitHub OAuth authorize URL redirects to `https://frontend-bhagyansh.vercel.app/login`, backend callback exchange returns 400 on garbage code (means callback route + secret + DB all fine). CORS preflight 200.
+Verified (2026-10-06): GitHub OAuth login end-to-end; repo connect + analyze;
+graph renders with the light palette; `POST /webhooks/github` enforces the
+shared secret (fail-closed: 503 without a valid signature); repos survive
+redeploys because the DB is Neon, not the ephemeral disk.
 
-## 4. KNOW ISSUE (1 real issue, infra not code)
-**Symptom:** connect repo → "Connected" toast → dashboard shows "No repos connected yet" / blank.
+Known (not a bug): Render free tier cold-starts in ~50s — first request after
+idle spins the instance up.
 
-**Root cause (NOT a code bug — infra):**
-- Render **free tier** sleeps after 15 min idle AND wipes the ephemeral disk on restart/move.
-- Backend SQLite DB file (data/vorza.db) lives on that disk → every restart/move deletes connected repos.
-- (Earlier "network error" on login was the same: cold start 30-60s; GitHub OAuth code is single-use, so retrying the same code fails with "code incorrect/expired".)
+## 4. RESOLVED — data no longer wipes on redeploy
 
-**Fix (durable):** backend is Postgres-ready (reads DATABASE_URL). Just:
-1. Create free Postgres on Neon (neon.tech) - 0.5GB, no card.
-2. Render -> CodeAtlas backend -> Environment -> add DATABASE_URL=<neon string> -> Deploy.
-3. Now connects persist forever (no more wipes).
+**The old issue (fixed 2026-10-06):** Render free tier wipes the ephemeral disk
+on restart/move, and the backend's SQLite file lived there, so connected repos
+vanished on every redeploy.
+
+**Fix applied:** the backend now reads `DATABASE_URL` (Neon Postgres, pooled
+URI). Alembic migrates on boot; verified in Neon that `repo`, `user`,
+`analysissnapshot`, `aireviewrow`, `comment` and `alembic_version` all exist.
+Connected repos and comments now survive redeploys.
+
+If repos still vanish after a restart, the app is **not** running with the Neon
+string — check Render -> Environment -> `DATABASE_URL`, and the service logs for
+"Running migrations".
 
 ## 5. STARTING A NEW SESSION — where to begin
 1. Backend cold? Render sleep -> first request takes 30-60s.

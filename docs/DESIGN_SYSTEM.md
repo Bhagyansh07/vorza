@@ -14,25 +14,35 @@ Every value below is quoted from `frontend/src/index.css` or
 // correct
 <div className="bg-surface border-line text-ink-dim rounded-stem shadow-panel" />
 
-// wrong -- this is why the favicon drifted from the app (see Phase 4)
-<div className="bg-[#161a26] text-[#a8b0be]" />
+// wrong -- this is why the favicon once drifted from the app (see Brand assets)
+<div className="bg-[#0e6ad2] text-[#575b63]" />
 ```
 
 A palette change should be a one-file edit. That property was violated once
-already: the accent was retuned from shadcn violet to cyan in the token pass,
-and `favicon.svg` kept the old `#8b5cf6 → #4f46e5` gradient, so the tab icon
-advertised a different brand than the running app. `scripts/make_brand_assets.py`
-now owns the raster brand assets and reads the same token values, so it cannot
-happen again.
+already: the Oct-2026 light pass changed every token (dark -> light, cyan ->
+enterprise blue) completely inside `index.css`/`tailwind.config.ts`, and the
+component tree needed **zero** class renames to follow. What would have drifted
+was the fixed raster brand assets (icons still drawn with the old near-black
+plate), so `scripts/make_brand_assets.py` owns those and reads the same token
+constants; changing a token and then regenerating keeps every format in lockstep.
 
 ---
 
-## Dark only
+## Light only
 
-There is no light theme. This was verified, not assumed: **zero** `dark:`
-utilities exist in the codebase. Tokens are declared once in `:root` and
-`darkMode: ['class']` is retained so a future light theme has a hook, but nothing
-uses it.
+There is no dark theme. Verified, not assumed: **zero** `dark:` utilities exist
+in `src/`, `color-scheme: light` is set on `:root` and in `index.html`, and the
+`sonner` toaster is pinned to `theme="light"`. `darkMode: ['class']` is retained
+so a future dark theme has a hook, but nothing uses it.
+
+This was a deliberate change, not an accident: on 2026-10-06 the app was
+re-skinned from dark-only-with-cyan-accent to a **light enterprise theme** --
+cool neutral ramp, single enterprise blue, Primer-style status colours, Geist
+Sans + Geist Mono Variable (self-hosted via fontsource). The health-status ramp,
+the graph node palette (`healthColor` renders at 50% lightness so it reads on a
+near-white canvas) and the brand assets were all retuned in the same pass, and
+the dashboard/graph health thresholds were unified to a single 70/45 pair in
+`src/lib/health-thresholds.ts`.
 
 Do not add `dark:` variants. If you need contrast that the ramp does not give
 you, the answer is a new token, not a `dark:` prefix.
@@ -46,11 +56,11 @@ something needed it; do not add steps for one-off components.
 
 | Token | Value | Use |
 |---|---|---|
-| `--background` | `224 32% 6%` | Page backdrop, graph canvas |
-| `--surface` | `224 26% 10%` | Panels, cards, side panels, comment bubbles |
-| `--raised` | `224 24% 14%` | Hover/active, nested cards, tooltips |
-| `--panel` | `224 22% 18%` | Popovers, dropdowns, floating overlays |
-| `--line` | `220 16% 22%` | Hairline borders and separators |
+| `--background` | `220 20% 98%` | Page backdrop, graph canvas |
+| `--surface` | `0 0% 100%` | Panels, cards, side panels, comment bubbles |
+| `--raised` | `220 16% 96%` | Hover/active, nested cards, tooltips |
+| `--panel` | `0 0% 100%` | Popovers, dropdowns, floating overlays |
+| `--line` | `220 13% 89%` | Hairline borders and separators |
 
 > ### `--panel` is not a Tailwind colour
 >
@@ -70,10 +80,10 @@ something needed it; do not add steps for one-off components.
 
 | Token | Value | Use |
 |---|---|---|
-| `--foreground` | `210 40% 96%` | Headings, highest-emphasis text |
-| `--ink` | `210 38% 93%` | Body text on a surface |
-| `--ink-dim` | `213 18% 72%` | Labels, secondary copy |
-| `--ink-faint` | `216 15% 56%` | Placeholders, axis ticks |
+| `--foreground` | `222 25% 11%` | Headings, highest-emphasis text |
+| `--ink` | `222 18% 15%` | Body text on a surface |
+| `--ink-dim` | `220 10% 38%` | Labels, secondary copy (5.9:1 on white) |
+| `--ink-faint` | `220 7% 49%` | Placeholders, axis ticks (4.5:1 on white) |
 
 Four levels. If a piece of copy does not fit, it usually wants to be deleted
 rather than promoted to a new weight.
@@ -84,14 +94,18 @@ rather than promoted to a new weight.
 
 | Token | Value |
 |---|---|
-| `--primary` | `190 72% 52%` |
-| `--primary-foreground` | `200 30% 7%` |
-| `--primary-soft` | `190 46% 20%` |
+| `--primary` | `212 87% 44%` |
+| `--primary-foreground` | `0 0% 100%` |
+| `--primary-soft` | `213 85% 95%` |
 
-Cyan, retuned from the shadcn default violet (`258 90% 70%`) in the token pass.
-The reason was not taste: violet sat too close to the status palette below, so
-focus rings and selection states competed with health signals that carry actual
-product meaning. Moving the accent to a hue no status colour occupies fixed it.
+Enterprise blue (≈ `#0e6ad2`), the single accent for the whole product. It was
+chosen so that `--primary` carries white text at 5.2:1 **and** -- like the cyan
+it replaced -- sits on a hue no status colour occupies: the health ramp is
+green/amber/red and the complexity ramp is blue/amber/red, so a focus ring or a
+selection state can never be mistaken for a health signal.
+
+`--primary-soft` is a tinted chip fill. Pair it with `text-primary`; never use it
+as a standalone text colour.
 
 **The accent never carries status.** If something is bad, it is `signal-bad`, not
 "a redder primary".
@@ -105,9 +119,24 @@ critical".
 
 | Token | Value | Meaning | Threshold |
 |---|---|---|---|
-| `--signal-good` | `152 58% 48%` | healthy | `health_score >= 70` |
-| `--signal-warn` | `38 90% 56%` | at risk | `45 <= health_score < 70` |
-| `--signal-bad` | `354 72% 62%` | critical | `health_score < 45` |
+| `--signal-good` | `143 72% 29%` | healthy | `health_score >= 70` |
+| `--signal-warn` | `40 100% 30%` | at risk | `45 <= health_score < 70` |
+| `--signal-bad` | `356 72% 47%` | critical | `health_score < 45` |
+
+These are the lighter-canvas re-tunes of the dark theme's ramp: each is darker
+than its predecessor (good was `152 58% 48%`, now `143 72% 29%`) so the status
+colours hold WCAG AA on white at body size, and the graph's node fill stays
+legible on the near-white canvas (`healthColor` in
+`features/graph/lib/encoding.ts` renders at 50% lightness for the same reason).
+
+The thresholds are **one pair, defined once**: `HEALTH_GOOD_MIN = 70`,
+`HEALTH_WARN_MIN = 45` live in `src/lib/health-thresholds.ts`, re-exported by
+`features/graph/lib/encoding.ts` and used by both the dashboard's `healthTone`
+and the graph's `healthLabel`/legend. Before the unification the dashboard
+bucketed at 80/50, so a file could read "Medium" in a badge and "Healthy" in the
+legend on the same page. Frontend assertions live in
+`src/lib/health-thresholds.test.ts` and `src/lib/health.test.ts`; the backend
+assertion is `backend/tests/services/test_analysis_scoring.py`.
 
 Aliases, kept because they carry product meaning that a bare `signal-*` loses at
 the call site:
@@ -121,7 +150,7 @@ So `bg-health-good` reads as "this file is healthy" and `bg-complexity-medium`
 reads as "this file is complex". Same pixel, different claim. Use the `health.*`
 family for a health score and the `complexity.*` family for a complexity score --
 never `signal-*` directly in a component, because `--complexity-low` is
-`210 60% 60%`, a desaturated blue that exists only in the complexity family.
+`214 55% 45%`, a desaturated blue that exists only in the complexity family.
 
 ---
 
@@ -143,12 +172,14 @@ they read as unrelated objects.
 `--shadow-panel` is a single token, not a scale:
 
 ```css
---shadow-panel: 0 1px 0 0 hsl(var(--line) / 0.55), ...
+--shadow-panel: 0 1px 2px 0 hsl(222 25% 11% / 0.06),
+  0 12px 28px -12px hsl(222 25% 11% / 0.2);
 ```
 
-A 1px top hairline plus a soft drop. The hairline is the important part: on a
-near-black canvas, a shadow alone is almost invisible, so the top edge needs its
-own luminance step to separate a floating layer from the surface below it.
+A 1px hairline-plus-sheen and a soft ambient drop, tinted with the ink hue rather
+than pure black. On a light canvas the drop alone reads as lift; the 1px top
+line is what stops a floating layer from looking like it has a raw pixel edge
+against the page.
 
 ---
 
@@ -156,12 +187,15 @@ own luminance step to separate a floating layer from the surface below it.
 
 Colours are written as `hsl(var(--token))` with **no alpha placeholder**. This is
 deliberate and verified: Tailwind v3 still emits the alpha modifier, so
-`border-line/70` compiles to `hsl(var(--line) / .7)`. That means the translucent
-overlay panels in `features/graph` work without a second token per opacity step.
+`border-line/70` compiles to `hsl(var(--line) / .7)`. The graph's floating
+layers are **solid** `bg-surface` + hairline + `shadow-panel` (see Graph view
+conventions); the alpha modifiers are used where a secondary edge or fill must
+recede -- `border-line/70` on side panels, `bg-raised/40` inside the review
+banner, `border-primary/60` or `/50` on pins.
 
 The trade-off: with a real placeholder (`hsl(var(--token) / <alpha-value>)`) the
 `/70` modifier would be ignored. Do not "fix" the tokens to the shadcn form
-without checking the overlay panels still render.
+without checking the alpha utilities still compile.
 
 ---
 
@@ -169,12 +203,16 @@ without checking the overlay panels still render.
 
 | Role | Stack | Size |
 |---|---|---|
-| UI / body | `ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, ...` | 14px base |
+| UI / body | `Geist Sans` (self-hosted via fontsource) | 14px base |
 | Numeric | same, plus `.tabular` | see below |
+| Machine output | `Geist Mono Variable` (fontsource) | 12-13px |
 
-There is no webfont. On a dark UI a downloaded font is a 100ms+ blocking cost for
-a difference almost nobody sees, and it has to be subset and self-hosted to be
-worth considering at all.
+Mono is reserved for things the machine printed, not things a human wrote: file
+paths, branch names, hashes, scores. Both fonts are self-hosted fontsource
+packages (latin subsets, `@fontsource/geist-sans` + `@fontsource-variable/
+geist-mono`), so there is no third-party font request at runtime; the system
+stack stays in the `fontFamily` fallback so a blocked font still renders an
+interface rather than a flash of unreadable default.
 
 ### `.tabular`
 
@@ -233,8 +271,14 @@ The graph is the product, so it has its own rules.
 - **Coordinates are normalised 0..1.** Comment pins store `x`/`y` as fractions of
   the canvas, so a pin survives a viewport resize and a zoom level change. This
   is why the gateway validates cursor coordinates for finiteness.
-- **Overlays are `bg-*/60` + `rounded-stem` + `shadow-panel`.** One recipe, so
-  every floating layer in the graph matches.
+- **Overlays are solid `bg-surface` + hairline + `rounded-stem` + `shadow-panel`.**
+  One recipe, so every floating layer in the graph matches. No `backdrop-blur`:
+  blurred glass reads as a launcher gadget, not an instrument. The only blur in
+  the product is the dialog scrim (`bg-black/70`), which sits over content
+  on purpose.
+- **The graph never throws.** At mount, tick-lookup maps are keyed off
+  `data-node-id` / `data-link-id`, never off d3-bound data (React-owned SVG has
+  no `__data__`); `ForceDirectedGraph.test.tsx` locks this in.
 - **`comment:new` events arrive both wrapped and bare** (`{"comment": {...}}` and
   `{...}`). The client normalises. Do not change one without the other.
 
@@ -251,13 +295,16 @@ network, no ImageMagick, no vendored fonts):
 | `icon-192.png`, `icon-512.png` | as named | PWA manifest |
 | `icon-maskable-512.png` | 512x512 | Android, art inside the inner 80% safe zone |
 | `apple-touch-icon.png` | 180x180 | iOS, opaque because iOS ignores transparency |
-| `favicon.svg` | 32x32 | Hand-written, but with the token values inline and a comment saying they must match |
+| `favicon.svg` | 32x32 | The mark: white V on a blue plate, geometry shared with the PNG icons |
 
-The OG card and the icons run the **same force-directed simulation the graph view
-uses**, so the picture is an honest sample of the product's output rather than
-decoration. `og:image` pointing at a file that does not exist is worse than
-omitting the tag, and a stock placeholder would have been a lie about what the
-product does.
+The PNG icons and `favicon.svg` are the **same drawing**: a white V (two graph
+edges meeting at a vertex, a node at each end) on the brand-blue plate, rendered
+by `draw_mark` in the script so an SVG and a PNG can never disagree about the
+logo. The OG card runs the **same force-directed simulation the graph view
+uses**, so the preview picture is an honest sample of the product's output
+rather than decoration. `og:image` pointing at a file that does not exist is
+worse than omitting the tag, and a stock placeholder would have been a lie about
+what the product does.
 
 ```bash
 backend/.venv/Scripts/python.exe scripts/make_brand_assets.py
