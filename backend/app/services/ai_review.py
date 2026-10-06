@@ -30,7 +30,7 @@ from pydantic import ValidationError
 from app.core.config import settings
 
 from . import prompts
-from .schemas import AiReview
+from .schemas import AiReview, ReviewFlag
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +160,116 @@ def parse_review_json(raw: str) -> dict[str, Any]:
         raise
 
 
+DIFF_HEADER_RE = re.compile(r"^diff --git a/(.+?) b/(.+?)$")
+DIFF_HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
+MAX_FLAGS = 15
+
+
+def changed_files_from_diff(diff: str) -> list[str]:
+    """Extract the new-side file paths from ``diff --git a/X b/Y`` headers.
+
+    Renames carry both paths; the new path is what a reviewer's citation refers
+    to. Synthetic paths (``/dev/null`` for deletions) are skipped and
+    duplicates are dropped, preserving first-seen order. Falls back to ``+++
+    b/...`` lines when a diff omits ``diff --git`` headers entirely (some
+    providers strip them).
+    """
+    paths: list[str] = []
+    seen: set[str] = set()
+    for line in diff.splitlines():
+        match = DIFF_HEADER_RE.match(line)
+        if match:
+            path = match.group(2)
+            if path != "/dev/null" and path not in seen:
+                seen.add(path)
+                paths.append(path)
+    if paths:
+        return paths
+    for line in diff.splitlines():
+        if not line.startswith("+++ b/"):
+            continue
+        path = line[len("+++ b/") :]
+        if path != "/dev/null" and path not in seen:
+            seen.add(path)
+            paths.append(path)
+    return paths
+
+
+def changed_line_ranges_by_file(diff: str) -> dict[str, list[tuple[int, int]]]:
+    """Map each changed file to the inclusive new-file line windows its hunks
+    span (``@@ -a,b +c,d @@`` → ``(c, c + d - 1)``).
+
+    Context lines inside a hunk count: a citation may legitimately point at a
+    nearby line the hunk makes visible. Files touched only by a rename have no
+    hunks and therefore no ranges.
+    """
+    current: str | None = None
+    ranges: dict[str, list[tuple[int, int]]] = {}
+    for line in diff.splitlines():
+        match = DIFF_HEADER_RE.match(line)
+        if match:
+            current = match.group(2)
+            ranges.setdefault(current, [])
+            continue
+        if current is None:
+            continue
+        hunk = DIFF_HUNK_RE.match(line)
+        if hunk:
+            start = int(hunk.group(1))
+            length = int(hunk.group(2) or 1)
+            ranges[current].append((start, start + length - 1))
+    return ranges
+
+
+def _overlaps(line_start: int, line_end: int, windows: list[tuple[int, int]]) -> bool:
+    return any(a <= line_end and line_start <= b for a, b in windows)
+
+
+def sanitize_review(
+    review: AiReview,
+    *,
+    visible_files: set[str],
+    file_ranges: dict[str, list[tuple[int, int]]],
+    max_flags: int = MAX_FLAGS,
+) -> AiReview:
+    """Drop uncited findings and strip impossible line numbers.
+
+    The model can still invent a ``file`` or a ``line``; nothing in the prompt
+    can prevent that, so the server enforces it (CONTRACTS.md "AI review output
+    shape"):
+
+    - a flag whose ``file`` is not among ``visible_files`` (the files the
+      truncated diff the reviewer actually saw contains) is **dropped**;
+    - a ``line_start``/``line_end`` pair that does not fall inside a changed
+      hunk visible in the diff is **stripped** (the finding survives, but no
+      invented line number does);
+    - the flag list is capped at ``max_flags``; the overflow is dropped.
+
+    ``review.dropped_flags`` is set to the total dropped so the UI can honestly
+    say "N findings dropped", and ``review.updated_files`` is NOT trusted from
+    the model here -- callers overwrite it with the server-derived diff set.
+    """
+    kept: list[ReviewFlag] = []
+    dropped = 0
+    for flag in review.flags:
+        if flag.file not in visible_files:
+            dropped += 1
+            continue
+        if flag.line_start is not None and flag.line_end is not None:
+            if not _overlaps(
+                flag.line_start, flag.line_end, file_ranges.get(flag.file, [])
+            ):
+                flag.line_start = None
+                flag.line_end = None
+        kept.append(flag)
+    if len(kept) > max_flags:
+        dropped += len(kept) - max_flags
+        kept = kept[:max_flags]
+    review.flags = kept
+    review.dropped_flags = dropped
+    return review
+
+
 _cost_log: deque[dict[str, Any]] = deque(maxlen=500)
 
 
@@ -199,6 +309,13 @@ def review_pr(diff: str, pr_number: int, client: LLMClient) -> AiReview:
     be validated, so garbage is never persisted downstream.
     """
     snippet = truncate_diff(diff)
+    # Truth the reviewer actually saw: the SANITIZED flag set may only cite
+    # files whose hunks were visible in the (possibly truncated) diff.
+    visible_files = set(changed_files_from_diff(snippet))
+    file_ranges = changed_line_ranges_by_file(snippet)
+    # Truth about the PR itself, used for `updated_files` below: the full diff,
+    # even when hunks were truncated away.
+    all_changed = changed_files_from_diff(diff)
     last_error: Exception | None = None
     for attempt in range(MAX_RETRIES + 1):
         if attempt == 0:
@@ -221,6 +338,12 @@ def review_pr(diff: str, pr_number: int, client: LLMClient) -> AiReview:
             review = AiReview.model_validate(payload)
             if review.pr_number != pr_number:
                 review.pr_number = pr_number
+            # The diff is the source of truth for both sets; the model's own
+            # updated_files is never trusted (CONTRACTS.md AI review shape).
+            sanitize_review(
+                review, visible_files=visible_files, file_ranges=file_ranges
+            )
+            review.updated_files = all_changed
             return review
         except (json.JSONDecodeError, ValidationError, TypeError, ValueError) as exc:
             last_error = exc

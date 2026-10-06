@@ -181,6 +181,7 @@ async def review_pull_request(repo_id: uuid.UUID, pr_number: int) -> None:
                 summary=review.summary,
                 flags=[f.model_dump() for f in review.flags],
                 updated_files=review.updated_files,
+                dropped_flags=review.dropped_flags,
             )
             session.add(review_row)
             session.commit()

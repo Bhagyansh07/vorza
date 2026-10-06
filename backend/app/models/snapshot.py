@@ -78,6 +78,10 @@ class AiReviewRow(SQLModel, table=True):
     summary: str = Field(default="", max_length=4096)
     flags: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON))
     updated_files: list[str] = Field(default_factory=list, sa_column=Column(JSON))
+    # Server-computed by ai_review.sanitize_review: findings dropped because
+    # they cited a file not in the diff, or because the flag list exceeded the
+    # cap. Always mirrors the persisted flags' story.
+    dropped_flags: int = Field(default=0, ge=0)
     created_at: datetime | None = Field(
         default_factory=get_datetime_utc,
         sa_type=DateTime(timezone=True),

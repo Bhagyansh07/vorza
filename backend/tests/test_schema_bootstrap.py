@@ -59,7 +59,7 @@ class TestEnsureSchema:
                 .all()
             )
         assert len(versions) == 1
-        assert versions[0] == "0003"
+        assert versions[0] == "0004"
 
     def test_leaves_an_already_migrated_database_untouched(self, engine) -> None:
         ensure_schema(engine)

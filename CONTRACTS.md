@@ -21,7 +21,7 @@ AnalysisSnapshot {
 }
 FileNode    { path, loc, complexity_score, churn_score, health_score, imports: [path] }
 Comment     { id, repo_id, snapshot_id, file_path, author_id, body, x, y, created_at }
-AiReviewRow { id, repo_id, pr_number, risk_score, summary, flags, updated_files, created_at }
+AiReviewRow { id, repo_id, pr_number, risk_score, summary, flags, updated_files, dropped_flags, created_at }
 ```
 
 ### Corrections to v0.1
@@ -96,10 +96,25 @@ trend endpoint, because it is chart data and the file set can be large.
   "pr_number": 42,
   "risk_score": 0-100,
   "summary": "one paragraph, plain English",
-  "flags": [ { "file": "path", "severity": "low|medium|high", "note": "text" } ],
-  "updated_files": [ "path1", "path2" ]
+  "flags": [
+    { "file": "path", "severity": "low|medium|high", "note": "text",
+      "line_start": 12, "line_end": 14 }
+  ],
+  "updated_files": [ "path1", "path2" ],
+  "dropped_flags": 2
 }
 ```
+
+`line_start`/`line_end` and `dropped_flags` are optional in the model's raw
+output. **The server sanitizes every review before persistence**
+(`ai_review.sanitize_review`): a flag whose `file` is not among the files
+visible in the (possibly truncated) diff is **dropped**; a line range that does
+not intersect a changed hunk is **stripped** (the finding survives, the
+invented line does not); the flag list is capped at 15. `dropped_flags` is set
+to the number dropped so the UI can say "N findings dropped" honestly, and
+`updated_files` is overwritten from the diff rather than trusted from the
+model. The model cannot invent citations: files it never saw are rejected, and
+lines are checked against the hunks it actually received.
 
 Persisted as `AiReviewRow` above. With no `OPENAI_API_KEY` set, the orchestrator
 **skips the review and logs an explicit warning** rather than failing the run.

@@ -27,11 +27,16 @@ Rules:
     "pr_number": <int, the PR number given to you>,
     "risk_score": <int or float 0-100, higher = riskier change>,
     "summary": <one paragraph, plain English, what the PR does and how risky it is>,
-    "flags": [ list of {{ "file": "<path>", "severity": "low"|"medium"|"high", "note": "<plain-English issue>" }} ],
+    "flags": [ list of {{ "file": "<path>", "severity": "low"|"medium"|"high", "note": "<plain-English issue>", "line_start": <optional int>, "line_end": <optional int> }} ],
     "updated_files": [ "<list of file paths touched by the PR>" ]
 }}
 - "flags" may be empty if the diff is clean, but still fill out the other fields.
 - Do not invent issues; only flag things you actually see in the diff.
+- Every "file" MUST be a path that appears in the diff shown to you. A file
+  whose hunks were truncated away is not reviewable — do not cite it.
+- Cite lines you actually see: "line_start"/"line_end" are optional, use
+  new-file line numbers from a hunk in the diff. Omit them rather than guessing.
+- Do not invent "updated_files": list only paths visible in the diff.
 - Keep the summary under ~200 words."""
 
 USER_REVIEW_PROMPT_TEMPLATE = """PR #{pr_number}
