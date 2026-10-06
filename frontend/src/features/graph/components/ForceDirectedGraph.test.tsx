@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 import { ForceDirectedGraph } from './ForceDirectedGraph';
 import type { FileNode, GraphLink } from '../types';
@@ -57,5 +57,57 @@ describe('ForceDirectedGraph', () => {
     expect(document.querySelectorAll('[data-node-id]')).toHaveLength(3);
     expect(document.querySelectorAll('[data-link]')).toHaveLength(1);
     expect(document.querySelectorAll('[data-link-id]')).toHaveLength(1);
+  });
+
+  it('exposes every node as a focusable button with an accessible name (R8)', async () => {
+    render(
+      <ForceDirectedGraph
+        files={files}
+        links={links}
+        selectedPath={null}
+        onSelect={() => {}}
+      />,
+    );
+
+    // W5: the canvas is a labelled group (not role="img", which would make the
+    // interactive children presentational), and each node is a real button.
+    expect(document.querySelector('svg')).toHaveAttribute('role', 'group');
+
+    const node = screen.getByRole('button', { name: /src\/app\.tsx/ });
+    expect(node).toHaveAttribute('tabindex', '0');
+    expect(node).toHaveAttribute('aria-pressed', 'false');
+    expect(node.getAttribute('aria-label')).toMatch(/Healthy health/);
+  });
+
+  it('selects a node with the keyboard: Enter (R8)', () => {
+    const onSelect = vi.fn();
+    render(
+      <ForceDirectedGraph
+        files={files}
+        links={links}
+        selectedPath={null}
+        onSelect={onSelect}
+      />,
+    );
+
+    const node = screen.getByRole('button', { name: /src\/lib\/api\.ts/ });
+    fireEvent.keyDown(node, { key: 'Enter' });
+    expect(onSelect).toHaveBeenCalledWith('src/lib/api.ts');
+  });
+
+  it('selects a node with the keyboard: Space (R8)', () => {
+    const onSelect = vi.fn();
+    render(
+      <ForceDirectedGraph
+        files={files}
+        links={links}
+        selectedPath={null}
+        onSelect={onSelect}
+      />,
+    );
+
+    const node = screen.getByRole('button', { name: /src\/app\.tsx/ });
+    fireEvent.keyDown(node, { key: ' ' });
+    expect(onSelect).toHaveBeenCalledWith('src/app.tsx');
   });
 });

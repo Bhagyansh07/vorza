@@ -5,6 +5,7 @@ import { buildGraph, snapshotHealthBreakdown } from "../lib/graphModel";
 import { healthLabel, healthTone } from "../lib/encoding";
 import { formatRelative } from "../lib/format";
 import { ForceDirectedGraph, type ForceGraphHandle } from "./ForceDirectedGraph";
+import { FileTable } from "./FileTable";
 import { FileSidePanel } from "./FileSidePanel";
 import { GraphLegend } from "./GraphLegend";
 import { CommentLayer } from "./CommentLayer";
@@ -54,6 +55,7 @@ export function GraphView({
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [reviewOpen, setReviewOpen] = useState(true);
+  const [view, setView] = useState<"map" | "list">("map");
   const canvasRef = useRef<HTMLDivElement>(null);
   const downRef = useRef<{ x: number; y: number } | null>(null);
   const draftAnchor = useRef(0);
@@ -77,6 +79,7 @@ export function GraphView({
     setSelectedPath(null);
     setDraft(null);
     setReviewOpen(true);
+    setView("map");
   }, [repoId]);
 
   const openComposerAt = useCallback(
@@ -171,6 +174,29 @@ export function GraphView({
 
         <div className="ml-auto flex items-center gap-2">
           {canRenderCanvas && (
+            <div
+              role="group"
+              aria-label="Graph view"
+              className="flex items-center overflow-hidden rounded-stem border border-line"
+            >
+              {(["map", "list"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setView(v)}
+                  aria-pressed={view === v}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    view === v
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-surface text-ink-dim hover:text-ink"
+                  }`}
+                >
+                  {v === "map" ? "Map" : "List"}
+                </button>
+              ))}
+            </div>
+          )}
+          {canRenderCanvas && view === "map" && (
             <button
               onClick={() => graphRef.current?.fit()}
               className="rounded-stem border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-raised"
@@ -203,7 +229,7 @@ export function GraphView({
           {model.status === "success" && !model.snapshot?.files.length && (
             <GraphEmptyState onRetry={model.refresh} />
           )}
-          {canRenderCanvas && (
+          {canRenderCanvas && view === "map" && (
             <>
               <ForceDirectedGraph
                 ref={graphRef}
@@ -242,6 +268,13 @@ export function GraphView({
                 </div>
               )}
             </>
+          )}
+          {canRenderCanvas && view === "list" && (
+            <FileTable
+              files={model.snapshot!.files}
+              selectedPath={selectedPath}
+              onSelect={setSelectedPath}
+            />
           )}
         </div>
 

@@ -11,7 +11,7 @@ import {
   useState,
 } from "react";
 import type { FileNode, GraphLink } from "../types";
-import { healthFill, nodeRadius } from "../lib/encoding";
+import { healthFill, healthLabel, nodeRadius } from "../lib/encoding";
 
 interface Props {
   files: FileNode[];
@@ -62,11 +62,14 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
   const positionsRef = useRef(new Map<string, { x: number; y: number }>());
   const selectedRef = useRef<string | null>(null);
   const hoveredRef = useRef<string | null>(null);
+  const focusedRef = useRef<string | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
+  const [focused, setFocused] = useState<string | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   selectedRef.current = selectedPath;
   hoveredRef.current = hovered;
+  focusedRef.current = focused;
 
   const latestPulse = useMemo(() => {
     const map = new Map<string, number>();
@@ -91,8 +94,9 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
     const paths = new Set(ranked);
     if (selectedPath) paths.add(selectedPath);
     if (hovered) paths.add(hovered);
+    if (focused) paths.add(focused);
     return paths;
-  }, [files, selectedPath, hovered]);
+  }, [files, selectedPath, hovered, focused]);
 
   const refreshLabels = useCallback(() => {
     const world = worldRef.current;
@@ -100,6 +104,7 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
     const k = zoomKRef.current;
     const selected = selectedRef.current;
     const hoveredNow = hoveredRef.current;
+    const focusedNow = focusedRef.current;
     const fontSize = Math.min(12, 10 / k);
     select(world)
       .selectAll<SVGGElement, SimNode>("g[data-node]")
@@ -107,7 +112,7 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
         // Same rule as the tick maps: these are React-owned elements with no
         // d3 datum, so read the id from the attribute, not from a bound `d`.
         const path = this.dataset.nodeId ?? "";
-        const keep = path === selected || path === hoveredNow;
+        const keep = path === selected || path === hoveredNow || path === focusedNow;
         const label = select(this).select<SVGTextElement>("text[data-label]");
         label.attr("display", keep || k >= 0.7 ? "" : "none");
         label.attr("font-size", `${fontSize}`);
@@ -322,11 +327,20 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
     setHovered((prev) => (prev === path ? prev : path));
   };
 
+  const handleNodeKeyDown = (e: React.KeyboardEvent<SVGGElement>, path: string) => {
+    // role="button" on a native-less <g> gets no built-in activation, so
+    // Enter and Space both toggle the selection, matching a real button.
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleNodeClick(path);
+    }
+  };
+
   return (
     <svg
       ref={svgRef}
-      role="img"
-      aria-label="Force-directed map of the codebase. Node size encodes complexity, node color encodes health."
+      role="group"
+      aria-label="Force-directed map of the codebase. Each file is a focusable node: Tab to a node and press Enter to inspect it. Use the Map/List toggle for a table of every file with its scores."
       className="h-full w-full touch-none select-none"
     >
       <defs>
@@ -352,16 +366,24 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
             const r = nodeRadius(f.complexity_score, f.loc);
             const isSelected = f.path === selectedPath;
             const isHovered = f.path === hovered;
+            const isFocused = f.path === focused;
             const stamp = latestPulse.get(f.path);
             return (
               <g
                 key={f.path}
                 data-node
                 data-node-id={f.path}
-                className="cursor-pointer"
+                role="button"
+                tabIndex={0}
+                aria-label={`${f.path}, ${healthLabel(f.health_score)} health, complexity ${f.complexity_score}`}
+                aria-pressed={isSelected}
+                className="cursor-pointer outline-none"
                 onClick={() => handleNodeClick(f.path)}
+                onKeyDown={(e) => handleNodeKeyDown(e, f.path)}
                 onMouseEnter={() => handleHover(f.path)}
                 onMouseLeave={() => setHovered(null)}
+                onFocus={() => setFocused(f.path)}
+                onBlur={() => setFocused(null)}
               >
                 {stamp !== undefined && (
                   <circle
@@ -381,9 +403,15 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
                 <circle
                   r={r}
                   fill={healthFill(f.health_score)}
-                  opacity={isHovered || isSelected ? 1 : 0.88}
-                  stroke={isSelected ? "hsl(var(--primary))" : "none"}
-                  strokeWidth={isSelected ? 2 : 0}
+                  opacity={isHovered || isSelected || isFocused ? 1 : 0.88}
+                  stroke={
+                    isSelected
+                      ? "hsl(var(--primary))"
+                      : isFocused
+                        ? "hsl(var(--ink-faint))"
+                        : "none"
+                  }
+                  strokeWidth={isSelected ? 2 : isFocused ? 1.5 : 0}
                   pointerEvents="none"
                 />
                 {labeled.has(f.path) && (
