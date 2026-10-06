@@ -1,12 +1,11 @@
 import { Suspense, lazy } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft, History } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/errors/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useSnapshotHistory, useAnalyzeRepo } from '@/features/repos/hooks/use-repos';
-import { EmptyState } from '@/components/empty/EmptyState';
+import { useSnapshotHistory } from '@/features/repos/hooks/use-repos';
 import { useDocumentMeta } from '@/lib/seo';
 
 /**

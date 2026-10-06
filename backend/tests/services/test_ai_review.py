@@ -27,9 +27,7 @@ class FakeLLMClient:
         content, usage = self._responses[self.calls]
         self.calls += 1
         if usage is None:
-            usage = LlmUsage(
-                model="gpt-4o-mini", input_tokens=1, output_tokens=1
-            )
+            usage = LlmUsage(model="gpt-4o-mini", input_tokens=1, output_tokens=1)
         return content, usage
 
 
@@ -49,19 +47,37 @@ def test_truncate_diff_empty_is_kept_empty() -> None:
 
 
 def test_parse_review_json_clean() -> None:
-    payload = {"pr_number": 5, "summary": "ok", "risk_score": 0.1, "flags": [], "updated_files": []}
+    payload = {
+        "pr_number": 5,
+        "summary": "ok",
+        "risk_score": 0.1,
+        "flags": [],
+        "updated_files": [],
+    }
     text = json.dumps(payload)
     assert parse_review_json(text) == payload
 
 
 def test_parse_review_json_with_markdown_fences() -> None:
-    payload = {"pr_number": 1, "summary": "s", "risk_score": 0.2, "flags": [], "updated_files": []}
+    payload = {
+        "pr_number": 1,
+        "summary": "s",
+        "risk_score": 0.2,
+        "flags": [],
+        "updated_files": [],
+    }
     text = f"```json\n{json.dumps(payload)}\n```"
     assert parse_review_json(text) == payload
 
 
 def test_parse_review_json_with_leading_prose() -> None:
-    payload = {"pr_number": 2, "summary": "s", "risk_score": 0.3, "flags": [], "updated_files": []}
+    payload = {
+        "pr_number": 2,
+        "summary": "s",
+        "risk_score": 0.3,
+        "flags": [],
+        "updated_files": [],
+    }
     text = f"Here is the answer: {json.dumps(payload)} and more."
     assert parse_review_json(text) == payload
 
@@ -70,9 +86,7 @@ def test_record_usage_adds_to_log_and_rounds(monkeypatch) -> None:
     from app.services import ai_review
 
     ai_review._cost_log.clear()
-    record_usage(
-        LlmUsage(model="gpt-4o-mini", input_tokens=10, output_tokens=5)
-    )
+    record_usage(LlmUsage(model="gpt-4o-mini", input_tokens=10, output_tokens=5))
     log = get_cost_log()
     assert len(log) == 1
     assert log[0]["total_tokens"] == 15
