@@ -239,6 +239,45 @@ Used wherever numbers are compared down a column: health scores, LOC, churn,
 timestamps in the history chart. Proportional digits make two columns of numbers
 that should line up visibly not line up, and the eye reads that as noise.
 
+### Landing page: the survey
+
+The marketing page (the only indexable route) is built as an atlas, not a
+product shot. Its vocabulary, all token-driven:
+
+- **Map frames** (`MapFrame.tsx`): every demo map sits in a double hairline
+  frame with corner registration ticks and mono margin notes (sheet reference,
+  coordinates, scale). The frame is a `figure`; the notes are its caption.
+- **Numbered survey labels**: sections read `01 · Survey`, `02 · Reading the
+  map`, `03 · Blast radius`, `04 · Pull requests get read`, `05 · Inventory`,
+  `06 · Field notes`, `07 · Field equipment`, mono caps, one accent.
+- **Live maps, not screenshots** (`DemoMap.tsx`): the hero, story and blast
+  sections render the real force simulation and the real `encoding.ts` colour
+  rules against a labelled demo dataset (`demoData.ts`) that mirrors Vorza's
+  own repo layout. Everything on the page is either derived from that dataset
+  or labelled sample. No image is presented as a real user's repository.
+- **Scroll-zoom story** (`ScrollStory.tsx`): a 280vh section whose sticky map
+  zooms through three beats (clusters, hubs, outliers) from deterministic seed
+  positions, so the keyframes land on the same regions on every load.
+- **Sample review card** (`ReviewDemo.tsx`): mirrors `ReviewBanner`'s chip
+  language, including the dropped-findings honesty line. Never presented as a
+  real review.
+- **Animated metrics** (`Metrics.tsx`): count-ups toward numbers derived from
+  the demo dataset, not invented figures. `useCountUp` reads `performance.now()`
+  inside the rAF callback rather than trusting the host timestamp (jsdom's is
+  offset from the window clock and produced negative eased values).
+
+Font decision: the design brief for Phase 3 asked for a serif/grotesk display
+plus JetBrains Mono. Kept: Geist Sans (a grotesk) for headings and Geist Mono
+for machine output, both already self-hosted via fontsource. Adding a second
+display and a second mono face would add weight to the indexable page for no
+measured gain; the substitution still satisfies "self-hosted mono data labels"
+with the stack that already ships.
+
+Copy rules (also enforced in the Phase 1 audit): no em dashes, no
+"seamless / next-gen" vocabulary, no filler ("open the box" style). Honesty
+notes print verbatim: the `repo` scope paragraph from the audit sits on the
+page unchanged.
+
 ---
 
 ## Components
