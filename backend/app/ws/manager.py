@@ -103,12 +103,3 @@ class ConnectionManager:
             throttle = CursorThrottle(max_per_sec=self._cursor_max_per_sec)
             self._throttles[repo_id] = throttle
         return throttle
-
-    def throttle_submit(
-        self, repo_id: RepoId, user_id: UserId, x: float, y: float
-    ) -> bool:
-        """True when a cursor update for this user may be broadcast immediately."""
-        return self.throttle_for(repo_id).submit(user_id, x, y)
-
-    def throttle_due(self, repo_id: RepoId) -> dict[str, tuple[float, float]]:
-        return self.throttle_for(repo_id).due()
