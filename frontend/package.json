@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "postbuild": "node scripts/check-bundle-size.mjs",
+    "size:check": "node scripts/check-bundle-size.mjs",
+    "size:check:update": "node scripts/check-bundle-size.mjs --update-baseline",
     "preview": "vite preview",
     "prerender": "node scripts/seo-render.mjs all",
     "prerender:root": "node scripts/seo-render.mjs root",

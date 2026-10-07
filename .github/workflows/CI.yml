@@ -68,6 +68,8 @@ jobs:
       - name: Test
         run: npm test -- --run
       - name: Build
+        # `postbuild` runs the bundle-size gate (check-bundle-size.mjs) against
+        # the committed baseline: initial JS gzip > +5% fails the build (D3).
         run: npm run build
         timeout-minutes: 10
 

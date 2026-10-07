@@ -1,0 +1,5 @@
+{
+  "initialJsGzipBytes": 196608,
+  "tolerancePct": 5,
+  "note": "Measured by node scripts/check-bundle-size.mjs --update-baseline after a deliberate bundle change. Update, do not delete."
+}
