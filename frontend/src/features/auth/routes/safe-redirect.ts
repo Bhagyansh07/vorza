@@ -14,10 +14,11 @@ export const DEFAULT_REDIRECT = '/dashboard';
  * browser put in the address bar, so an attacker can put anything there and
  * hand the victim a link.
  *
- * React Router 6.30.6 has an open-redirect advisory for exactly this
- * (GHSA-wrjc-x8rr-h8h6, plus the CVE-2025-68470 bypass), fixed in 7.18.4.
- * Upgrading is a v6 -> v7 migration and is filed separately; this guard is the
- * mitigation in the meantime.
+ * React Router had an open-redirect advisory for exactly this
+ * (GHSA-wrjc-x8rr-h8h6, plus the CVE-2025-68470 bypass), fixed in v7.18.4.
+ * The app is on react-router-dom v7.18.4+, which ships the fix, and this guard
+ * is kept as defense in depth: the router is not allowed to be the only thing
+ * standing between an attacker-supplied pathname and a redirect target.
  *
  * The rules, and why each one:
  *
