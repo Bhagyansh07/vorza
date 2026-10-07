@@ -5,9 +5,11 @@ name: Lighthouse (T2)
 # without a session, so audited scores would be meaningless there.
 #
 # Gating thresholds (measured 2026-10-08 against the live origin):
-#   landing  mobile perf 90, a11y 100  -> gate perf >= 85, a11y >= 95
-#   login    mobile perf 80, a11y 100  -> gate perf >= 70, a11y >= 95
-# Both presets (mobile + desktop) run, so thresholds hold on desktop too.
+#   landing  mobile perf 90, a11y 100; desktop perf 99, a11y 100
+#            -> gate perf >= 85, a11y >= 95 (both presets)
+#   login    mobile perf 80, a11y 100; desktop perf 96, a11y 100
+#            -> gate perf >= 70, a11y >= 95 (both presets)
+# Each preset runs twice (runs: 2) and LHCI asserts the median.
 #
 # PR comments are intentionally not wired: that needs the Lighthouse CI GitHub
 # app installed on this private repo plus a token secret. See
@@ -25,20 +27,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Lighthouse on the landing page
+      - name: Lighthouse landing (mobile)
         uses: treosh/lighthouse-ci-action@v12
         with:
           urls: https://vorza-sigma.vercel.app/
           configPath: ./.github/lighthouserc.landing.json
           runs: 2
           uploadArtifacts: true
-          artifactName: lhci-landing
+          artifactName: lhci-landing-mobile
 
-      - name: Lighthouse on the login page
+      - name: Lighthouse landing (desktop)
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: https://vorza-sigma.vercel.app/
+          configPath: ./.github/lighthouserc.landing-desktop.json
+          runs: 2
+          uploadArtifacts: true
+          artifactName: lhci-landing-desktop
+
+      - name: Lighthouse login (mobile)
         uses: treosh/lighthouse-ci-action@v12
         with:
           urls: https://vorza-sigma.vercel.app/login
           configPath: ./.github/lighthouserc.login.json
           runs: 2
           uploadArtifacts: true
-          artifactName: lhci-login
+          artifactName: lhci-login-mobile
+
+      - name: Lighthouse login (desktop)
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: https://vorza-sigma.vercel.app/login
+          configPath: ./.github/lighthouserc.login-desktop.json
+          runs: 2
+          uploadArtifacts: true
+          artifactName: lhci-login-desktop
