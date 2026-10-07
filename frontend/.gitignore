@@ -9,12 +9,17 @@ coverage
 .env
 .env.*
 !.env.production
+!.env.e2e
 
 # logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Playwright (T1 E2E)
+playwright-report
+test-results
 
 # editor
 .vscode/*

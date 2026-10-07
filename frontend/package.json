@@ -6,9 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:e2e": "tsc -b && vite build --mode e2e",
     "postbuild": "node scripts/check-bundle-size.mjs",
     "size:check": "node scripts/check-bundle-size.mjs",
     "size:check:update": "node scripts/check-bundle-size.mjs --update-baseline",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium",
     "preview": "vite preview",
     "prerender": "node scripts/seo-render.mjs all",
     "prerender:root": "node scripts/seo-render.mjs root",
@@ -45,6 +48,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",
+    "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
@@ -72,7 +76,8 @@
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.26.1",
     "vite": "^6.2.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "ws": "^8.22.0"
   },
   "allowScripts": {
     "esbuild@0.25.12": true

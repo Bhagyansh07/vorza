@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import type { Plugin } from 'vite';
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 import { absolutizeHead, injectRoot } from './prerender/seo-html.mjs';
 
@@ -193,5 +193,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // Playwright specs live in e2e/ and are run by Playwright, not vitest.
+    exclude: [...configDefaults.exclude, 'e2e/**'],
   },
 });
