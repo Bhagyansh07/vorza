@@ -241,8 +241,9 @@ that should line up visibly not line up, and the eye reads that as noise.
 
 ### Landing page: the survey
 
-The marketing page (the only indexable route) is built as an atlas, not a
-product shot. Its vocabulary, all token-driven:
+The marketing page (the indexable `/` route, plus a shell for `/login`; see
+`vite.config.ts` `INDEXABLE_ROUTES`) is built as an atlas, not a product shot.
+Its vocabulary, all token-driven:
 
 - **Map frames** (`MapFrame.tsx`): every demo map sits in a double hairline
   frame with corner registration ticks and mono margin notes (sheet reference,
