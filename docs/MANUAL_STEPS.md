@@ -16,7 +16,7 @@ Current state, verified 2026-10-07:
 | Database | **Neon Postgres** (Free); the live DB URL is a Render env var (`DATABASE_URL`), not committed |
 | Deploy config | `render.yaml` (backend) and Vercel project settings (frontend, root dir `frontend`) |
 | Site origin | `VITE_SITE_URL=https://vorza-sigma.vercel.app` on Vercel prod; canonical/`og:url`/JSON-LD follow it |
-| `/` for crawlers | **Pre-rendered** (no JS): the build injects the committed `frontend/prerender/landing-root.html` snapshot into `landing.html` and Vercel rewrites `/` to it. The SPA then mounts normally. Snapshot regenerated with `npm run build && npm run prerender:root` whenever landing markup changes; `public/og-image.png` (1200x630) via `npm run prerender:og`. See section 3.3. |
+| `/` for crawlers | **Pre-rendered** (no JS): the build injects the committed `frontend/prerender/landing-root.html` snapshot into `index.html` (the file `/` serves), and keeps the untouched built entry as `shell.html` for SPA deep links. The SPA mounts over the static landing with `createRoot`. Snapshot regenerated with `npm run build && npm run prerender:root` whenever landing markup changes; `public/og-image.png` (1200x630) via `npm run prerender:og`. See section 3.3. |
 | Indexable pages | `/` and `/login` (`frontend/vite.config.ts` `seoFiles()`); `/dashboard` and `/repos/*` are disallowed in `robots.txt` |
 
 > The old domains `frontend-bhagyansh.vercel.app` and `frontend-mu-jet-18.vercel.app`
@@ -244,6 +244,7 @@ The old Vercel deployment is gone, so this is a new project.
 | OG image loads | 200, 1200x630 | `curl -sI https://<domain>/og-image.png` |
 | Bundle points at Render | yes | `curl -s https://<domain>/assets/index-*.js \| grep -o 'https://[a-z0-9-]*\.onrender\.com'` |
 | Landing is pre-rendered, not a shell | full marketing copy + `application/ld+json`, no empty `#root` | `curl -s https://<domain>/ \| grep -c "force-directed"` (expect ≥ 1) and the same for `application/ld+json`; View source shows the text, it is not JS-rendered |
+| Deep links stay shells | `/login` returns the app shell, not the landing body | `curl -s "https://<domain>/login" \| grep -c "force-directed"` (expect 0) |
 | Canonical / OG / JSON-LD are absolute | every URL points at your frontend origin, no `localhost` | `curl -s https://<domain>/ \| grep -oE 'href="https://[^"]*"\|content="https://[^"]*"\|"url": "https://[^"]*"'`; each host equals `<your-vercel-domain>` |
 
 ```bash
@@ -260,8 +261,13 @@ The `/` route for crawlers is a **committed snapshot**, not generated on Vercel
 (the build machine has no browser). Two committed artifacts:
 
 - `frontend/prerender/landing-root.html` — the rendered `#root` of the landing.
-  The build injects it into `landing.html`; the Vercel rewrite serves that file
-  at `/` (`frontend/vercel.json`).
+  The build injects it into `index.html`, which is the file Vercel serves at
+  `/`. The untouched built entry is kept as `shell.html` and served for SPA
+  deep links (`/login`, app routes) by the rewrite in `frontend/vercel.json`.
+  A rewrite of `/` to a second file would not work: Vercel gives the
+  filesystem precedence, so `/index.html` shadows it. Vercel's guidance for
+  this case is to rename the static file, which is why the shell is not
+  `index.html`.
 - `frontend/public/og-image.png` — the 1200x630 social banner (`og:image`,
   `twitter:image`, JSON-LD `image`).
 
