@@ -3,9 +3,10 @@
  *
  * These scripts are developer tools, not part of the shipped app. They need a
  * Chrome binary on the machine they run on, so the Vite build itself never
- * calls them: `dist/landing.html` is assembled from a *committed* snapshot
- * (prerender/landing-root.html) so a deploy stays deterministic on machines
- * that have no browser (e.g. Vercel's build image).
+ * calls them: `dist/index.html` is reassembled from a *committed* snapshot
+ * (prerender/landing-root.html) and the untouched built entry is kept as
+ * `dist/shell.html` for the SPA deep links, so a deploy stays deterministic
+ * on machines that have no browser (e.g. Vercel's build image).
  */
 
 import { spawn } from 'node:child_process';

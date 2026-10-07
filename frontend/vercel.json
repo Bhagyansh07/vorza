@@ -5,8 +5,7 @@
   "outputDirectory": "dist",
   "installCommand": "npm ci",
   "rewrites": [
-    { "source": "/", "destination": "/landing.html" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/shell.html" }
   ],
   "headers": [
     {
@@ -28,7 +27,7 @@
       ]
     },
     {
-      "source": "/(index|landing)\\.html",
+      "source": "/(index|shell)\\.html",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },

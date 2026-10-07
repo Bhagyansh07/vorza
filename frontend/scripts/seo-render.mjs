@@ -8,7 +8,7 @@
  *
  * Why not part of `npm run build`: `build` runs on Vercel's image, which has
  * no Chrome. So the landing snapshot is committed and the build simply injects
- * it into landing.html (see vite.config.ts, vorza-seo-files). Run this locally
+ * it into index.html (see vite.config.ts, vorza-seo-files). Run this locally
  * whenever the landing markup or the og artwork changes, and commit the
  * results. Uses the system Chrome (CHROME_PATH overrides detection).
  */

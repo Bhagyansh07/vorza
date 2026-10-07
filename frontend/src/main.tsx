@@ -15,7 +15,7 @@ import '@/index.css';
 
 const rootEl = document.getElementById('root')!;
 
-// The `/` route is served from landing.html, whose <div id="root"> already
+// The `/` route is served from index.html, whose <div id="root"> already
 // holds the fully rendered landing (committed in prerender/ and injected at
 // build time). That markup exists for crawlers and no-JS readers: it is the
 // only version of the page they ever see. We deliberately do NOT hydrate it.

@@ -88,14 +88,26 @@ function seoFiles(): Plugin {
       });
     },
     async closeBundle() {
-      // `/` is served from `landing.html` (pre-rendered in prerender/) so that
-      // a crawler sees the full landing without running JS (S2). The snapshot
-      // is committed and regenerated with `npm run prerender`; the build never
-      // launches a browser, so it is deterministic on Vercel too.
+      // Final layout of the deployed dist/:
+      //
+      //   index.html  the landing page: the committed pre-render from
+      //               prerender/ injected into <div id="root">. Served for
+      //               `/`, so a crawler sees the full landing without running
+      //               JS (S2) and the SPA mounts over it with createRoot.
+      //   shell.html  the untouched built entry (empty #root + the same
+      //               scripts), served for every other path by the SPA
+      //               rewrite in vercel.json. Deep links like `/login` stay
+      //               lightweight shells.
+      //
+      // A rewrite cannot serve `/` from a second file: Vercel gives the
+      // filesystem precedence over rewrites, so `/index.html` shadows every
+      // rewrite of `/`. Making index.html itself the landing and renaming the
+      // app entry to shell.html is Vercel's own guidance for this case
+      // ("rename your static file").
       //
       // This must be closeBundle, not generateBundle: Vite's html plugin emits
       // index.html in its own generateBundle hook, which runs *after* user
-      // plugins, so the bundle does not yet hold index.html in here.
+      // plugins, so only here does the built entry exist.
       const indexFile = path.join(outDir, 'index.html');
       const snapshotPath = path.resolve(
         __dirname,
@@ -104,6 +116,7 @@ function seoFiles(): Plugin {
       );
       try {
         const html = readFileSync(indexFile, 'utf8');
+        writeFileSync(path.join(outDir, 'shell.html'), html);
         const snapshot = readFileSync(snapshotPath, 'utf8').trim();
         const prerendered = injectRoot(html, snapshot);
         if (!prerendered) {
@@ -112,11 +125,14 @@ function seoFiles(): Plugin {
           );
           return;
         }
-        writeFileSync(path.join(outDir, 'landing.html'), prerendered);
-        logger.info('[vorza] wrote landing.html (pre-rendered /)');
+        writeFileSync(indexFile, prerendered);
+        logger.info(
+          '[vorza] index.html = pre-rendered landing (/), ' +
+            'shell.html = app shell (SPA deep links)'
+        );
       } catch (err) {
         logger.warn(
-          `[vorza] landing.html not written (${err instanceof Error ? err.message : err}). ` +
+          `[vorza] pre-render not written (${err instanceof Error ? err.message : err}). ` +
             'Run `npm run build && npm run prerender` so crawlers see the landing.'
         );
       }
