@@ -18,7 +18,7 @@ Usage::
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from sqlalchemy import asc, desc
 from sqlalchemy.sql.elements import UnaryExpression
@@ -35,9 +35,12 @@ def order_desc(column: Any) -> UnaryExpression[Any]:
     That rejection is the exact mismatch this module exists to absorb; typing
     it ``Any`` documents the seam instead of scattering ignores across routes.
     """
-    return desc(column)
+    # SQLAlchemy 2.1 retyped ascending/descending as ``Any``, so the cast pins
+    # the declared return type across every supported SQLAlchemy release; this
+    # keeps mypy strict happy without a bare ignore.
+    return cast(UnaryExpression[Any], desc(column))
 
 
 def order_asc(column: Any) -> UnaryExpression[Any]:
     """ORDER BY column ASC. See :func:`order_desc` for the ``Any`` rationale."""
-    return asc(column)
+    return cast(UnaryExpression[Any], asc(column))
