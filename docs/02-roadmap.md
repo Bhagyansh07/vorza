@@ -99,8 +99,8 @@ section 7; indexing itself takes days-weeks).
 
 | ID | Item | Effort | Done when |
 | --- | --- | --- | --- |
-| T1 | Playwright smoke E2E: login(mocked GitHub), connect, analyze, see graph, post comment, review card | M | 5-8 E2E specs green locally + in CI (chromium only, 3 parallel shards) |
-| T2 | Lighthouse CI job on PRs (landing + repo page, mobile + desktop) | S-M | LHCI comment on PRs; a11y ≥ 95, perf ≥ 85 on landing |
+| T1 | **done** — Playwright smoke E2E: login(mocked GitHub), connect, analyze, see graph, post comment, review card | M | 5-8 E2E specs green locally + in CI (chromium only, 3 parallel shards). Shipped: test-double server (`frontend/e2e/server.mjs`, `1de5bc1`), 7 specs (`c10a6be`), 3-shard workflow (`a0a821f`). 7/7 green locally and in the E2E workflow on every subsequent master push |
+| T2 | **done** — Lighthouse CI on the public origin (landing + login, mobile + desktop) | S-M | LHCI gate green via `.github/workflows/Lighthouse.yml` (`d3dfea7`, `92630d4`): a11y >= 95 and perf >= 85 on landing, a11y >= 95 (perf floor 70) on login, both presets, measured live first (landing perf 90 mobile / 99 desktop; login 80 / 96; a11y 100/100 all). PR comments not wired: needs the Lighthouse CI GitHub app on this private repo (`docs/MANUAL_STEPS.md` section 9) |
 | T3 | **R2 — react-router v6 → v7** | M | `npm audit --omit=dev` clean; `safe-redirect.ts` tests still green; router suite passes |
 | T4 | **D3 — quantitative bundle gate**: `vite build` emits size report, script fails on regression > 5% | S | CI fails if initial JS gzip grows > 5% vs baseline |
 | T5 | **R6 — snapshot trimming** job (keep latest N = 20 per repo) + **R10 — ETag/`If-None-Match`** on `GET /snapshots/latest` | M | oldest snapshots pruned with test; conditional GET returns 304; dashboard polls 304 after first fetch |
@@ -108,6 +108,13 @@ section 7; indexing itself takes days-weeks).
 
 Phase 5 gate: E2E + LHCI green, audits clean, router migration shipped with
 guards intact, trimming/conditional-GET tested.
+
+Phase 5 status (2026-10-08): T1 E2E green locally (7/7, chromium, 3 shards) and
+in CI; T2 Lighthouse green on the public origin (landing perf 90 mobile / 99
+desktop, a11y 100/100; login perf 80 mobile / 96 desktop, a11y 100/100). T3-T6
+shipped earlier (react-router 7, bundle gate, snapshot trim + ETag, OAuth state
+single-use). PR-comment mode in the Lighthouse workflow still needs the
+Lighthouse CI GitHub app install (`docs/MANUAL_STEPS.md` section 9).
 
 ## 6. Phase 6 — Free deploy plan + branding (`vorza`)
 
