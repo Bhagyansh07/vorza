@@ -1,7 +1,10 @@
+import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import react from '@vitejs/plugin-react';
 import type { Plugin } from 'vite';
 import { defineConfig } from 'vitest/config';
+
+import { absolutizeHead, injectRoot } from './prerender/seo-html.mjs';
 
 /**
  * Routes that belong in `sitemap.xml`.
@@ -25,11 +28,16 @@ const INDEXABLE_ROUTES = ['/', '/login'];
  */
 function seoFiles(): Plugin {
   let origin = '';
+  let outDir = 'dist';
+  let logger: { warn: (msg: string) => void; info: (msg: string) => void } =
+    console;
   return {
     name: 'vorza-seo-files',
     apply: 'build',
     configResolved(config) {
       origin = (config.env.VITE_SITE_URL ?? '').trim().replace(/\/+$/, '');
+      outDir = config.build.outDir;
+      logger = config.logger;
       if (!origin) {
         config.logger.warn(
           '[vorza] VITE_SITE_URL is unset, so robots.txt and sitemap.xml will ' +
@@ -37,6 +45,11 @@ function seoFiles(): Plugin {
             '(docs/MANUAL_STEPS.md).'
         );
       }
+    },
+    transformIndexHtml(html) {
+      // Relative canonical/og URLs are fine for the SPA but useless to
+      // crawlers, which never run JS. Bake the build-time origin in.
+      return absolutizeHead(html, origin);
     },
     generateBundle() {
       const site = origin || 'http://localhost:5173';
@@ -68,7 +81,45 @@ function seoFiles(): Plugin {
       ].join('\n');
 
       this.emitFile({ type: 'asset', fileName: 'robots.txt', source: robots });
-      this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: sitemap });
+      this.emitFile({
+        type: 'asset',
+        fileName: 'sitemap.xml',
+        source: sitemap,
+      });
+    },
+    async closeBundle() {
+      // `/` is served from `landing.html` (pre-rendered in prerender/) so that
+      // a crawler sees the full landing without running JS (S2). The snapshot
+      // is committed and regenerated with `npm run prerender`; the build never
+      // launches a browser, so it is deterministic on Vercel too.
+      //
+      // This must be closeBundle, not generateBundle: Vite's html plugin emits
+      // index.html in its own generateBundle hook, which runs *after* user
+      // plugins, so the bundle does not yet hold index.html in here.
+      const indexFile = path.join(outDir, 'index.html');
+      const snapshotPath = path.resolve(
+        __dirname,
+        'prerender',
+        'landing-root.html'
+      );
+      try {
+        const html = readFileSync(indexFile, 'utf8');
+        const snapshot = readFileSync(snapshotPath, 'utf8').trim();
+        const prerendered = injectRoot(html, snapshot);
+        if (!prerendered) {
+          logger.warn(
+            '[vorza] could not inject landing snapshot into index.html'
+          );
+          return;
+        }
+        writeFileSync(path.join(outDir, 'landing.html'), prerendered);
+        logger.info('[vorza] wrote landing.html (pre-rendered /)');
+      } catch (err) {
+        logger.warn(
+          `[vorza] landing.html not written (${err instanceof Error ? err.message : err}). ` +
+            'Run `npm run build && npm run prerender` so crawlers see the landing.'
+        );
+      }
     },
   };
 }
@@ -110,7 +161,12 @@ export default defineConfig({
         //
         // Pinned by src/features/graph/bundle-boundary.test.ts.
         manualChunks: {
-          react: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query'],
+          react: [
+            'react',
+            'react-dom',
+            'react-router-dom',
+            '@tanstack/react-query',
+          ],
           d3: ['d3-force', 'd3-selection', 'd3-zoom'],
         },
       },

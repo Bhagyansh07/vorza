@@ -59,6 +59,27 @@
 
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!--
+      Static JSON-LD. Most rich-result and knowledge-panel crawlers never run
+      JS, so this lives in the raw HTML (and in landing.html on the `/` route)
+      instead of being injected by the SPA. The `url` and `image` values are
+      made absolute at build time from VITE_SITE_URL, like the canonical tag.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Vorza",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Web",
+        "url": "/",
+        "image": "/og-image.png",
+        "description": "The living, AI-reviewed map of your codebase. Every file becomes a node: sized by how much of the codebase depends on it, coloured by how healthy it is. Pull requests get read before you do.",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "featureList": "Interactive codebase map, complexity and churn scoring, health coverage, AI pull-request reviews"
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
