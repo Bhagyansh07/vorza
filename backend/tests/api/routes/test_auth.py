@@ -255,9 +255,7 @@ def test_verify_oauth_state_expiry_bounds(monkeypatch):
     assert verify_oauth_state("not-a-state") is False
 
 
-def test_state_survives_a_failed_exchange_for_retry(
-    client: TestClient, monkeypatch
-):
+def test_state_survives_a_failed_exchange_for_retry(client: TestClient, monkeypatch):
     """A failed token exchange must not burn the state.
 
     The spend rides the callback's transaction, so when the exchange fails and

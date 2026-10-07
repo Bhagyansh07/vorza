@@ -359,9 +359,7 @@ def test_latest_snapshot_supports_conditional_get_etag(
     assert etag and etag.startswith('"'), "a strong quoted ETag must be sent"
 
     # A matching If-None-Match short-circuits with an empty 304.
-    second = client.get(
-        url, headers={**auth_headers(user), "If-None-Match": etag}
-    )
+    second = client.get(url, headers={**auth_headers(user), "If-None-Match": etag})
     assert second.status_code == 304
     assert second.text == ""
 

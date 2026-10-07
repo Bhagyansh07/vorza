@@ -20,9 +20,7 @@ from app.services.orchestrator import SNAPSHOT_KEEP, analyze_repo, trim_snapshot
 from tests.utils.user import create_repo, create_user
 
 
-def _seed_snapshots(
-    db_session: Session, repo_id: uuid.UUID, count: int
-) -> None:
+def _seed_snapshots(db_session: Session, repo_id: uuid.UUID, count: int) -> None:
     """Insert ``count`` snapshots with descending ages, newest first.
 
     Row ``i`` is created ``i`` hours in the past, so row 0 is the newest. The
@@ -30,9 +28,7 @@ def _seed_snapshots(
     """
     now = datetime.now(UTC)
     for i in range(count):
-        row = AnalysisSnapshot(
-            repo_id=repo_id, overall_health_score=float(i)
-        )
+        row = AnalysisSnapshot(repo_id=repo_id, overall_health_score=float(i))
         row.created_at = now - timedelta(hours=i)
         db_session.add(row)
     db_session.commit()

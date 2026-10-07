@@ -214,9 +214,7 @@ def consume_oauth_state(session: Session, state: str) -> bool:
     oauth_table = SQLModel.metadata.tables["oauthstate"]
     result = cast(
         CursorResult[Any],
-        session.execute(
-            sql_delete(oauth_table).where(oauth_table.c.nonce == nonce)
-        ),
+        session.execute(sql_delete(oauth_table).where(oauth_table.c.nonce == nonce)),
     )
     return (result.rowcount or 0) > 0
 
@@ -232,9 +230,7 @@ def purge_expired_oauth_states(session: Session) -> int:
     result = cast(
         CursorResult[Any],
         session.execute(
-            sql_delete(oauth_table).where(
-                oauth_table.c.expires_at < datetime.now(UTC)
-            )
+            sql_delete(oauth_table).where(oauth_table.c.expires_at < datetime.now(UTC))
         ),
     )
     return result.rowcount or 0
