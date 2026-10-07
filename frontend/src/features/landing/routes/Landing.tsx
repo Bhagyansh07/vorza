@@ -368,8 +368,8 @@ export function Landing() {
             </p>
             <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-stem border border-line bg-line sm:grid-cols-4">
               {[
-                ['backend tests', '172'],
-                ['frontend tests', '142'],
+                ['backend tests', '183'],
+                ['frontend tests', '143'],
                 ['backend coverage', '81%'],
                 ['live stack', 'Render + Vercel + Neon'],
               ].map(([label, value]) => (
