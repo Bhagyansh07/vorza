@@ -1,6 +1,7 @@
+import hashlib
 import uuid
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response, status
 from sqlmodel import select
 
 from app.api.deps import CurrentUser, SessionDep, get_owned_repo
@@ -16,11 +17,31 @@ from app.services.orchestrator import analyze_repo
 router = APIRouter(tags=["analysis"])
 
 
+def _snapshot_etag(payload: AnalysisSnapshotPublic) -> str:
+    """Strong ``ETag`` for a snapshot payload: quoted sha256 of the JSON.
+
+    The full public payload is the cache key, so any change to the graph data,
+    health scores or meta flips the tag and the next conditional GET re-sends.
+    """
+    digest = hashlib.sha256(payload.model_dump_json().encode("utf-8")).hexdigest()
+    return f'"{digest}"'
+
+
 @router.get("/repos/{repo_id}/snapshots/latest", response_model=AnalysisSnapshotPublic)
 def get_latest_snapshot(
-    repo_id: uuid.UUID, session: SessionDep, current_user: CurrentUser
-) -> AnalysisSnapshotPublic:
-    """Latest analysis snapshot — the force-directed map's graph data."""
+    repo_id: uuid.UUID,
+    session: SessionDep,
+    current_user: CurrentUser,
+    response: Response,
+    request: Request,
+) -> AnalysisSnapshotPublic | Response:
+    """Latest analysis snapshot — the force-directed map's graph data.
+
+    Supports conditional GET (docs/01-audit.md R10): every response carries a
+    strong ``ETag`` for the full public payload, and an ``If-None-Match`` that
+    equals it returns 304 so the bandwidth-heavy graph is not re-downloaded
+    while nothing changed. The dashboard polls this endpoint with the tag.
+    """
     get_owned_repo(session, repo_id, current_user)
     snapshot = session.exec(
         select(AnalysisSnapshot)
@@ -33,7 +54,14 @@ def get_latest_snapshot(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No snapshot yet for this repo — trigger POST /repos/{id}/analyze",
         )
-    return AnalysisSnapshotPublic.model_validate(snapshot, from_attributes=True)
+    payload = AnalysisSnapshotPublic.model_validate(snapshot, from_attributes=True)
+    etag = _snapshot_etag(payload)
+    response.headers["ETag"] = etag
+    if request.headers.get("If-None-Match") == etag:
+        return Response(
+            status_code=status.HTTP_304_NOT_MODIFIED, headers={"ETag": etag}
+        )
+    return payload
 
 
 @router.get("/repos/{repo_id}/snapshots/history", response_model=SnapshotsList)

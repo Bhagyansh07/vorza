@@ -20,10 +20,14 @@ from __future__ import annotations
 
 import logging
 import uuid
+from typing import Any, cast
 
-from sqlmodel import Session
+from sqlalchemy import delete as sql_delete
+from sqlalchemy.engine import CursorResult
+from sqlmodel import Session, SQLModel, select
 
 from app.core.db import engine
+from app.core.sql import order_desc
 from app.models.repo import Repo
 from app.models.snapshot import AiReviewRow
 from app.models.snapshot import AnalysisSnapshot as AnalysisSnapshotRow
@@ -39,6 +43,53 @@ from app.services.pipeline import (
 from app.ws.pubsub import publish_review_new, publish_snapshot_updated
 
 logger = logging.getLogger(__name__)
+
+#: Only the newest snapshots per repo are kept (docs/01-audit.md R6). The
+#: analysis write path trims to this bound so a repo's snapshot table and its
+#: trend history never grow unbounded no matter how often the repo is
+#: re-analyzed.
+SNAPSHOT_KEEP = 20
+
+
+def trim_snapshots(
+    session: Session, repo_id: uuid.UUID, keep: int = SNAPSHOT_KEEP
+) -> int:
+    """Delete this repo's snapshots beyond the newest ``keep``.
+
+    Runs in the caller's transaction, so on the analyze path it commits (or
+    rolls back) with the same boundaries as the new snapshot's insert. Returns
+    how many rows were pruned. Safe to call standalone as a maintenance job.
+
+    Ordering ties on ``created_at`` fall back to ``id`` so the kept set is
+    deterministic even when two snapshots land in the same millisecond.
+    """
+    keep_ids = set(
+        session.exec(
+            select(AnalysisSnapshotRow.id)
+            .where(AnalysisSnapshotRow.repo_id == repo_id)
+            .order_by(
+                order_desc(AnalysisSnapshotRow.created_at),
+                order_desc(AnalysisSnapshotRow.id),
+            )
+            .limit(keep)
+        ).all()
+    )
+    if len(keep_ids) < keep:
+        return 0
+    # sqlmodel's stubs do not expose `__table__` on model classes (same reason
+    # as services/github.py), so reach the columns through the shared metadata:
+    # AnalysisSnapshot -> "analysissnapshot".
+    snap_table = SQLModel.metadata.tables["analysissnapshot"]
+    result = cast(
+        CursorResult[Any],
+        session.execute(
+            sql_delete(snap_table).where(
+                snap_table.c.repo_id == repo_id,
+                ~snap_table.c.id.in_(keep_ids),
+            )
+        ),
+    )
+    return result.rowcount or 0
 
 
 # ------------------------------------------------------------------
@@ -104,8 +155,20 @@ async def analyze_repo(repo_id: uuid.UUID) -> None:
                 ],
             )
             session.add(db_snapshot)
+            # Trim inside the SAME transaction as the insert: the trim's select
+            # auto-flushes the pending insert so the kept set always includes the
+            # new snapshot, one commit lands both, and the fresh snapshot is not
+            # expired by a second commit before the broadcast below reads it
+            # (unbounded history is the R6 failure mode; see trim_snapshots).
+            trimmed = trim_snapshots(session, repo_id)
             session.commit()
             session.refresh(db_snapshot)
+            if trimmed:
+                logger.info(
+                    "orchestrator.analyze_repo(%s): pruned %d old snapshot(s)",
+                    repo_id,
+                    trimmed,
+                )
 
         _clear_analyze_error(repo_id)
 

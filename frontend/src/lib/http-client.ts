@@ -63,6 +63,15 @@ http.interceptors.response.use(
   }
 );
 
+// Per-repo latest-snapshot cache for conditional GETs (R10). The backend sends
+// a strong ETag for the graph payload; polls that replay it get a 304 instead
+// of re-downloading the bandwidth-heavy graph, and this map is what lets the
+// caller hand back the previously fetched payload in that case.
+const latestSnapshotCache = new Map<
+  string,
+  { etag: string; snapshot: AnalysisSnapshot }
+>();
+
 /** Real HTTP implementation of ApiClient, talking to Agent 1's FastAPI backend. */
 export const httpApiClient: ApiClient = {
   async loginWithGitHubCode(
@@ -107,10 +116,29 @@ export const httpApiClient: ApiClient = {
   async getLatestSnapshot(
     repoId: string | number
   ): Promise<AnalysisSnapshot> {
-    const { data } = await http.get<AnalysisSnapshot>(
-      `/repos/${repoId}/snapshots/latest`
-    );
-    return data;
+    const key = String(repoId);
+    const cached = latestSnapshotCache.get(key);
+    try {
+      const { data, headers } = await http.get<AnalysisSnapshot>(
+        `/repos/${repoId}/snapshots/latest`,
+        cached
+          ? { headers: { 'If-None-Match': cached.etag } }
+          : undefined
+      );
+      const etag = headers.etag;
+      if (etag) {
+        latestSnapshotCache.set(key, { etag, snapshot: data });
+      }
+      return data;
+    } catch (error) {
+      // 304 means "nothing changed": the cached payload is still the latest,
+      // so the caller keeps its data without a re-download. The response
+      // interceptor normalizes it into an ApiError, hence the instanceof.
+      if (cached && error instanceof ApiError && error.status === 304) {
+        return cached.snapshot;
+      }
+      throw error;
+    }
   },
 
   async getSnapshotHistory(

@@ -339,6 +339,53 @@ def test_latest_snapshot_404s_before_any_analysis(
     assert response.status_code == 404
 
 
+def test_latest_snapshot_supports_conditional_get_etag(
+    client: TestClient, db_session: Session
+) -> None:
+    """R10: an If-None-Match matching the ETag returns 304, not the graph.
+
+    The payload is the bandwidth-heavy part of the dashboard, so a poll loop
+    must be able to prove "nothing changed" without re-downloading it.
+    """
+    user = create_user(db_session)
+    repo = create_repo(db_session, user)
+    db_session.add(AnalysisSnapshot(repo_id=repo.id, overall_health_score=88.0))
+    db_session.commit()
+
+    url = f"/repos/{repo.id}/snapshots/latest"
+    first = client.get(url, headers=auth_headers(user))
+    assert first.status_code == 200
+    etag = first.headers.get("etag")
+    assert etag and etag.startswith('"'), "a strong quoted ETag must be sent"
+
+    # A matching If-None-Match short-circuits with an empty 304.
+    second = client.get(
+        url, headers={**auth_headers(user), "If-None-Match": etag}
+    )
+    assert second.status_code == 304
+    assert second.text == ""
+
+    # A stale tag re-sends the full payload.
+    third = client.get(
+        url, headers={**auth_headers(user), "If-None-Match": '"not-the-tag"'}
+    )
+    assert third.status_code == 200
+    assert third.json()["overall_health_score"] == 88.0
+
+    # The tag is content-derived: a different snapshot gets a different tag.
+    db_session.add(
+        AnalysisSnapshot(
+            repo_id=repo.id,
+            overall_health_score=91.5,
+            files=[{"path": "a.py", "loc": 1}],
+        )
+    )
+    db_session.commit()
+    changed = client.get(url, headers=auth_headers(user))
+    assert changed.status_code == 200
+    assert changed.headers.get("etag") != etag
+
+
 def test_snapshot_history_is_oldest_first(
     client: TestClient, db_session: Session
 ) -> None:

@@ -102,12 +102,15 @@ export function useLatestSnapshot(
       }
     },
     enabled: repoId !== undefined,
-    // Until the first snapshot exists the endpoint 404s and the page sits on
-    // "Map unavailable" with no way to learn the analyze task finished (the
-    // realtime snapshot:updated event needs Redis, which the free Render tier
-    // does not have). Poll every few seconds while the snapshot is missing so
-    // "Analyze now" visibly flips the page to the map without a manual refresh.
-    refetchInterval: (query) => (query.state.data ? false : 4000),
+    // The dashboard polls the latest snapshot on a steady timer. While the
+    // snapshot is missing the endpoint 404s and the page sits on "Map
+    // unavailable", so polling is what flips it to the map when the analyze
+    // task finishes (the realtime snapshot:updated event needs Redis, which
+    // the free Render tier does not have). After the first fetch the polling is
+    // cheap: http-client replays the stored ETag and the backend answers 304
+    // (R10) instead of re-sending the bandwidth-heavy graph, so keeping the
+    // timer running keeps the map fresh without a manual refresh.
+    refetchInterval: 30000,
   });
 }
 

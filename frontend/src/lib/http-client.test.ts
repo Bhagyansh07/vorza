@@ -189,4 +189,29 @@ describe('httpApiClient (Agent 1 contract endpoints)', () => {
     });
     expect(created.body).toBe('new note');
   });
+
+  it('replays a cached snapshot when the backend 304s (R10)', async () => {
+    // The snapshot payload is the bandwidth-heavy part of the dashboard, so a
+    // polling client replays the ETag and only re-downloads when it changes.
+    server.use(
+      http.get(`${API}/repos/r_etag/snapshots/latest`, ({ request }) => {
+        const ifNoneMatch = request.headers.get('If-None-Match');
+        if (ifNoneMatch === '"v1"') {
+          return new HttpResponse(null, {
+            status: 304,
+            headers: { ETag: '"v1"' },
+          });
+        }
+        return HttpResponse.json(snapshot, { headers: { ETag: '"v1"' } });
+      })
+    );
+
+    const first = await httpApiClient.getLatestSnapshot('r_etag');
+    expect(first.overall_health_score).toBe(82);
+
+    // Second poll: the cached ETag is replayed, the server 304s, and the
+    // previously fetched payload is returned instead of a fresh download.
+    const second = await httpApiClient.getLatestSnapshot('r_etag');
+    expect(second).toEqual(first);
+  });
 });

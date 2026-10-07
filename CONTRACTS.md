@@ -44,8 +44,8 @@ AiReviewRow { id, repo_id, pr_number, risk_score, summary, flags, updated_files,
 | GET | `/repos` | List connected repos |
 | GET | `/github/repos` | **New in v0.3.** List the user's GitHub repos for the connect picker (small projection of `GET /user/repos`) |
 | DELETE | `/repos/{id}` | **New in v0.3.** Disconnect a repo; snapshots, comments and reviews cascade-delete |
-| GET | `/repos/{id}/snapshots/latest` | Latest analysis snapshot (the graph data) |
-| GET | `/repos/{id}/snapshots/history` | Trend data for charts |
+| GET | `/repos/{id}/snapshots/latest` | Latest analysis snapshot (the graph data). Sends a strong `ETag`; `If-None-Match` matching it returns `304` (R10) |
+| GET | `/repos/{id}/snapshots/history` | Trend data for charts. Only the newest 20 snapshots per repo are kept; older rows are pruned on the analyze write path (R6) |
 | POST | `/repos/{id}/analyze` | Trigger a manual re-analysis |
 | POST | `/webhooks/github` | GitHub PR webhook receiver → triggers the AI review pipeline |
 | GET/POST | `/repos/{id}/comments` | List / create comment pins |
