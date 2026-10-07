@@ -45,6 +45,6 @@ Recording notes:
 ## Where the numbers in the 06 Field notes strip came from
 
 Recorded at the time of shooting, from the repo, not the video: 172 backend
-tests, 127 frontend tests, 81% backend coverage, deployed on Render + Vercel +
+tests, 142 frontend tests, 81% backend coverage, deployed on Render + Vercel +
 Neon. If the numbers have moved, re-run the counts and re-render the strip
 before cutting the end card.

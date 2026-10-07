@@ -7,7 +7,7 @@ be done from a commit. It is written click-by-click on purpose.
 against that provider's own documentation on **2026-10-05** and is linked. Where
 something could not be verified, it says so.
 
-Current state, verified 2026-10-06:
+Current state, verified 2026-10-07:
 
 | Thing | State |
 |---|---|
@@ -15,7 +15,9 @@ Current state, verified 2026-10-06:
 | Frontend on Vercel | **Live** at `https://vorza-sigma.vercel.app` (project `vorza`, linked to `master`, auto-deploy on push) |
 | Database | **Neon Postgres** (Free); the live DB URL is a Render env var (`DATABASE_URL`), not committed |
 | Deploy config | `render.yaml` (backend) and Vercel project settings (frontend, root dir `frontend`) |
-| Site origin | `VITE_SITE_URL=https://vorza-sigma.vercel.app` on Vercel prod; canonical/`og:url` follow it |
+| Site origin | `VITE_SITE_URL=https://vorza-sigma.vercel.app` on Vercel prod; canonical/`og:url`/JSON-LD follow it |
+| `/` for crawlers | **Pre-rendered** (no JS): the build injects the committed `frontend/prerender/landing-root.html` snapshot into `landing.html` and Vercel rewrites `/` to it. The SPA then mounts normally. Snapshot regenerated with `npm run build && npm run prerender:root` whenever landing markup changes; `public/og-image.png` (1200x630) via `npm run prerender:og`. See section 3.3. |
+| Indexable pages | `/` and `/login` (`frontend/vite.config.ts` `seoFiles()`); `/dashboard` and `/repos/*` are disallowed in `robots.txt` |
 
 > The old domains `frontend-bhagyansh.vercel.app` and `frontend-mu-jet-18.vercel.app`
 > 404 or serve stale builds. Do not link, log in, or deploy against them.
@@ -241,6 +243,8 @@ The old Vercel deployment is gone, so this is a new project.
 | Mocks are off | no fixtures | DevTools -> Network: the requests must go to `onrender.com`. If they do not, the bundle is serving fixtures -- see the `VITE_USE_MOCKS` note above. |
 | OG image loads | 200, 1200x630 | `curl -sI https://<domain>/og-image.png` |
 | Bundle points at Render | yes | `curl -s https://<domain>/assets/index-*.js \| grep -o 'https://[a-z0-9-]*\.onrender\.com'` |
+| Landing is pre-rendered, not a shell | full marketing copy + `application/ld+json`, no empty `#root` | `curl -s https://<domain>/ \| grep -c "force-directed"` (expect ≥ 1) and the same for `application/ld+json`; View source shows the text, it is not JS-rendered |
+| Canonical / OG / JSON-LD are absolute | every URL points at your frontend origin, no `localhost` | `curl -s https://<domain>/ \| grep -oE 'href="https://[^"]*"\|content="https://[^"]*"\|"url": "https://[^"]*"'`; each host equals `<your-vercel-domain>` |
 
 ```bash
 # The single most useful one: does the built bundle contain your backend URL?
@@ -249,6 +253,33 @@ curl -s "https://<your-domain>$(curl -s https://<your-domain>/ | grep -o '/asset
 ```
 
 Expect `1` or more. `0` means the frontend is calling itself.
+
+### 3.3 Regenerate the pre-render (only after landing changes)
+
+The `/` route for crawlers is a **committed snapshot**, not generated on Vercel
+(the build machine has no browser). Two committed artifacts:
+
+- `frontend/prerender/landing-root.html` — the rendered `#root` of the landing.
+  The build injects it into `landing.html`; the Vercel rewrite serves that file
+  at `/` (`frontend/vercel.json`).
+- `frontend/public/og-image.png` — the 1200x630 social banner (`og:image`,
+  `twitter:image`, JSON-LD `image`).
+
+Change landing markup or the Field notes numbers (06 · Field notes strip)
+**and** regenerate both, or crawlers keep serving the old text:
+
+```bash
+cd frontend
+VITE_SITE_URL="https://<your-vercel-domain>" npm run build
+npm run prerender   # rewrites both artifacts (or prerender:root / prerender:og)
+```
+
+`npm run prerender` opens the built SPA in the system Chrome (headless, via
+`puppeteer-core`, `scripts/seo-render.mjs`) and asserts the page still carries
+its markers before writing. It commits nothing; you commit the artifacts like
+any other file. `frontend/src/features/landing/prerender-snapshot.test.ts` fails
+CI if a snapshot is missing or becomes a shell, so a stale snapshot cannot slip
+through.
 
 ---
 
