@@ -41,7 +41,7 @@ class TestEnsureSchema:
         ensure_schema(engine)
 
         tables = set(inspect(engine).get_table_names())
-        assert {"user", "repo", "comment", "analysissnapshot", "aireviewrow"} <= tables
+        assert {"user", "repo", "comment", "analysissnapshot", "aireviewrow", "oauthstate"} <= tables
 
     def test_stamps_the_head_so_a_later_upgrade_is_a_noop(self, engine) -> None:
         """Without the stamp, `alembic upgrade head` would try to CREATE TABLE
@@ -59,7 +59,7 @@ class TestEnsureSchema:
                 .all()
             )
         assert len(versions) == 1
-        assert versions[0] == "0004"
+        assert versions[0] == "0005"
 
     def test_leaves_an_already_migrated_database_untouched(self, engine) -> None:
         ensure_schema(engine)

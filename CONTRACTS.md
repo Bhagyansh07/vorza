@@ -37,8 +37,8 @@ AiReviewRow { id, repo_id, pr_number, risk_score, summary, flags, updated_files,
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/auth/github/login` | **New in v0.2.** Returns the GitHub authorize URL and a `state` value. The backend owns the whole OAuth flow. |
-| POST | `/auth/github/callback` | GitHub OAuth login |
+| GET | `/auth/github/login` | **New in v0.2.** Returns the GitHub authorize URL and a `state` value. The backend owns the whole OAuth flow. Each call mints a fresh single-use `state` (expires after 10 min; a redeemed state cannot be reused). |
+| POST | `/auth/github/callback` | GitHub OAuth login. The `state` is spent once: a second redemption with the same `state` returns 400. |
 | GET | `/me` | Current user |
 | POST | `/repos` | Connect a new GitHub repo |
 | GET | `/repos` | List connected repos |

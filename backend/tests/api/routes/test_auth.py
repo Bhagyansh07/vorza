@@ -1,17 +1,46 @@
 """GitHub OAuth + /me."""
 
+import hashlib
+import hmac
+import time
+from datetime import UTC
+from urllib.parse import parse_qs, urlparse
+
 from fastapi.testclient import TestClient
+from sqlmodel import select
 
 from app.api.routes import auth as auth_routes
 from app.core.config import settings
-from app.services.github import GithubOAuthError, build_authorize_url
+from app.services.github import GithubOAuthError
 from tests.utils.user import authentication_token
 
 
-def _signed_state(monkeypatch) -> str:
+def _issued_state(client: TestClient, monkeypatch) -> str:
+    """Walk the real login route and return the state it issued.
+
+    States are minted with a DB row now (single-use store), so tests must not
+    call ``build_authorize_url`` directly -- going through ``GET
+    /auth/github/login`` is the path the browser actually uses and it persists
+    the nonce.
+    """
     monkeypatch.setattr(settings, "GITHUB_CLIENT_ID", "github-client-abc")
-    _, state = build_authorize_url()
-    return state
+    resp = client.get("/auth/github/login")
+    assert resp.status_code == 200
+    query = parse_qs(urlparse(resp.json()["authorize_url"]).query)
+    return query["state"][0]
+
+
+def _sign_state(nonce: str, expiry_ts: int) -> str:
+    """Craft a signature-valid state directly, for controlled scenarios.
+
+    Only used to prove the store/expiry checks; a real state comes from the
+    login route.
+    """
+    payload = f"{nonce}.{expiry_ts}"
+    digest = hmac.new(
+        settings.SECRET_KEY.encode(), payload.encode(), hashlib.sha256
+    ).hexdigest()[:24]
+    return f"{payload}.{digest}"
 
 
 def test_github_login_returns_authorize_url(client: TestClient, monkeypatch):
@@ -50,8 +79,6 @@ def test_github_login_reports_the_scopes_it_will_request(
 
     # The reported scopes must be the ones actually in the URL, or the UI is
     # describing a different request than the one being made.
-    from urllib.parse import parse_qs, urlparse
-
     query = parse_qs(urlparse(body["authorize_url"]).query)
     assert query["scope"] == ["read:user repo"]
 
@@ -76,8 +103,6 @@ def test_github_login_reports_no_write_for_a_read_only_scope(
 
     assert body["scopes"] == ["read:user"]
     assert body["write_access"] is False
-
-    from urllib.parse import parse_qs, urlparse
 
     query = parse_qs(urlparse(body["authorize_url"]).query)
     assert query["scope"] == ["read:user"]
@@ -133,7 +158,7 @@ def test_github_callback_creates_user(client: TestClient, monkeypatch):
 
     response = client.post(
         "/auth/github/callback",
-        json={"code": "one-time-code", "state": _signed_state(monkeypatch)},
+        json={"code": "one-time-code", "state": _issued_state(client, monkeypatch)},
     )
     assert response.status_code == 200
     body = response.json()
@@ -153,7 +178,7 @@ def test_github_callback_invalid_code(client: TestClient, monkeypatch):
     monkeypatch.setattr(auth_routes, "exchange_code_for_token", fake_exchange)
     response = client.post(
         "/auth/github/callback",
-        json={"code": "bad-code", "state": _signed_state(monkeypatch)},
+        json={"code": "bad-code", "state": _issued_state(client, monkeypatch)},
     )
     assert response.status_code == 400
 
@@ -168,3 +193,128 @@ def test_me_returns_current_user(client: TestClient, db_session, user):
     response = client.get("/me", headers=headers)
     assert response.status_code == 200
     assert response.json()["github_username"] == user.github_username
+
+
+# ---------------------------------------------------------------------------
+# OAuth state: single-use store (docs/01-audit.md R9)
+# ---------------------------------------------------------------------------
+
+
+def test_oauth_state_is_single_use(client: TestClient, monkeypatch):
+    """A redeemed state cannot mint a second session."""
+
+    async def fake_exchange(code: str) -> str:
+        return "single-use-token"
+
+    async def fake_profile(token: str) -> dict:
+        return {"id": 424242, "login": "single", "email": "s@example.com", "name": "S"}
+
+    monkeypatch.setattr(auth_routes, "exchange_code_for_token", fake_exchange)
+    monkeypatch.setattr(auth_routes, "fetch_github_user", fake_profile)
+
+    state = _issued_state(client, monkeypatch)
+
+    first = client.post("/auth/github/callback", json={"code": "c", "state": state})
+    assert first.status_code == 200
+
+    # The same state, even with a fresh code, must now fail: its nonce was
+    # atomically spent by the successful login above.
+    second = client.post("/auth/github/callback", json={"code": "c", "state": state})
+    assert second.status_code == 400
+
+
+def test_callback_rejects_state_never_issued(client: TestClient, monkeypatch):
+    """A signature-valid state that was never minted must be rejected.
+
+    This is what makes the store load-bearing: HMAC alone would let a signed
+    state through, and single-use is only real enforcement if the nonce has to
+    have been issued in the first place.
+    """
+    state = _sign_state("never-issued", int(time.time()) + 600)
+    response = client.post("/auth/github/callback", json={"code": "c", "state": state})
+    assert response.status_code == 400
+
+
+def test_callback_rejects_expired_state(client: TestClient, monkeypatch):
+    """A time-boxed state is rejected once its signed expiry passes."""
+    state = _sign_state("expired-nonce", int(time.time()) - 60)
+    response = client.post("/auth/github/callback", json={"code": "c", "state": state})
+    assert response.status_code == 400
+
+
+def test_verify_oauth_state_expiry_bounds(monkeypatch):
+    """The pure verifier checks signature, past expiry, and absurd futures."""
+    from app.services.github import verify_oauth_state
+
+    now = int(time.time())
+    assert verify_oauth_state(_sign_state("n1", now - 60)) is False
+    assert verify_oauth_state(_sign_state("n1", now + 600)) is True
+    # A signed expiry two hours out is beyond anything this backend mints with
+    # the default 10-minute TTL, so treat it as invalid rather than long-lived.
+    assert verify_oauth_state(_sign_state("n1", now + 7200)) is False
+    assert verify_oauth_state("not-a-state") is False
+
+
+def test_state_survives_a_failed_exchange_for_retry(
+    client: TestClient, monkeypatch
+):
+    """A failed token exchange must not burn the state.
+
+    The spend rides the callback's transaction, so when the exchange fails and
+    the transaction rolls back, the user can retry with the same ``state``
+    instead of being bounced back to GitHub for a brand-new one.
+    """
+    calls = {"n": 0}
+
+    async def flaky_exchange(code: str) -> str:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise GithubOAuthError("bad_verification_code")
+        return "retry-token"
+
+    async def fake_profile(token: str) -> dict:
+        return {"id": 777, "login": "retry", "email": "r@example.com", "name": "R"}
+
+    monkeypatch.setattr(auth_routes, "exchange_code_for_token", flaky_exchange)
+    monkeypatch.setattr(auth_routes, "fetch_github_user", fake_profile)
+
+    state = _issued_state(client, monkeypatch)
+
+    first = client.post("/auth/github/callback", json={"code": "c", "state": state})
+    assert first.status_code == 400
+
+    second = client.post("/auth/github/callback", json={"code": "c", "state": state})
+    assert second.status_code == 200
+
+
+def test_expired_states_are_purged_on_next_login(
+    client: TestClient, monkeypatch, db_session
+):
+    """The store self-cleans (TTL cache): stale rows die on the next issuance."""
+    from datetime import datetime, timedelta
+
+    from app.models.oauth_state import OauthState
+    from app.services.github import purge_expired_oauth_states
+
+    monkeypatch.setattr(settings, "GITHUB_CLIENT_ID", "github-client-abc")
+    db_session.add_all(
+        [
+            OauthState(
+                nonce="stale-nonce",
+                expires_at=datetime.now(UTC) - timedelta(minutes=5),
+            ),
+            OauthState(
+                nonce="fresh-nonce",
+                expires_at=datetime.now(UTC) + timedelta(minutes=5),
+            ),
+        ]
+    )
+    db_session.commit()
+
+    assert purge_expired_oauth_states(db_session) == 1
+    db_session.commit()
+
+    remaining = db_session.exec(
+        select(OauthState).where(OauthState.nonce == "stale-nonce")
+    ).first()
+    assert remaining is None

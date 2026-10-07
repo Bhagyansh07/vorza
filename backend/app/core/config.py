@@ -24,6 +24,11 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
+    # How long an issued GitHub OAuth `state` stays valid before the callback
+    # rejects it as expired. The expiry is signed into the state value and the
+    # issued nonce is stored (see models/oauth_state.py), so an unspent state
+    # also self-cleans from the store after this window.
+    OAUTH_STATE_TTL_MINUTES: int = 10
     FRONTEND_HOST: str = "http://localhost:5173"
     # Browser origins allowed to call the API in addition to FRONTEND_HOST.
     # GitHub OAuth starts with the login grant fetch from the browser, so any

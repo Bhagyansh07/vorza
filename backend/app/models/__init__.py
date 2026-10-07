@@ -6,6 +6,7 @@ from app.models.comment import (
     CommentPublic,
     CommentsPublic,
 )
+from app.models.oauth_state import OauthState
 from app.models.repo import Repo, RepoCreate, RepoPublic, ReposPublic
 from app.models.snapshot import (
     AiReviewRow,
@@ -36,6 +37,7 @@ __all__ = [
     "CommentsPublic",
     "FileNode",
     "Message",
+    "OauthState",
     "Repo",
     "RepoCreate",
     "RepoPublic",

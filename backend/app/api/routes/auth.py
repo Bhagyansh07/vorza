@@ -11,6 +11,7 @@ from app.models.user import Token, User, UserPublic
 from app.services.github import (
     GithubOAuthError,
     build_authorize_url,
+    consume_oauth_state,
     exchange_code_for_token,
     fetch_github_user,
     granted_write_access,
@@ -46,11 +47,14 @@ class GithubAuthorize(SQLModel):
 
 
 @router.get("/auth/github/login")
-def github_login() -> GithubAuthorize:
+def github_login(session: SessionDep) -> GithubAuthorize:
     """Return the GitHub authorize URL the frontend should redirect to.
 
     The URL includes an ``state`` parameter; the frontend must echo it back
-    unchanged in ``POST /auth/github/callback``.
+    unchanged in ``POST /auth/github/callback``. The state is single-use and
+    time-boxed: each call records its nonce (see ``app/models/oauth_state.py``)
+    and the callback spends it atomically, so a captured state cannot be used
+    to mint a second session.
 
     **Shape change in v0.3.** This used to return ``Message``, i.e.
     ``{"message": "<url>"}``. It now returns ``GithubAuthorize`` with
@@ -67,7 +71,7 @@ def github_login() -> GithubAuthorize:
     and fails visibly, which is the intended failure mode for a contract change.
     """
     try:
-        authorize_url, _state = build_authorize_url()
+        authorize_url, _state = build_authorize_url(session)
     except GithubOAuthError as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -88,6 +92,14 @@ async def github_callback(
 ) -> Token:
     """Exchange a GitHub OAuth code for a JWT; create the user if needed."""
     if not verify_oauth_state(body.state):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired OAuth state",
+        )
+    if not consume_oauth_state(session, body.state):
+        # Signature + expiry are valid, so the state is ours -- but it was
+        # never issued, or has already been spent by a successful login. Either
+        # way a second session cannot be minted from it.
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired OAuth state",

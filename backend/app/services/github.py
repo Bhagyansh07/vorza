@@ -9,11 +9,17 @@ repos) and, later, uses the stored token to fetch repo metadata.
 import hashlib
 import hmac
 import secrets
+import time
+from datetime import UTC, datetime, timedelta
 from typing import Any, cast
 
 import httpx
+from sqlalchemy import delete as sql_delete
+from sqlalchemy.engine import CursorResult
+from sqlmodel import Session, SQLModel
 
 from app.core.config import settings
+from app.models.oauth_state import OauthState
 
 GITHUB_OAUTH_AUTHORIZE_URL = "https://github.com/login/oauth/authorize"
 GITHUB_OAUTH_TOKEN_URL = "https://github.com/login/oauth/access_token"
@@ -87,12 +93,18 @@ def granted_write_access() -> bool:
     return bool(WRITE_SCOPES & set(requested_scopes().split()))
 
 
-def build_authorize_url() -> tuple[str, str]:
+def build_authorize_url(session: Session) -> tuple[str, str]:
     """Return ``(authorize_url, state)`` for GitHub login.
 
-    The ``state`` value is ``<nonce>.<hmac>`` -- HMAC-signed with the backend
-    ``SECRET_KEY``, so the callback can verify it without server-side session
-    storage. The frontend must echo it back in the callback request.
+    The ``state`` value is ``<nonce>.<expiry_epoch>.<hmac>`` -- HMAC-signed with
+    the backend ``SECRET_KEY`` and time-stamped, so the callback can verify it
+    without server-side session storage, and reject a stale state before it ever
+    touches the store. The frontend must echo it back in the callback request.
+
+    The issued nonce is also recorded in ``oauthstate`` (with an expiry), so the
+    callback can spend it exactly once. ``consume_oauth_state`` deletes the row
+    and only a delete that removed a row counts as a successful redemption; a
+    state never issued, or already spent, fails the callback.
 
     The ``scope`` parameter comes from :func:`requested_scopes`, which defaults
     to ``read:user repo``. Note that ``repo`` includes **write** access to
@@ -100,24 +112,31 @@ def build_authorize_url() -> tuple[str, str]:
     Vorza does not use the write half -- but the grant is what the user accepts,
     so the UI must describe it accurately.
 
-    What this gives us: an attacker cannot forge a state, which is the CSRF
-    protection that matters here. What it does **not** give us:
+    What this gives us, and the request it answers (docs/01-audit.md R9):
 
-    - **Not single-use.** Nothing records that a state was already spent.
-    - **Not time-boxed.** There is no timestamp in the value, so a captured
-      state verifies forever.
+    - **Single-use.** The nonce is spent when a login session is created; a
+      twice-redeemed ``state`` fails verification. A failed token exchange rolls
+      back with the session transaction, so the state stays usable for a retry
+      -- a captured pair can still never mint two sessions.
+    - **Time-boxed.** The expiry is part of the signed value, so a captured
+      ``state`` is rejected once that window passes even if the store row were
+      somehow still around.
 
-    Both were previously claimed in this docstring and were not true. The
-    practical impact is limited: the ``code`` is single-use on GitHub's side, so
-    a captured (state, code) pair cannot be replayed to mint a second session,
-    and replaying a valid state against an attacker's own code only logs the
-    attacker in as themselves. Making it genuinely single-use means storing
-    spent nonces, which needs a table plus a cleanup job -- a real change, not a
-    docstring one, so it is filed as a P2 in docs/audit/03-feature-roadmap.md.
+    The store self-cleans: stale rows are purged on every issuance ("TTL
+    cache"), which keeps the table small without a scheduled job.
     """
     if not settings.GITHUB_CLIENT_ID:
         raise GithubOAuthError("GITHUB_CLIENT_ID is not configured")
-    state = _new_oauth_state()
+    purge_expired_oauth_states(session)
+    state, nonce = _new_oauth_state()
+    session.add(
+        OauthState(
+            nonce=nonce,
+            expires_at=datetime.now(UTC)
+            + timedelta(minutes=settings.OAUTH_STATE_TTL_MINUTES),
+        )
+    )
+    session.commit()
     params = httpx.QueryParams(
         {
             "client_id": settings.GITHUB_CLIENT_ID,
@@ -129,24 +148,96 @@ def build_authorize_url() -> tuple[str, str]:
     return f"{GITHUB_OAUTH_AUTHORIZE_URL}?{params}", state
 
 
-def _new_oauth_state() -> str:
+def _new_oauth_state() -> tuple[str, str]:
+    """Mint ``(state, nonce)`` where state is ``<nonce>.<expiry>.<digest>``.
+
+    ``expiry`` is the sign-out time as a Unix epoch, signed together with the
+    nonce so it cannot be tampered with without the ``SECRET_KEY``.
+    """
     nonce = secrets.token_urlsafe(24)
+    expiry = int(time.time()) + settings.OAUTH_STATE_TTL_MINUTES * 60
+    payload = f"{nonce}.{expiry}"
     digest = hmac.new(
-        settings.SECRET_KEY.encode(), nonce.encode(), hashlib.sha256
+        settings.SECRET_KEY.encode(), payload.encode(), hashlib.sha256
     ).hexdigest()[:24]
-    return f"{nonce}.{digest}"
+    return f"{payload}.{digest}", nonce
 
 
 def verify_oauth_state(state: str) -> bool:
-    """``True`` only for a state we signed via ``_new_oauth_state``."""
+    """``True`` only for an unsigned-tamper-proof, not-yet-expired state.
+
+    Pure and stateless: checks the signature and the signed expiry only. Whether
+    the nonce was actually issued and is still unspent is decided by
+    :func:`consume_oauth_state`, which the callback calls after this passes.
+    """
     try:
-        nonce, digest = state.rsplit(".", 1)
+        nonce, expiry, digest = state.rsplit(".", 2)
     except ValueError:
         return False
     expected = hmac.new(
-        settings.SECRET_KEY.encode(), nonce.encode(), hashlib.sha256
+        settings.SECRET_KEY.encode(), f"{nonce}.{expiry}".encode(), hashlib.sha256
     ).hexdigest()[:24]
-    return hmac.compare_digest(digest, expected)
+    if not hmac.compare_digest(digest, expected):
+        return False
+    try:
+        expiry_ts = int(expiry)
+    except ValueError:
+        return False
+    now = int(time.time())
+    if expiry_ts < now:
+        return False
+    # A signed expiry can only be ours, and we never mint one more than TTL
+    # minutes ahead. Rejecting absurd-looking futures is free hygiene against a
+    # mis-signed value surviving a unit test's clock assumptions.
+    if expiry_ts > now + settings.OAUTH_STATE_TTL_MINUTES * 60 + 60:
+        return False
+    return True
+
+
+def consume_oauth_state(session: Session, state: str) -> bool:
+    """Atomically spend ``state``'s nonce; ``True`` only if it was unspent.
+
+    One ``DELETE`` that returns how many rows it removed. Two concurrent
+    callbacks for the same ``state`` serialise at the database: exactly one sees
+    ``rowcount == 1`` and proceeds, the other sees ``0`` and is rejected. The
+    spend rides the callback's transaction, so a failed token exchange rolls it
+    back -- the user can retry with the same ``state``, and two successful
+    redemptions can never both happen.
+    """
+    try:
+        nonce, _expiry, _digest = state.rsplit(".", 2)
+    except ValueError:
+        return False
+    # sqlmodel's stubs do not expose `__table__` on model classes, so reach the
+    # columns through the shared metadata (the table name derives from the
+    # class: OauthState -> "oauthstate").
+    oauth_table = SQLModel.metadata.tables["oauthstate"]
+    result = cast(
+        CursorResult[Any],
+        session.execute(
+            sql_delete(oauth_table).where(oauth_table.c.nonce == nonce)
+        ),
+    )
+    return (result.rowcount or 0) > 0
+
+
+def purge_expired_oauth_states(session: Session) -> int:
+    """Delete spent/expired nonce rows; returns how many were removed.
+
+    Called on every issuance so the store stays bounded. Safe on Postgres and
+    SQLite alike: the comparison is against a timezone-aware UTC timestamp and
+    the columns are stored with ``DateTime(timezone=True)``.
+    """
+    oauth_table = SQLModel.metadata.tables["oauthstate"]
+    result = cast(
+        CursorResult[Any],
+        session.execute(
+            sql_delete(oauth_table).where(
+                oauth_table.c.expires_at < datetime.now(UTC)
+            )
+        ),
+    )
+    return result.rowcount or 0
 
 
 # ---------------------------------------------------------------------------
