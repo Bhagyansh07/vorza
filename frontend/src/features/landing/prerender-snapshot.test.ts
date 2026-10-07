@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
  * Guards the committed pre-render snapshot that `/` is served from.
  *
  * `prerender/landing-root.html` is produced by `npm run prerender` (a local
- * Chrome render of the built app) and injected into `dist/landing.html` at
+ * Chrome render of the built app) and injected into `dist/index.html` at
  * build time. The build cannot regenerate it itself, so this test fails with a
  * regeneration hint if the committed file goes stale, is deleted, or a dev
  * commits a shell instead.

@@ -10,9 +10,10 @@
  *    absolute ones from the build-time site origin (VITE_SITE_URL). Social and
  *    search crawlers do not run JS; the static head is the only head they see.
  * 2. `injectRoot` puts the committed landing snapshot into a document's
- *    `<div id="root">`, producing `landing.html` for the `/` route. That page
- *    is what `curl /` returns: full landing content and `application/ld+json`,
- *    not a `<div id="root"></div>`-only shell.
+ *    `<div id="root">`. The build calls it on the built entry and overwrites
+ *    `dist/index.html` with the result, so `/` returns full landing content and
+ *    `application/ld+json`, not a `<div id="root"></div>`-only shell (the
+ *    untouched built entry is kept as `shell.html` for the SPA deep links).
  */
 
 /** Replace the relative head URLs with absolute ones from `site`. */
