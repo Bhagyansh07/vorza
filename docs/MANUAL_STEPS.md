@@ -37,6 +37,7 @@ environment variables for URLs that do not exist yet.
 6. GitHub webhook (section 6).
 7. Search Console (section 7).
 8. Custom domain, if you want one (section 8).
+9. (Optional) Lighthouse CI comments on PRs (section 9).
 
 ---
 
@@ -416,6 +417,30 @@ curl -s "$FRONTEND/" | grep -o '<link rel="canonical" href="[^"]*"'
 
 Expected: `401` on `/me`, `200` on `/login`, a non-zero grep count, and a
 canonical equal to your frontend origin.
+
+---
+
+## 9. (Optional) Lighthouse comments on pull requests
+
+`.github/workflows/Lighthouse.yml` runs Lighthouse against the **public** Vercel
+origin (landing + login, mobile + desktop presets) on every push to `master`.
+It gates on `performance >= 85` and `accessibility >= 95` for the landing, and
+`accessibility >= 95` (performance floor 70) for the login shell. Reports are
+uploaded as build artifacts on every run.
+
+Commenting scores on pull requests is not wired by default, because that needs
+a third-party GitHub App to be authorised on this private repo (a token cannot
+be minted by CI). Two manual steps enable it:
+
+1. Install the **Lighthouse CI** GitHub App (<https://github.com/apps/lighthouse-ci>)
+   for this repository.
+2. Add the generated token as the `LHCI_GITHUB_APP_TOKEN` secret, add
+   `pull_request` to the `on:` block in `.github/workflows/Lighthouse.yml`, and
+   set `temporaryPublicStorage: true` on the Lighthouse steps.
+
+The repo page is deliberately not audited: it requires login, and Vercel
+serves the SPA shell without a session, so scores there would not mean
+anything.
 
 ---
 
