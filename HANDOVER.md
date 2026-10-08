@@ -12,7 +12,7 @@ review with a risk score.
 | App | https://vorza-sigma.vercel.app (older `frontend-bhagyansh.vercel.app` serves a stale build — do not link it) |
 | API | https://codeatlas-qr0e.onrender.com |
 | OpenAPI | https://codeatlas-qr0e.onrender.com/openapi.json (also the deploy health check) |
-| Repository | https://github.com/Bhagyansh07/codeatlas |
+| Repository | https://github.com/Bhagyansh07/vorza |
 | Database | Neon Postgres (free tier, no expiry clock) |
 
 Both apps auto-deploy from `master`. The backend runs Alembic migrations on

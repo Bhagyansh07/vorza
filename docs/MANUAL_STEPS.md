@@ -109,7 +109,7 @@ anyone reading the repo.
 
 1. Go to <https://render.com> and sign in.
 2. **Blueprints** in the left sidebar -> **New Blueprint Instance**.
-3. Connect the repository: `Bhagyansh07/codeatlas`. It is private, so you need
+3. Connect the repository: `Bhagyansh07/vorza`. It is private, so you need
    to grant Render access:
    - Either use the GitHub App install and pick only this repo, or
    - Render's "connect with a personal access token" path.
@@ -182,7 +182,7 @@ The old Vercel deployment is gone, so this is a new project.
 ### 3.1 Create it
 
 1. Go to <https://vercel.com> and sign in with GitHub.
-2. **Add New -> Project**, then **Import** `Bhagyansh07/codeatlas`.
+2. **Add New -> Project**, then **Import** `Bhagyansh07/vorza`.
 3. Configure the project:
    - **Framework Preset**: Vite
    - **Root Directory**: `frontend` -- required. The repo root has no
@@ -444,41 +444,33 @@ anything.
 
 ---
 
-## 10. (Optional) Rename the repository to `vorza`
+## 10. Repository rename to `vorza` — DONE
 
-Roadmap D1: the repo (and the local folder) still carry the pre-branding name
-`codeatlas`. Renaming on GitHub is the only action that needs account access;
-everything else on this checklist is repo work. Do them in this order or the
-deploys go quiet:
+Roadmap D1 stage 1 is complete (2026-10-08): the GitHub repo was renamed to
+`vorza`, the local remote URL was updated to
+`https://github.com/Bhagyansh07/vorza.git`, and all live-facing references
+were swept:
 
-1. **Rename on GitHub** (the user's account): repo *Settings -> General*,
-   rename to `vorza`. GitHub redirects the old URL, so references do not 404
-   immediately, but replace them anyway.
-2. **Verify both deploys still build.** Push a trivial commit (or wait for the
-   next one) and confirm the CI, E2E and Lighthouse workflows plus the Vercel
-   and Render builds all go green. If a provider lost the link (Vercel and
-   Render both watch the repo by name), reconnect it in the project settings
-   before doing anything else.
-3. **Update the two live-facing references** in this repo:
-   `frontend/src/features/landing/routes/Landing.tsx` (the footer "Source"
-   link, `https://github.com/Bhagyansh07/codeatlas`) and regenerate the
-   prerendered landing (`npm run build` runs `scripts/seo-render.mjs`, or run
-   it directly), so the committed `frontend/prerender/landing-root.html` no
-   longer contains the old handle.
-4. **Sweep the docs**: `docs/MANUAL_STEPS.md` section 3.1 ("Connect the
-   repository"), `render.yaml` blueprint references, and any remaining
-   `Bhagyansh07/codeatlas` strings in README/docs. The done-when from the
-   roadmap: `grep -ri codeatlas` finds only historical or audit citations that
-   are explicitly labelled as such (`docs/00-recon.md`, `docs/02-roadmap.md`
-   and `STATUS.md` history stay as-is).
-5. **Optionally rename the local folder** `C:\Users\bhagy\codeatlas` and the
-   remote (`git remote set-url origin
-   git@github.com:Bhagyansh07/vorza.git`), then re-point any editor/terminal
-   shortcuts.
+- `frontend/src/features/landing/routes/Landing.tsx` footer "Source" link plus
+  the regenerated `frontend/prerender/landing-root.html`.
+- `README.md`, `HANDOVER.md`, and the repository-connect steps in this file.
 
-The rename does not touch the live brand: Vercel (`vorza-sigma.vercel.app`),
-Render (`codeatlas-qr0e.onrender.com`) and the GitHub OAuth app are all
-separate from the repository name.
+Remaining `codeatlas` occurrences are intentional: the live Render hostname
+(`codeatlas-qr0e.onrender.com`), labelled history (`docs/00-recon.md`,
+`docs/02-roadmap.md`, `docs/audit/*`, `STATUS.md`) and the optional local
+folder name.
+
+Two optional follow-ups for the user:
+
+1. **Rename the local folder** `C:\Users\bhagy\codeatlas` once no editor is
+   mid-session inside it, and re-point any shortcuts. The origin remote is
+   already the new URL, so the clone keeps working.
+2. **Confirm both deploys rebuilt** on the next push: Vercel
+   (`vorza-sigma.vercel.app`) and Render (`codeatlas-qr0e.onrender.com`). If a
+   provider lost the link, reconnect it in the project settings.
+
+The rename does not touch the live brand: Vercel, Render and the GitHub OAuth
+app are all separate from the repository name.
 
 ---
 

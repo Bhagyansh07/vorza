@@ -120,7 +120,7 @@ Lighthouse CI GitHub app install (`docs/MANUAL_STEPS.md` section 9).
 
 | ID | Item | Effort | Done when |
 | --- | --- | --- | --- |
-| D1 | Repo rename `codeatlas` → `vorza` (GitHub rename + local folder + remote update) + sweep of stale `codeatlas` names in docs/scripts/README | M | fresh clone of `vorza` builds; `grep -ri codeatlas` finds only historical/audit citations that are labelled as such |
+| D1 | Repo rename `codeatlas` → `vorza` (GitHub rename + local folder + remote update) + sweep of stale `codeatlas` names in docs/scripts/README | M | **renamed to `vorza` 2026-10-08**: remote URL, Landing footer link + prerender, README/HANDOVER/MANUAL_STEPS all swept; local folder rename left optional (user-side); remaining `codeatlas` hits are labelled history or the live Render hostname |
 | D2 | Domain consolidation: `vorza.dev`-style domain on Vercel (canonical), Render backend host stays; update `.env.production` + dashboards; DNS + certs on free tier | M | `https://<domain>` serves the app, `og:url`/sitemap use it, backend URL unchanged, no mixed-content warnings |
 | D3 | Post-domain verification: crawl, OG unfurl, sitemap resubmit, robots | S | S1-S4 checks re-run green against the final domain |
 | D4 | Guard rail for `frontend/.env.production` staleness (comment + dashboard-first rule already documented; verify both agree) | S | `.env.production` values == dashboard values; comment updated with new domain. Parity **verified 2026-10-08**: served bundle inlines `VITE_API_URL=https://codeatlas-qr0e.onrender.com`, live canonical/og:url resolve to `https://vorza-sigma.vercel.app/` (dashboard `VITE_SITE_URL`); a dated re-verification note added to the file. Comment gets the new domain after D2 lands |
