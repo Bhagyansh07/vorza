@@ -2,7 +2,7 @@
 
 Why this exists
 ---------------
-The product is light-only with a single enterprise-blue accent, and every
+The product ships one violet accent across both themes, and every
 raster asset has to agree with the running app down to the hex: a favicon
 advertising one brand while the page renders another is exactly the drift this
 file was written to prevent. Hardcoding colours in three places is what caused
@@ -42,7 +42,7 @@ RAISED = (243, 244, 246)  # --raised      220 16% 96%
 LINE = (223, 225, 231)  # --line        220 13% 89%
 INK = (26, 29, 36)  # --ink         222 18% 15%
 INK_DIM = (87, 100, 107)  # --ink-dim     220 10% 38%
-PRIMARY = (14, 106, 210)  # --primary     212 87% 44%
+PRIMARY = (47, 39, 206)  # --primary     243 68% 48%
 SIGNAL_GOOD = (21, 127, 61)  # --signal-good 143 72% 29%
 SIGNAL_WARN = (153, 102, 0)  # --signal-warn 40 100% 30%
 SIGNAL_BAD = (206, 34, 45)  # --signal-bad  356 72% 47%
@@ -308,7 +308,7 @@ def build_og_image() -> Path:
 
 
 def build_icon(size: int, *, maskable: bool = False) -> Path:
-    """The mark: a white Vorza V on a rounded brand-blue plate.
+    """The mark: a white Vorza V on a rounded brand-violet plate.
 
     Maskable icons get their art scaled into the inner 80% safe zone, because
     Android will crop a full-bleed square to whatever shape the launcher uses

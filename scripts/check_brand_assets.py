@@ -23,7 +23,7 @@ def check(name, fn):
         print(f"FAIL {name}: {e}")
 
 
-BLUE = (14, 106, 210)
+VIOLET = (47, 39, 206)
 WHITE = (255, 255, 255)
 BG = (249, 250, 251)
 
@@ -32,20 +32,20 @@ def check_icon():
     for size in (192, 512):
         img = Image.open(PUBLIC / f"icon-{size}.png").convert("RGB")
         assert img.size == (size, size), img.size
-        # plate is brand blue at centre-left and centre-right edges
-        assert near(sample(img, 0.05, 0.5), BLUE), sample(img, 0.05, 0.5)
-        assert near(sample(img, 0.95, 0.5), BLUE), sample(img, 0.95, 0.5)
+        # plate is brand violet at centre-left and centre-right edges
+        assert near(sample(img, 0.05, 0.5), VIOLET), sample(img, 0.05, 0.5)
+        assert near(sample(img, 0.95, 0.5), VIOLET), sample(img, 0.95, 0.5)
         # a white-ish node sits up-and-left inside the mark
         px = sample(img, 0.42, 0.42)
         assert max(px) > 150, px
-    # maskable: art confined to inner zone -> corners are blue plate
+    # maskable: art confined to inner zone -> corners are violet plate
     img = Image.open(PUBLIC / "icon-maskable-512.png").convert("RGB")
-    assert near(sample(img, 0.5, 0.03), BLUE), sample(img, 0.5, 0.03)
+    assert near(sample(img, 0.5, 0.03), VIOLET), sample(img, 0.5, 0.03)
 
 
 def check_apple():
     img = Image.open(PUBLIC / "apple-touch-icon.png").convert("RGB")
-    assert near(sample(img, 0.5, 0.12), BLUE, tol=35), sample(img, 0.5, 0.12)
+    assert near(sample(img, 0.5, 0.12), VIOLET, tol=35), sample(img, 0.5, 0.12)
     px = sample(img, 0.42, 0.42)
     assert max(px) > 150, px
 
@@ -53,7 +53,7 @@ def check_apple():
 def check_og():
     img = Image.open(PUBLIC / "og-image.png").convert("RGB")
     assert img.size == (1200, 630), img.size
-    assert near(sample(img, 0.5, 0.003), BLUE), sample(img, 0.5, 0.003)  # top bar
+    assert near(sample(img, 0.5, 0.003), VIOLET), sample(img, 0.5, 0.003)  # top bar
     assert near(sample(img, 0.5, 0.5), BG, tol=12), sample(img, 0.5, 0.5)  # light card
     # wordmark "Vorza" ink sits at roughly (214,156)-(520,245); sample inside a glyph
     px = sample(img, 0.19, 0.3)
