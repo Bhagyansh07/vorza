@@ -51,10 +51,13 @@ the dark canvas, evaluated at call time so no theme state threads through the
 renderer.
 
 The dark-with-cyan-accent theme this replaced was retired on 2026-10-06 along
-with the light re-skin; what remains is the same enterprise identity in both
-themes -- cool neutral ramp, single blue accent, Primer-style status colours,
-Geist Sans + Geist Mono Variable (self-hosted via fontsource) -- plus one
-70/45 health bound in `src/lib/health-thresholds.ts`.
+with the light re-skin. The 2026-10-09 identity pass then adopted the
+realtimecolors indigo palette (hue 243: `#2f27ce` primary, `#dedcff` dark
+accent, `#050315` dark base) and swapped the Geist faces for Inter/JetBrains
+Mono, again through the token swap alone. What remains is one identity in both
+themes: cool neutral ramp, single indigo accent, Primer-style status colours,
+Inter Variable + JetBrains Mono Variable (self-hosted via fontsource) -- plus
+one 70/45 health bound in `src/lib/health-thresholds.ts`.
 
 Do not add `dark:` variants. If you need contrast that the ramps do not give
 you, the answer is a new token, not a `dark:` prefix.
@@ -68,11 +71,11 @@ something needed it; do not add steps for one-off components.
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--background` | `220 20% 98%` | `222 24% 8%` | Page backdrop, graph canvas |
-| `--surface` | `0 0% 100%` | `222 20% 12%` | Panels, cards, side panels, comment bubbles |
-| `--raised` | `220 16% 96%` | `222 17% 16%` | Hover/active, nested cards, tooltips |
-| `--panel` | `0 0% 100%` | `222 20% 12%` | Popovers, dropdowns, floating overlays |
-| `--line` | `220 13% 89%` | `222 14% 24%` | Hairline borders and separators |
+| `--background` | `220 20% 98%` | `247 10% 5%` | Page backdrop, graph canvas |
+| `--surface` | `0 0% 100%` | `246 12% 9%` | Panels, cards, side panels, comment bubbles |
+| `--raised` | `220 16% 96%` | `246 10% 13%` | Hover/active, nested cards, tooltips |
+| `--panel` | `0 0% 100%` | `246 12% 9%` | Popovers, dropdowns, floating overlays |
+| `--line` | `220 13% 89%` | `246 12% 24%` | Hairline borders and separators |
 
 > ### `--panel` is not a Tailwind colour
 >
@@ -92,10 +95,10 @@ something needed it; do not add steps for one-off components.
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--foreground` | `222 25% 11%` | `220 30% 94%` | Headings, highest-emphasis text |
-| `--ink` | `222 18% 15%` | `220 22% 88%` | Body text on a surface |
-| `--ink-dim` | `220 10% 38%` | `220 13% 66%` | Labels, secondary copy (5.9:1 light / 6.8:1 dark) |
-| `--ink-faint` | `220 7% 49%` | `220 13% 58%` | Placeholders, axis ticks (4.5:1 light / 4.7:1 dark) |
+| `--foreground` | `222 25% 11%` | `244 30% 97%` | Headings, highest-emphasis text |
+| `--ink` | `222 18% 15%` | `244 22% 92%` | Body text on a surface |
+| `--ink-dim` | `220 10% 38%` | `244 12% 74%` | Labels, secondary copy (5.9:1 light / 8.2:1 dark) |
+| `--ink-faint` | `220 7% 49%` | `244 12% 60%` | Placeholders, axis ticks (4.5:1 light / 5.1:1 dark) |
 
 Four levels. If a piece of copy does not fit, it usually wants to be deleted
 rather than promoted to a new weight.
@@ -106,16 +109,18 @@ rather than promoted to a new weight.
 
 | Token | Light | Dark |
 |---|---|---|
-| `--primary` | `212 87% 44%` | `212 94% 62%` |
-| `--primary-foreground` | `0 0% 100%` | `222 40% 8%` |
-| `--primary-soft` | `213 85% 95%` | `212 80% 20%` |
+| `--primary` | `243 68% 48%` | `243 96% 88%` |
+| `--primary-foreground` | `0 0% 100%` | `245 60% 10%` |
+| `--primary-soft` | `243 70% 95%` | `243 60% 16%` |
 
-Enterprise blue (≈ `#0e6ad2`), the single accent for the whole product. In
-light it carries white text at 5.2:1; in dark the same blue is lifted to 62%
-and carries near-black ink at ~6.4:1 (white fails AA on a lighter blue). Both
+Enterprise indigo (≈ `#2f27ce`), the single accent for the whole product, from
+the realtimecolors identity palette. In light it carries white text at 9.1:1;
+in dark the same hue is carried up as the palette's `#dedcff` (88% periwinkle)
+and carries near-black ink at ~11.6:1 (white fails AA on the lighter indigo).
+Both
 sit on a hue no status colour occupies: the health ramp is green/amber/red and
-the complexity ramp is blue/amber/red, so a focus ring or a selection state can
-never be mistaken for a health signal.
+the complexity ramp is indigo/amber/red, so a focus ring or a selection state
+can never be mistaken for a health signal.
 
 `--primary-soft` is a tinted chip fill. Pair it with `text-primary`; never use it
 as a standalone text colour.
@@ -167,7 +172,7 @@ So `bg-health-good` reads as "this file is healthy" and `bg-complexity-medium`
 reads as "this file is complex". Same pixel, different claim. Use the `health.*`
 family for a health score and the `complexity.*` family for a complexity score --
 never `signal-*` directly in a component, because `--complexity-low` is
-`214 55% 45%`, a desaturated blue that exists only in the complexity family.
+`243 55% 45%`, a desaturated indigo that exists only in the complexity family.
 
 ---
 
@@ -220,16 +225,16 @@ without checking the alpha utilities still compile.
 
 | Role | Stack | Size |
 |---|---|---|
-| UI / body | `Geist Sans` (self-hosted via fontsource) | 14px base |
+| UI / body | `Inter Variable` (self-hosted via fontsource) | 14px base |
 | Numeric | same, plus `.tabular` | see below |
-| Machine output | `Geist Mono Variable` (fontsource) | 12-13px |
+| Machine output | `JetBrains Mono Variable` (fontsource) | 12-13px |
 
 Mono is reserved for things the machine printed, not things a human wrote: file
 paths, branch names, hashes, scores. Both fonts are self-hosted fontsource
-packages (latin subsets, `@fontsource/geist-sans` + `@fontsource-variable/
-geist-mono`), so there is no third-party font request at runtime; the system
-stack stays in the `fontFamily` fallback so a blocked font still renders an
-interface rather than a flash of unreadable default.
+variable packages (`@fontsource-variable/inter` + `@fontsource-variable/
+jetbrains-mono`), so there is no third-party font request at runtime; the
+system stack stays in the `fontFamily` fallback so a blocked font still renders
+an interface rather than a flash of unreadable default.
 
 ### `.tabular`
 
@@ -267,12 +272,11 @@ Its vocabulary, all token-driven:
   inside the rAF callback rather than trusting the host timestamp (jsdom's is
   offset from the window clock and produced negative eased values).
 
-Font decision: the design brief for Phase 3 asked for a serif/grotesk display
-plus JetBrains Mono. Kept: Geist Sans (a grotesk) for headings and Geist Mono
-for machine output, both already self-hosted via fontsource. Adding a second
-display and a second mono face would add weight to the indexable page for no
-measured gain; the substitution still satisfies "self-hosted mono data labels"
-with the stack that already ships.
+Font decision: the redesign brief asked for Inter with JetBrains Mono.
+Adopted: Inter Variable for interface text and JetBrains Mono Variable for
+machine output, both self-hosted via fontsource variable packages. The variable
+face covers the whole weight range in one @font-face, and mono stays restricted
+to what the machine printed (paths, branches, hashes, scores).
 
 Copy rules (also enforced in the Phase 1 audit): no em dashes, no
 "seamless / next-gen" vocabulary, no filler ("open the box" style). Honesty
@@ -352,10 +356,10 @@ network, no ImageMagick, no vendored fonts):
 | `icon-192.png`, `icon-512.png` | as named | PWA manifest |
 | `icon-maskable-512.png` | 512x512 | Android, art inside the inner 80% safe zone |
 | `apple-touch-icon.png` | 180x180 | iOS, opaque because iOS ignores transparency |
-| `favicon.svg` | 32x32 | The mark: white V on a blue plate, geometry shared with the PNG icons |
+| `favicon.svg` | 32x32 | The mark: white V on an indigo plate, geometry shared with the PNG icons |
 
 The PNG icons and `favicon.svg` are the **same drawing**: a white V (two graph
-edges meeting at a vertex, a node at each end) on the brand-blue plate, rendered
+edges meeting at a vertex, a node at each end) on the brand-indigo plate, rendered
 by `draw_mark` in the script so an SVG and a PNG can never disagree about the
 logo. The OG card runs the **same force-directed simulation the graph view
 uses**, so the preview picture is an honest sample of the product's output
