@@ -1,0 +1,82 @@
+import { useEffect, useRef, type ComponentPropsWithoutRef } from 'react';
+import { useInView, useMotionValue, useSpring } from 'motion/react';
+
+import { cn } from '@/lib/utils';
+
+/**
+ * NumberTicker, from magicui (MIT). Springs a number to its target when the
+ * element scrolls into view.
+ *
+ * Adapted: `text-black dark:text-white` is `text-ink` so it follows the token
+ * system, and the `"use client"` directive was dropped (this is a Vite SPA).
+ *
+ * Initial render shows `startValue`; the spring only fires once in view, so
+ * prerendered pages and tests see a stable number and no flash of the target.
+ */
+interface NumberTickerProps extends ComponentPropsWithoutRef<'span'> {
+  value: number;
+  startValue?: number;
+  direction?: 'up' | 'down';
+  delay?: number;
+  decimalPlaces?: number;
+}
+
+export function NumberTicker({
+  value,
+  startValue = 0,
+  direction = 'up',
+  delay = 0,
+  className,
+  decimalPlaces = 0,
+  ...props
+}: NumberTickerProps) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const motionValue = useMotionValue(direction === 'down' ? value : startValue);
+  const springValue = useSpring(motionValue, {
+    damping: 60,
+    stiffness: 100,
+  });
+  const isInView = useInView(ref, { once: true, margin: '0px' });
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    if (isInView) {
+      timer = setTimeout(() => {
+        motionValue.set(direction === 'down' ? startValue : value);
+      }, delay * 1000);
+    }
+
+    return () => {
+      if (timer !== null) {
+        clearTimeout(timer);
+      }
+    };
+  }, [motionValue, isInView, delay, value, direction, startValue]);
+
+  useEffect(
+    () =>
+      springValue.on('change', (latest) => {
+        if (ref.current) {
+          ref.current.textContent = Intl.NumberFormat('en-US', {
+            minimumFractionDigits: decimalPlaces,
+            maximumFractionDigits: decimalPlaces,
+          }).format(Number(latest.toFixed(decimalPlaces)));
+        }
+      }),
+    [springValue, decimalPlaces]
+  );
+
+  return (
+    <span
+      ref={ref}
+      className={cn(
+        'inline-block tracking-wider text-ink tabular-nums',
+        className
+      )}
+      {...props}
+    >
+      {startValue}
+    </span>
+  );
+}
