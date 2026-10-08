@@ -178,7 +178,7 @@ function buildOgSvg() {
 
   const circles = nodes
     .map((n) => {
-      const ring = n.hub ? ` stroke="hsl(212 87% 44%)" stroke-width="2"` : '';
+      const ring = n.hub ? ` stroke="hsl(243 68% 48%)" stroke-width="2"` : '';
       const stroke = n.hub
         ? ''
         : ` stroke="hsl(220 13% 89%)" stroke-width="0.5"`;
@@ -223,11 +223,11 @@ function buildOgPage() {
   }
   .left { width: 470px; padding: 70px 0 0 64px; }
   .eyebrow { display: flex; align-items: center; gap: 10px; }
-  .eyebrow .dot { width: 12px; height: 12px; border-radius: 3px; background: hsl(212 87% 44%); }
+  .eyebrow .dot { width: 12px; height: 12px; border-radius: 3px; background: hsl(243 68% 48%); }
   .eyebrow span {
     font-family: Consolas, "SFMono-Regular", monospace;
     font-size: 14px; letter-spacing: 0.28em; font-weight: 600;
-    color: hsl(212 87% 44%);
+    color: hsl(243 68% 48%);
   }
   h1 { font-size: 92px; font-weight: 700; letter-spacing: -0.03em; margin-top: 18px; color: #1f232c; }
   .tagline { font-size: 27px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.25; margin-top: 14px; color: #292d37; }

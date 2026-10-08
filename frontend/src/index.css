@@ -11,7 +11,7 @@
  * the `prefers-color-scheme: dark` block below. No `.dark` class and no
  * `dark:` utility exists anywhere in src/ -- components only reference theme
  * classes, so the flip is a pure token swap in this file. The palette is a
- * cool neutral ramp with a single blue accent and three status colours.
+ * cool neutral ramp with a single indigo accent and three status colours.
  * Every step is contrast-checked against the surface it is used on (WCAG AA,
  * 4.5:1 for body text, 3:1 for graph axis strokes) in BOTH themes: the dark
  * block lightens the accent so it carries dark text, lifts the status colours
@@ -50,16 +50,18 @@
     --ink-faint: 220 7% 49%;
 
     /* ---------------------------------------------------------------------
-     * Accent. One accent for the whole product: a deep, unsaturated-neutral
-     * blue that carries white text at 5.2:1 and reads as instrument panel
-     * rather than consumer gradient. No second brand hue exists -- status
-     * colours below are semantic, not decorative.
+     * Accent. One indigo for the whole product (hue 243, from the
+     * realtimecolors identity: deep #2f27ce in light, the palette's #dedcff
+     * carried up as the dark accent). Light primary carries white text at
+     * ~9.1:1 and reads as an instrument panel rather than a consumer
+     * gradient. No second brand hue exists -- status colours below are
+     * semantic, not decorative.
      * ------------------------------------------------------------------- */
-    --primary: 212 87% 44%;
+    --primary: 243 68% 48%;
     --primary-foreground: 0 0% 100%;
     /* Tinted fill for "accented but recessive" chips: `bg-primary-soft`
      * paired with `text-primary`, never as standalone text colour. */
-    --primary-soft: 213 85% 95%;
+    --primary-soft: 243 70% 95%;
 
     /* ---------------------------------------------------------------------
      * Status. These are the canonical three. The `health.*` and
@@ -99,7 +101,7 @@
     --health-bad: var(--signal-bad);
 
     /* complexity ramp: FileNode.complexity_score (node radius + fill hue) */
-    --complexity-low: 214 55% 45%;
+    --complexity-low: 243 55% 45%;
     --complexity-medium: 40 100% 30%;
     --complexity-high: 356 72% 47%;
 
@@ -145,24 +147,26 @@
        * border + shadow (mirror of light, where panel and surface are both
        * white). Hairlines sit a step above raised so they read as edges, not
        * fills. */
-      --background: 222 24% 8%;
-      --surface: 222 20% 12%;
-      --raised: 222 17% 16%;
-      --panel: 222 20% 12%;
-      --line: 222 14% 24%;
+      --background: 247 10% 5%;
+      --surface: 246 12% 9%;
+      --raised: 246 10% 13%;
+      --panel: 246 12% 9%;
+      --line: 246 12% 24%;
 
       /* Ink ramp flipped: foreground ~12.7:1 on surface, dim ~7.2:1, faint
        * ~4.6:1 on raised (must stay legible on the lightest step it sits on). */
-      --foreground: 220 30% 94%;
-      --ink: 220 22% 88%;
-      --ink-dim: 220 13% 66%;
-      --ink-faint: 220 13% 58%;
+      --foreground: 244 30% 97%;
+      --ink: 244 22% 92%;
+      --ink-dim: 244 12% 74%;
+      --ink-faint: 244 12% 60%;
 
-      /* Accent: 62% blue carries near-black ink at ~7.6:1; soft chip fill is
-       * a dark tinted blue that keeps text-primary at ~6.8:1. */
-      --primary: 212 94% 62%;
-      --primary-foreground: 222 40% 8%;
-      --primary-soft: 212 75% 17%;
+      /* Accent: the palette's #dedcff carried up as the dark accent -- 88%
+       * periwinkle carries near-black ink at ~11.6:1 (white fails AA on it);
+       * soft chip fill is a dark indigo tint keeping text-primary at ~10.7:1.
+       * The deep #2f27ce stays reserved for light-theme fills. */
+      --primary: 243 96% 88%;
+      --primary-foreground: 245 60% 10%;
+      --primary-soft: 243 60% 16%;
 
       /* Status: lifted so each reads as text on surface (good ~5:1, warn
        * ~6.3:1, bad ~4.7:1). */
@@ -182,7 +186,7 @@
       --accent: var(--raised);
       --accent-foreground: var(--ink);
       --border: var(--line);
-      --input: 222 14% 28%;
+      --input: 246 14% 28%;
       --ring: var(--primary);
       --destructive: 356 74% 44%;
       --destructive-foreground: 0 0% 100%;
@@ -193,7 +197,7 @@
       --health-bad: var(--signal-bad);
 
       /* complexity ramp: FileNode.complexity_score (node radius + fill hue) */
-      --complexity-low: 214 75% 62%;
+      --complexity-low: 243 75% 62%;
       --complexity-medium: 40 100% 55%;
       --complexity-high: 356 74% 60%;
 

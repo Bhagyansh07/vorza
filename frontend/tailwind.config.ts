@@ -51,15 +51,15 @@ export default {
         },
       },
       /*
-       * Geist Sans for interface text, Geist Mono for anything the machine
-       * produced (paths, branches, hashes, scores). Both are self-hosted via
-       * fontsource -- no third-party font request at runtime. The system stack
-       * stays as the fallback so a blocked font still renders an interface
-       * rather than a flash of Times.
+       * Inter Variable for interface text, JetBrains Mono Variable for
+       * anything the machine produced (paths, branches, hashes, scores). Both
+       * are self-hosted via fontsource -- no third-party font request at
+       * runtime. The system stack stays as the fallback so a blocked font
+       * still renders an interface rather than a flash of Times.
        */
       fontFamily: {
         sans: [
-          'Geist Sans',
+          'Inter Variable',
           'ui-sans-serif',
           'system-ui',
           '-apple-system',
@@ -70,7 +70,7 @@ export default {
           'sans-serif',
         ],
         mono: [
-          'Geist Mono Variable',
+          'JetBrains Mono Variable',
           'ui-monospace',
           'SFMono-Regular',
           'Menlo',

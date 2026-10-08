@@ -3,13 +3,11 @@ import ReactDOM from 'react-dom/client';
 
 import App from '@/App';
 
-// Self-hosted type. Subsets are latin-only so nothing is downloaded that the
-// page never renders, and both files ship font-display: swap.
-import '@fontsource/geist-sans/latin-400.css';
-import '@fontsource/geist-sans/latin-500.css';
-import '@fontsource/geist-sans/latin-600.css';
-import '@fontsource/geist-sans/latin-700.css';
-import '@fontsource-variable/geist-mono/wght.css';
+// Self-hosted variable fonts. Inter covers the whole UI weight range in one
+// @font-face; JetBrains Mono is reserved for machine output (paths, branches,
+// hashes, scores). Both ship font-display: swap and no runtime font request.
+import '@fontsource-variable/inter/wght.css';
+import '@fontsource-variable/jetbrains-mono/wght.css';
 
 import '@/index.css';
 
