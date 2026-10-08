@@ -444,6 +444,44 @@ anything.
 
 ---
 
+## 10. (Optional) Rename the repository to `vorza`
+
+Roadmap D1: the repo (and the local folder) still carry the pre-branding name
+`codeatlas`. Renaming on GitHub is the only action that needs account access;
+everything else on this checklist is repo work. Do them in this order or the
+deploys go quiet:
+
+1. **Rename on GitHub** (the user's account): repo *Settings -> General*,
+   rename to `vorza`. GitHub redirects the old URL, so references do not 404
+   immediately, but replace them anyway.
+2. **Verify both deploys still build.** Push a trivial commit (or wait for the
+   next one) and confirm the CI, E2E and Lighthouse workflows plus the Vercel
+   and Render builds all go green. If a provider lost the link (Vercel and
+   Render both watch the repo by name), reconnect it in the project settings
+   before doing anything else.
+3. **Update the two live-facing references** in this repo:
+   `frontend/src/features/landing/routes/Landing.tsx` (the footer "Source"
+   link, `https://github.com/Bhagyansh07/codeatlas`) and regenerate the
+   prerendered landing (`npm run build` runs `scripts/seo-render.mjs`, or run
+   it directly), so the committed `frontend/prerender/landing-root.html` no
+   longer contains the old handle.
+4. **Sweep the docs**: `docs/MANUAL_STEPS.md` section 3.1 ("Connect the
+   repository"), `render.yaml` blueprint references, and any remaining
+   `Bhagyansh07/codeatlas` strings in README/docs. The done-when from the
+   roadmap: `grep -ri codeatlas` finds only historical or audit citations that
+   are explicitly labelled as such (`docs/00-recon.md`, `docs/02-roadmap.md`
+   and `STATUS.md` history stay as-is).
+5. **Optionally rename the local folder** `C:\Users\bhagy\codeatlas` and the
+   remote (`git remote set-url origin
+   git@github.com:Bhagyansh07/vorza.git`), then re-point any editor/terminal
+   shortcuts.
+
+The rename does not touch the live brand: Vercel (`vorza-sigma.vercel.app`),
+Render (`codeatlas-qr0e.onrender.com`) and the GitHub OAuth app are all
+separate from the repository name.
+
+---
+
 ## What I could not verify, and why
 
 Stated plainly rather than glossed over.
