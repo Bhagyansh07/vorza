@@ -10,7 +10,9 @@ new pull request gets an AI review with a risk score before it merges.
 
 > **Live:** [app](https://vorza-sigma.vercel.app) · [API](https://codeatlas-qr0e.onrender.com) · [OpenAPI](https://codeatlas-qr0e.onrender.com/openapi.json) · [source](https://github.com/Bhagyansh07/vorza)
 
-![Vorza map](/product-map.png)
+[![CI](https://github.com/Bhagyansh07/vorza/actions/workflows/CI.yml/badge.svg)](https://github.com/Bhagyansh07/vorza/actions/workflows/CI.yml) [![E2E (Playwright)](https://github.com/Bhagyansh07/vorza/actions/workflows/E2E.yml/badge.svg)](https://github.com/Bhagyansh07/vorza/actions/workflows/E2E.yml) [![Lighthouse](https://github.com/Bhagyansh07/vorza/actions/workflows/Lighthouse.yml/badge.svg)](https://github.com/Bhagyansh07/vorza/actions/workflows/Lighthouse.yml) [![MIT](https://img.shields.io/badge/license-MIT-blue)](#license)
+
+![Vorza: live demo map of a codebase](frontend/public/product-map.png)
 
 ## What it does
 
@@ -32,7 +34,7 @@ the risk live*, and *what breaks when I touch this*.
 |---|---|
 | Backend | FastAPI · SQLModel · PostgreSQL (Neon) · Alembic |
 | Analysis | Pure-Python pipeline over a git checkout (complexity, churn, imports) |
-| AI | OpenAI (`gpt-4o-mini`, optional) — skipped with a logged reason if no key |
+| AI | OpenAI-compatible endpoint (Groq, `openai/gpt-oss-120b` by default) — review skipped with a logged reason if unconfigured |
 | Frontend | React 18 · TypeScript · Vite · TanStack Query · Tailwind + shadcn/ui |
 | Graph | `d3-force` + `d3-zoom` |
 | Real-time | FastAPI WebSockets (Redis pub/sub optional) |
@@ -117,8 +119,10 @@ Current state:
 
 | | |
 |---|---|
-| Backend | **155 passing**, coverage **81%** (gate 60%) |
-| Frontend | **110 passing** across 14 files |
+| Backend | **183 passing**, coverage **81%** (gate 60%) |
+| Frontend | **143 passing** across 20 files |
+| E2E (Playwright) | 7 specs on chromium, 3 shards, against a mock backend + GitHub OAuth |
+| Lighthouse (T2) | landing perf ≥ 0.85 / a11y ≥ 0.95; login perf ≥ 0.70 / a11y ≥ 0.95 |
 | `mypy` (strict) | clean |
 | `ruff` / `eslint` | clean |
 | `tsc` | clean |
@@ -136,6 +140,8 @@ Both targets are configuration-as-code.
 | `render.yaml` | Render — Docker backend with `git` installed, migrations on boot |
 | `vercel.json` | Vercel — SPA rewrites + cache and security headers |
 | `.github/workflows/CI.yml` | lint, format, types, tests, coverage, Docker build |
+| `.github/workflows/E2E.yml` | Playwright E2E, 3 shards, against the mock backend |
+| `.github/workflows/Lighthouse.yml` | perf + a11y gates on the public origin |
 
 `master` auto-deploys to both. Click-by-click setup (Neon, Render, Vercel, the
 GitHub OAuth app, the webhook): [`docs/MANUAL_STEPS.md`](docs/MANUAL_STEPS.md).
@@ -159,10 +165,8 @@ Honest, ordered by how much they matter.
 
 | Gap | Why it matters |
 |---|---|
-| AI review needs `OPENAI_API_KEY` | Without it the webhook still verifies PR events, but the review is skipped and logged — nothing is reviewed |
-| No E2E or accessibility tests | Route behaviour is verified by reading code and unit tests, not by driving a browser |
+| AI review not live in production | The OpenAI-compatible review path is coded but gated: until `OPENAI_API_KEY`, `OPENAI_BASE_URL` and `OPENAI_MODEL` are set on Render and it redeploys, the webhook still verifies PR events and the review is skipped and logged |
 | OAuth `state` is not single-use | Impact is limited because GitHub's `code` is single-use, but the guard is weaker than the docstring once claimed |
-| No bundle-size gate in CI | Source-level guards exist, but nothing measures actual bytes |
 | Docker Compose orchestration unverified | The Docker images are built by CI on every push; the compose stack never ran on this machine |
 
 ## License
