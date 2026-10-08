@@ -40,7 +40,7 @@ const SNAPSHOT_MARKERS = [
   'Demo map of a codebase',
   'The living, AI-reviewed map of your codebase',
   '06 · Field notes',
-  '172',
+  '183',
   '81%',
 ];
 

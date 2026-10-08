@@ -453,7 +453,7 @@ export function Landing() {
             </Link>
             <a
               className="transition-colors hover:text-ink"
-              href="https://github.com/Bhagyansh07/codeatlas"
+              href="https://github.com/Bhagyansh07/vorza"
               rel="noreferrer noopener"
               target="_blank"
             >
