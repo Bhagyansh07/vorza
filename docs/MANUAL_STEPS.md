@@ -364,6 +364,24 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST \
 
 Expect `401` or `403`, never `200`.
 
+### Free AI key (Groq, optional)
+
+The review client speaks OpenAI's API, so any OpenAI-compatible provider works.
+The no-cost path: **Groq** (`https://console.groq.com`) -> **API Keys** ->
+create one (`gsk_...`). Then set these in Render env (section 2.1) and redeploy:
+
+```text
+OPENAI_API_KEY=gsk_...
+OPENAI_BASE_URL=https://api.groq.com/openai/v1
+OPENAI_MODEL=openai/gpt-oss-120b
+```
+
+`OPENAI_BASE_URL` and `OPENAI_MODEL` must match the provider: Groq does not
+serve `gpt-4o-mini`, and without a key the review is skipped with a logged
+reason either way. The same three variables can point at GitHub Models
+(`https://models.github.ai/inference`) or OpenRouter
+(`https://openrouter.ai/api/v1`) instead.
+
 ---
 
 ## 7. Google Search Console
