@@ -3,6 +3,7 @@ import { CheckIcon, Loader2, PlusIcon, RefreshCcw, SearchIcon } from 'lucide-rea
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
+import { ShimmerButton } from '@/components/ui/shimmer-button';
 import {
   Dialog,
   DialogContent,
@@ -65,10 +66,10 @@ export function ConnectRepoDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>
+        <ShimmerButton>
           <PlusIcon />
           Connect repo
-        </Button>
+        </ShimmerButton>
       </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto">
         <form onSubmit={submit}>

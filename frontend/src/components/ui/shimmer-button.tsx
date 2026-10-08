@@ -56,6 +56,7 @@ export const ShimmerButton = React.forwardRef<
         'transform-gpu transition-transform duration-300 ease-in-out active:translate-y-px',
         className
       )}
+      type="button"
       ref={ref}
       {...props}
     >

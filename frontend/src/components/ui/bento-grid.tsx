@@ -33,6 +33,8 @@ interface BentoCardProps extends ComponentPropsWithoutRef<'div'> {
   title: string;
   description: string;
   icon?: ReactNode;
+  /** Large display value rendered above the title, e.g. a NumberTicker. */
+  stat?: ReactNode;
   /** Optional trailing action, rendered as a Link with an arrow. */
   to?: string;
   actionLabel?: string;
@@ -46,6 +48,7 @@ export function BentoCard({
   title,
   description,
   icon,
+  stat,
   to,
   actionLabel,
   background,
@@ -66,6 +69,11 @@ export function BentoCard({
 
       <div className="relative flex flex-col gap-1 p-5">
         {icon ? <div className="text-primary">{icon}</div> : null}
+        {stat ? (
+          <div className="text-3xl font-semibold leading-none tracking-tight text-ink">
+            {stat}
+          </div>
+        ) : null}
         <h3 className="text-lg font-semibold leading-tight text-ink">{title}</h3>
         <p className="text-sm text-ink-dim">{description}</p>
       </div>

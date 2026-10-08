@@ -31,6 +31,16 @@ describe('Dashboard', () => {
     expect(await screen.findByText('facebook/react')).toBeInTheDocument();
     expect(screen.getByText('axios/axios')).toBeInTheDocument();
     expect(screen.getByText('vitejs/vite')).toBeInTheDocument();
+
+    // The honest metric strip sits above the grid, all derived from the same
+    // repo list (mock data has no analysis errors, so re-analysis is 0).
+    expect(screen.getByRole('heading', { name: 'Repositories' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Mapped without issues' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Re-analysis needed' })
+    ).toBeInTheDocument();
   });
 
   it('offers an empty state when there are no repos', async () => {
