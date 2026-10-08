@@ -12,12 +12,18 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { LogoutButton } from '@/features/auth/components/LogoutButton';
 import { useUser } from '@/features/auth/hooks/use-auth';
+import { cn } from '@/lib/utils';
 
-export function Navbar() {
+export function Navbar({ className }: { className?: string }) {
   const user = useUser();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background">
+    <header
+      className={cn(
+        'sticky top-0 z-40 border-b border-border bg-background',
+        className
+      )}
+    >
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4">
         <div className="flex items-center gap-6">
           <Link to="/dashboard" aria-label="Vorza dashboard">
