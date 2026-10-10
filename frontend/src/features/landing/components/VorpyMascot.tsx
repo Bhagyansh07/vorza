@@ -22,7 +22,14 @@
  * (`prefers-reduced-motion: reduce`) -- or there is no `matchMedia`/RAF at all --
  * it paints one static neutral frame and never starts the animation loop.
  */
-import { useCallback, useEffect, useId, useMemo, useRef } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  type CSSProperties,
+} from 'react';
 import {
   MAX_BODY_NODES,
   advanceAvatarPlayback,
@@ -178,8 +185,11 @@ export function VorpyMascot({
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none fixed bottom-6 right-6 z-30 hidden select-none md:block"
-      style={{ width: size, height: size }}
+      // Shown at every width (never `hidden md:block`): a smaller 84px badge on
+      // phones, the full `size` from `md` up. Decorative and non-interactive, so
+      // it never blocks a tap.
+      className="pointer-events-none fixed bottom-5 right-5 z-30 h-[84px] w-[84px] select-none md:bottom-6 md:right-6 md:h-[var(--vorpy-size)] md:w-[var(--vorpy-size)]"
+      style={{ '--vorpy-size': `${size}px` } as CSSProperties}
     >
       <svg
         className="h-full w-full drop-shadow-md"
