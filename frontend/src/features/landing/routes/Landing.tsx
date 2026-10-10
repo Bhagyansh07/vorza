@@ -447,9 +447,15 @@ export function Landing() {
       <footer className="border-t border-line bg-surface">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-8 text-sm text-ink-dim sm:flex-row sm:items-center sm:justify-between">
           <p>Vorza, the living, AI-reviewed map of your codebase.</p>
-          <nav aria-label="Footer" className="flex items-center gap-4">
+          <nav aria-label="Footer" className="flex flex-wrap items-center gap-4">
             <Link className="transition-colors hover:text-ink" to="/login">
               Sign in
+            </Link>
+            <Link className="transition-colors hover:text-ink" to="/privacy">
+              Privacy
+            </Link>
+            <Link className="transition-colors hover:text-ink" to="/terms">
+              Terms
             </Link>
             <a
               className="transition-colors hover:text-ink"

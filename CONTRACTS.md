@@ -151,6 +151,8 @@ Persisted as `AiReviewRow` above. With no `OPENAI_API_KEY` set, the orchestrator
 ```
 /                       → public landing page. INDEXABLE.
 /login                  → GitHub sign-in + OAuth callback handler. INDEXABLE.
+/privacy                → public privacy policy               INDEXABLE.
+/terms                  → public terms of service            INDEXABLE.
 /dashboard              → list of connected repos          noindex
 /repos/:id              → the live graph                    noindex
 /repos/:id/history      → trend charts                    noindex
@@ -166,6 +168,10 @@ dashboard is unmoved; `/dashboard` behaves exactly as v0.1 described.
 
 Authed routes are `noindex, nofollow`, including the 404. Indexing a page that
 redirects to `/login` wastes crawl budget on a URL that can never rank.
+
+The legal pages (`/privacy`, `/terms`) are public and indexable; they carry the
+same header and footer as the landing page and are rendered from
+`frontend/src/app/routes/{Privacy,Terms}.tsx`.
 
 ## Database
 

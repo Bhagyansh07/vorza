@@ -3,13 +3,15 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { ProtectedRoute } from '@/app/ProtectedRoute';
 import { NotFound } from '@/app/routes/NotFound';
+import { PrivacyPage } from '@/app/routes/Privacy';
+import { TermsPage } from '@/app/routes/Terms';
 import { AppShell } from '@/components/layout/AppShell';
 import { LoginPage } from '@/features/auth/routes/Login';
 import { Landing } from '@/features/landing/routes/Landing';
 
 /**
  * Route map, mirrors CONTRACTS.md "Frontend route map" section:
- *   /  /login  /dashboard  /repos/:repoId  /repos/:repoId/history
+ *   /  /login  /privacy  /terms  /dashboard  /repos/:repoId  /repos/:repoId/history
  *
  * `/` is the public landing page. It used to redirect to `/dashboard`, which
  * sits behind `ProtectedRoute`, so the app had no indexable page at all. See
@@ -35,6 +37,8 @@ export function AppRouter() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
