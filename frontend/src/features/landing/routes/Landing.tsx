@@ -13,14 +13,15 @@ import { ScrollStory } from '../components/ScrollStory';
 import { demoFiles, demoLinks, demoMetrics, demoSeedPositions } from '../components/demoData';
 
 /**
- * Vorpy, the site mascot, needs the Bible Strong runtime and a ~25 kB avatar
- * definition. Neither is part of first paint, so it is loaded on demand. This
- * import is asserted by `mascot-boundary.test.ts`; importing the component
- * directly would pull the runtime into the initial bundle.
+ * Vorpy, the site mascot, leads a guided tour of this page. The tour needs the
+ * Bible Strong runtime and a ~25 kB avatar definition. Neither is part of first
+ * paint, so it is loaded on demand. This import is asserted by
+ * `mascot-boundary.test.ts`; importing the tour (or the mascot) directly would
+ * pull the runtime into the initial bundle.
  */
-const VorpyMascot = lazy(() =>
-  import('../components/VorpyMascot').then((module) => ({
-    default: module.VorpyMascot,
+const VorpyTour = lazy(() =>
+  import('../components/VorpyTour').then((module) => ({
+    default: module.VorpyTour,
   })),
 );
 
@@ -168,7 +169,11 @@ export function Landing() {
 
       <main>
         {/* 01 · Survey — hero with the live map */}
-        <section aria-labelledby="hero-heading" className="mx-auto max-w-6xl px-6 pb-20 pt-16 sm:pt-20">
+        <section
+          aria-labelledby="hero-heading"
+          data-tour="hero"
+          className="mx-auto max-w-6xl px-6 pb-20 pt-16 sm:pt-20"
+        >
           <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-12 lg:gap-12">
             <div className="lg:col-span-5">
               <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-primary">
@@ -200,7 +205,7 @@ export function Landing() {
               </p>
             </div>
 
-            <div className="lg:col-span-7">
+            <div className="lg:col-span-7" data-tour="map">
               <MapFrame
                 sheet="Vorza · demo map · survey"
                 coords="31.2304°N  ·  121.4737°E"
@@ -211,7 +216,7 @@ export function Landing() {
             </div>
           </div>
 
-          <div className="mt-10">
+          <div className="mt-10" data-tour="metrics">
             <Metrics metrics={metrics} />
           </div>
         </section>
@@ -220,7 +225,11 @@ export function Landing() {
         <ScrollStory />
 
         {/* 03 · Blast radius — hover any file */}
-        <section aria-labelledby="blast-radius" className="border-t border-line bg-surface py-20">
+        <section
+          aria-labelledby="blast-radius"
+          data-tour="blast"
+          className="border-t border-line bg-surface py-20"
+        >
           <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 lg:grid-cols-12 lg:gap-12">
             <div className="lg:col-span-5">
               <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-primary">
@@ -263,7 +272,11 @@ export function Landing() {
         </section>
 
         {/* 04 · Pull requests — sample review */}
-        <section aria-labelledby="pr-reads" className="py-20">
+        <section
+          aria-labelledby="pr-reads"
+          data-tour="review"
+          className="py-20"
+        >
           <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 lg:grid-cols-12 lg:gap-12">
             <div className="order-2 lg:order-1 lg:col-span-6">
               <MapFrame
@@ -327,7 +340,11 @@ export function Landing() {
         </section>
 
         {/* 05 · What it actually does */}
-        <section aria-labelledby="how-it-works" className="border-t border-line bg-surface py-20">
+        <section
+          aria-labelledby="how-it-works"
+          data-tour="inventory"
+          className="border-t border-line bg-surface py-20"
+        >
           <div className="mx-auto max-w-6xl px-6">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-primary">
               05 · Inventory
@@ -362,7 +379,11 @@ export function Landing() {
         </section>
 
         {/* 06 · The engineering */}
-        <section aria-labelledby="the-engineering" className="py-20">
+        <section
+          aria-labelledby="the-engineering"
+          data-tour="engineering"
+          className="py-20"
+        >
           <div className="mx-auto max-w-6xl px-6">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-primary">
               06 · Field notes
@@ -386,7 +407,7 @@ export function Landing() {
               */}
               {[
                 ['backend tests', '183'],
-                ['frontend tests', '161'],
+                ['frontend tests', '167'],
                 ['backend coverage', '81%'],
                 ['live stack', 'Render + Vercel + Neon'],
               ].map(([label, value]) => (
@@ -419,7 +440,11 @@ export function Landing() {
         </section>
 
         {/* 07 · What it runs on */}
-        <section aria-labelledby="stack" className="border-t border-line bg-surface py-20">
+        <section
+          aria-labelledby="stack"
+          data-tour="stack"
+          className="border-t border-line bg-surface py-20"
+        >
           <div className="mx-auto max-w-6xl px-6">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-primary">
               07 · Field equipment
@@ -461,7 +486,7 @@ export function Landing() {
         </section>
       </main>
 
-      <footer className="border-t border-line bg-surface">
+      <footer data-tour="footer" className="border-t border-line bg-surface">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-6 py-8 text-sm text-ink-dim sm:flex-row sm:items-center sm:justify-between">
           <p>Vorza, the living, AI-reviewed map of your codebase.</p>
           <nav aria-label="Footer" className="flex flex-wrap items-center gap-4">
@@ -487,7 +512,7 @@ export function Landing() {
       </footer>
 
       <Suspense fallback={null}>
-        <VorpyMascot />
+        <VorpyTour />
       </Suspense>
     </div>
   );

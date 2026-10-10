@@ -28,3 +28,29 @@ test('landing renders the hero and public CTAs lead to /login', async ({
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByText('Sign in to Vorza')).toBeVisible();
 });
+
+/**
+ * Vorpy's guided tour is the page's only interactive explainer. This pins the
+ * contract a visitor relies on: the invite is reachable, the tour opens on step
+ * one, Next advances it, and it can be closed again.
+ */
+test('the Vorpy tour opens, steps forward and closes', async ({ page }) => {
+  await page.goto('/');
+
+  const invite = page.getByRole('button', {
+    name: 'Start the Vorpy guided tour',
+  });
+  await expect(invite).toBeVisible();
+  await invite.click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('heading', { name: 'Start here' })).toBeVisible();
+  await expect(dialog.getByText('1 / 10')).toBeVisible();
+
+  await dialog.getByRole('button', { name: 'Next' }).click();
+  await expect(dialog.getByText('2 / 10')).toBeVisible();
+
+  await dialog.getByRole('button', { name: 'Close the tour' }).click();
+  await expect(dialog).toBeHidden();
+});

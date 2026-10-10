@@ -19,6 +19,7 @@ import { describe, expect, it } from 'vitest';
 const here = dirname(fileURLToPath(import.meta.url)); // src/features/landing
 const SRC = resolve(here, '../..');
 const LANDING = 'routes/Landing.tsx';
+const TOUR = 'components/VorpyTour.tsx';
 const MASCOT = 'features/landing/components/VorpyMascot.tsx';
 const RUNTIME = '@bible-strong/avatar-core';
 
@@ -39,12 +40,21 @@ function sourceFiles(dir: string): string[] {
 }
 
 describe('the avatar runtime stays out of the initial bundle', () => {
-  it('the landing lazy-imports the mascot instead of importing it', () => {
+  it('the landing lazy-imports the tour instead of importing it', () => {
     const landing = readCode(resolve(here, LANDING));
     expect(landing).toMatch(/\blazy\s*\(/);
-    expect(landing).toMatch(/import\(\s*['"][^'"]*VorpyMascot['"]\s*\)/);
-    // A top-level `import { VorpyMascot }` would defeat the lazy import.
+    expect(landing).toMatch(/import\(\s*['"][^'"]*VorpyTour['"]\s*\)/);
+    // A top-level import of the tour (or the mascot) would defeat the lazy load.
+    expect(landing).not.toMatch(/^\s*import\s+\{[^}]*\bVorpyTour\b\s*\}/m);
     expect(landing).not.toMatch(/^\s*import\s+\{[^}]*\bVorpyMascot\b\s*\}/m);
+  });
+
+  it('the tour reaches the runtime only through the mascot', () => {
+    const tour = readCode(resolve(here, TOUR));
+    // The tour imports the mascot ...
+    expect(tour).toMatch(/from\s+['"][^'"]*VorpyMascot['"]/);
+    // ... but never names the runtime, so the boundary stays in one file.
+    expect(tour).not.toContain(RUNTIME);
   });
 
   it(`only ${MASCOT} imports the runtime`, () => {

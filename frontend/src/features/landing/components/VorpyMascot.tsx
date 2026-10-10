@@ -49,6 +49,13 @@ import {
 // avoids a repo-wide `resolveJsonModule` change; it is parsed once, below.
 import vorpyRaw from '../assets/vorpy.avatar.json?raw';
 
+/**
+ * Re-exported so the tour can type its per-step animation without importing the
+ * runtime itself. `mascot-boundary.test.ts` asserts this file is the only module
+ * that names `@bible-strong/avatar-core`.
+ */
+export type { AnimationKey };
+
 /** Body-node path slots in the studio's SVG (its renderer uses nodes + 2). */
 const BODY_NODE_SLOTS = MAX_BODY_NODES + 2;
 
@@ -92,13 +99,19 @@ function initialPlayback(animation: AnimationKey): AvatarPlaybackState {
 export type VorpyMascotProps = {
   /** Rendered square size in CSS pixels. */
   size?: number;
-  /** Which exported animation to idle on. Defaults to `idle`. */
+  /** Which exported animation to play. Defaults to `idle`. */
   animation?: AnimationKey;
+  /**
+   * Inline box instead of the fixed bottom-right badge, for placing Vorpy
+   * inside the tour panel. Defaults to `false`.
+   */
+  embedded?: boolean;
 };
 
 export function VorpyMascot({
   size = 112,
   animation = DEFAULT_ANIMATION,
+  embedded = false,
 }: VorpyMascotProps) {
   const reduceMotion = useMemo(prefersReducedMotion, []);
   const canAnimate =
@@ -163,33 +176,56 @@ export function VorpyMascot({
     });
   }, []);
 
+  // (Re)start playback whenever the requested animation changes, so the tour
+  // can move Vorpy from `thinking` to `celebrate` without remounting it.
   useEffect(() => {
-    if (!canAnimate || stateRef.current.status !== 'playing') return;
+    const now = performance.now();
+    const started = playAvatarAnimation(DEFINITION, animation, now);
+    stateRef.current = started.ok
+      ? started.value
+      : { ...createAvatarPlaybackState(), activeExpression: 'neutral' };
+
+    // Reduced motion (or no RAF): keep the static neutral frame from
+    // `firstScene`; never paint an animation frame over it.
+    if (!canAnimate) return;
+
+    paint(
+      renderAvatarFrame(DEFINITION, stateRef.current, now, playbackEnvironment()),
+    );
 
     let raf = 0;
-    const tick = (now: number) => {
+    const tick = (frameTime: number) => {
       const current = stateRef.current;
       const environment = playbackEnvironment();
-      const next = advanceAvatarPlayback(DEFINITION, current, now, environment);
+      const next = advanceAvatarPlayback(DEFINITION, current, frameTime, environment);
       stateRef.current = next;
       // State changes drive the controller; the SVG itself is updated
       // imperatively so a busy frame does not cost a React render.
-      paint(renderAvatarFrame(DEFINITION, next, now, environment));
+      paint(renderAvatarFrame(DEFINITION, next, frameTime, environment));
       if (next.status === 'playing') raf = requestAnimationFrame(tick);
     };
 
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [canAnimate, paint]);
+  }, [animation, canAnimate, paint]);
 
   return (
     <div
       aria-hidden="true"
-      // Shown at every width (never `hidden md:block`): a smaller 84px badge on
-      // phones, the full `size` from `md` up. Decorative and non-interactive, so
-      // it never blocks a tap.
-      className="pointer-events-none fixed bottom-5 right-5 z-30 h-[84px] w-[84px] select-none md:bottom-6 md:right-6 md:h-[var(--vorpy-size)] md:w-[var(--vorpy-size)]"
-      style={{ '--vorpy-size': `${size}px` } as CSSProperties}
+      // Floating: shown at every width (never `hidden md:block`): an 84px badge
+      // on phones, the full `size` from `md` up, decorative and non-interactive
+      // so it never blocks a tap. Embedded: a plain inline box the tour places
+      // inside its panel without the fixed positioning.
+      className={
+        embedded
+          ? 'relative shrink-0 select-none'
+          : 'pointer-events-none fixed bottom-5 right-5 z-30 h-[84px] w-[84px] select-none md:bottom-6 md:right-6 md:h-[var(--vorpy-size)] md:w-[var(--vorpy-size)]'
+      }
+      style={
+        (embedded
+          ? { width: size, height: size }
+          : { '--vorpy-size': `${size}px` }) as CSSProperties
+      }
     >
       <svg
         className="h-full w-full drop-shadow-md"

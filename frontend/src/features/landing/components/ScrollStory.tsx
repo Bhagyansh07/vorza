@@ -112,6 +112,7 @@ export function ScrollStory() {
     return (
       <section
         aria-labelledby="reading-the-map"
+        data-tour="reading"
         className="border-t border-line bg-surface py-20"
       >
         <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 px-6 lg:grid-cols-12 lg:gap-12">
@@ -160,6 +161,7 @@ export function ScrollStory() {
     <section
       aria-labelledby="reading-the-map"
       ref={sectionRef}
+      data-tour="reading"
       className="relative"
       style={{ height: '280vh' }}
     >
