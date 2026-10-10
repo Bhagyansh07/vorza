@@ -931,23 +931,23 @@
       "steps": [
         {
           "expression": "upward-side-glance",
-          "holdMs": 5200,
-          "transitionMs": 500,
+          "holdMs": 1600,
+          "transitionMs": 600,
           "transition": "smooth"
         },
         {
           "expression": "curious-left",
-          "holdMs": 5200,
-          "transitionMs": 500,
+          "holdMs": 1600,
+          "transitionMs": 600,
           "transition": "smooth"
         }
       ],
       "blink": {
         "enabled": true,
-        "initialDelayMs": 2600,
-        "minIntervalMs": 3400,
-        "maxIntervalMs": 6200,
-        "durationMs": 280
+        "initialDelayMs": 700,
+        "minIntervalMs": 1500,
+        "maxIntervalMs": 3200,
+        "durationMs": 180
       },
       "metadata": {
         "label": "idle",

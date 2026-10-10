@@ -64,6 +64,20 @@ describe('Vorpy avatar definition', () => {
     expect(eyes.spacing - eyes.left.width).toBeGreaterThan(0);
   });
 
+  it('keeps `idle` visibly alive: short holds and a frequent blink', () => {
+    // A calm mascot still has to read as animated, not as a still image. The
+    // default `idle` therefore holds each expression for at most two seconds
+    // and blinks at least every ~2s, so there is visible motion within a glance.
+    const { idle } = definition.animations;
+    expect(idle.playbackMode).toBe('loop');
+    for (const step of idle.steps) {
+      expect(step.holdMs, step.expression).toBeLessThanOrEqual(2000);
+    }
+    expect(idle.blink.enabled).toBe(true);
+    expect(idle.blink.initialDelayMs).toBeLessThanOrEqual(1000);
+    expect(idle.blink.minIntervalMs).toBeLessThanOrEqual(2000);
+  });
+
   it('keeps every animation step pointing at a real expression', () => {
     for (const key of definition.animationOrder) {
       const animation = definition.animations[key];
