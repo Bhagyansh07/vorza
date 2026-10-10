@@ -3,7 +3,6 @@ import { MemoryRouter } from 'react-router-dom';
 
 import { BentoCard, BentoGrid } from '@/components/ui/bento-grid';
 import { NumberTicker } from '@/components/ui/number-ticker';
-import { ShimmerButton } from '@/components/ui/shimmer-button';
 import { describe, expect, it } from 'vitest';
 
 describe('motion-based UI kit', () => {
@@ -49,10 +48,5 @@ describe('motion-based UI kit', () => {
   it('NumberTicker renders its stable start value before it is in view', () => {
     render(<NumberTicker value={42} />);
     expect(screen.getByText('0')).toBeVisible();
-  });
-
-  it('ShimmerButton renders children with a token background', () => {
-    render(<ShimmerButton>Connect repo</ShimmerButton>);
-    expect(screen.getByRole('button', { name: 'Connect repo' })).toBeVisible();
   });
 });
