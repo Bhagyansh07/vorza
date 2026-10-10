@@ -33,6 +33,8 @@ import { healthBadgeClasses } from '@/lib/health';
 import { GraphView } from '@/features/graph/components/GraphView';
 import { EmptyState } from '@/components/empty/EmptyState';
 import { createWebSocketSource } from '@/features/graph/realtime/websocket';
+import { LazyGuidedTour } from '@/features/tour/LazyGuidedTour';
+import { REPO_TOUR } from '@/features/tour/steps';
 import { useUser } from '@/features/auth/hooks/use-auth';
 import { useDocumentMeta } from '@/lib/seo';
 
@@ -79,7 +81,10 @@ export function RepoDetail() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div
+        className="mb-6 flex flex-wrap items-center justify-between gap-3"
+        data-tour="repo-header"
+      >
         <div>
           <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground">
             <Link to="/dashboard">
@@ -109,7 +114,7 @@ export function RepoDetail() {
           </div>
         )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-tour="repo-actions">
           <Button
             asChild
             variant="outline"
@@ -128,7 +133,7 @@ export function RepoDetail() {
         </div>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+      <div className="mb-6 grid gap-4 sm:grid-cols-3" data-tour="repo-stats">
         {snapshot.isPending && !snapshot.data ? (
           <>
             <Skeleton className="h-24 w-full rounded-lg" />
@@ -196,13 +201,16 @@ export function RepoDetail() {
         ) : null}
       </div>
 
-      <div className="h-[560px]">
+      <div className="h-[560px]" data-tour="repo-graph">
         <GraphView
           repoId={repoId}
           repoName={repo?.github_full_name}
           realtime={realtime}
         />
       </div>
+
+      {/* Vorpy's guided tour. Lazy: see `mascot-boundary.test.ts`. */}
+      <LazyGuidedTour tour={REPO_TOUR} />
     </div>
   );
 }

@@ -1,8 +1,10 @@
-import { Suspense, lazy, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { Logo } from '@/components/brand/Logo';
 import { Button } from '@/components/ui/button';
+import { LazyGuidedTour } from '@/features/tour/LazyGuidedTour';
+import { LANDING_TOUR } from '@/features/tour/steps';
 import { absoluteUrl, useDocumentMeta } from '@/lib/seo';
 
 import { DemoMap } from '../components/DemoMap';
@@ -11,19 +13,6 @@ import { Metrics } from '../components/Metrics';
 import { ReviewDemo } from '../components/ReviewDemo';
 import { ScrollStory } from '../components/ScrollStory';
 import { demoFiles, demoLinks, demoMetrics, demoSeedPositions } from '../components/demoData';
-
-/**
- * Vorpy, the site mascot, leads a guided tour of this page. The tour needs the
- * Bible Strong runtime and a ~25 kB avatar definition. Neither is part of first
- * paint, so it is loaded on demand. This import is asserted by
- * `mascot-boundary.test.ts`; importing the tour (or the mascot) directly would
- * pull the runtime into the initial bundle.
- */
-const VorpyTour = lazy(() =>
-  import('../components/VorpyTour').then((module) => ({
-    default: module.VorpyTour,
-  })),
-);
 
 /**
  * Public marketing page, and the only indexable page the app has.
@@ -407,7 +396,7 @@ export function Landing() {
               */}
               {[
                 ['backend tests', '183'],
-                ['frontend tests', '167'],
+                ['frontend tests', '173'],
                 ['backend coverage', '81%'],
                 ['live stack', 'Render + Vercel + Neon'],
               ].map(([label, value]) => (
@@ -511,9 +500,8 @@ export function Landing() {
         </div>
       </footer>
 
-      <Suspense fallback={null}>
-        <VorpyTour />
-      </Suspense>
+      {/* Vorpy's guided tour. Lazy: see `mascot-boundary.test.ts`. */}
+      <LazyGuidedTour tour={LANDING_TOUR} />
     </div>
   );
 }

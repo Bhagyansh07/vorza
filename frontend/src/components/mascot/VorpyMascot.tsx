@@ -2,9 +2,9 @@
  * Vorpy, the Vorza mascot.
  *
  * It is the exact avatar exported from Bible Strong Studio for Vorza
- * (`assets/vorpy.avatar.json`: indigo `#2f27ce` body, `#e7e9ff` eyes, the eight
- * animations sleeping / waking / idle / thinking / working / excited / drowsy /
- * celebrate), rendered by the studio's own runtime.
+ * (`vorpy.avatar.json`, beside this file: indigo `#2f27ce` body, `#e7e9ff` eyes,
+ * the eight animations sleeping / waking / idle / thinking / working / excited /
+ * drowsy / celebrate), rendered by the studio's own runtime.
  *
  * Runtime: `@bible-strong/avatar-core` (AGPL-3.0-only), the framework-independent
  * renderer from https://github.com/smontlouis/bible-strong-avatar-lab. Vorza uses
@@ -13,10 +13,11 @@
  * Anything built on `avatar-core` carries the AGPL licence and the upstream
  * credit above.
  *
- * Loading: this module is pulled in with `React.lazy` from the landing route, so
- * the runtime, its geometry code and its schema validator stay out of first
- * paint. `scripts/check-bundle-size.mjs` measures only the scripts `index.html`
- * references, which is the honest first-paint cost.
+ * Loading: this module is pulled in with `React.lazy` by the guided tour
+ * (`features/tour/LazyGuidedTour`), which every route mounts on demand, so the
+ * runtime, its geometry code and its schema validator stay out of first paint on
+ * the landing and inside the app. `scripts/check-bundle-size.mjs` measures only
+ * the scripts `index.html` references, which is the honest first-paint cost.
  *
  * Honest defaults: the mascot idles. When the visitor prefers reduced motion
  * (`prefers-reduced-motion: reduce`) -- or there is no `matchMedia`/RAF at all --
@@ -47,7 +48,7 @@ import {
 
 // `?raw` keeps the committed export byte-for-byte as the studio wrote it and
 // avoids a repo-wide `resolveJsonModule` change; it is parsed once, below.
-import vorpyRaw from '../assets/vorpy.avatar.json?raw';
+import vorpyRaw from './vorpy.avatar.json?raw';
 
 /**
  * Re-exported so the tour can type its per-step animation without importing the

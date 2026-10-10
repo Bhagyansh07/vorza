@@ -39,3 +39,35 @@ test('dashboard lists connected repos and connects one from the picker', async (
     page.getByText('acme/widgets').filter({ visible: true }).last()
   ).toBeVisible();
 });
+
+/**
+ * Vorpy's dashboard tour is the same engine as the landing page, mounted with
+ * the dashboard's own steps. This pins that it appears, opens on step one, and
+ * can be stepped and closed. The counter is asserted loosely (`1 / n`) because
+ * the visible step count depends on the viewport (the desktop rail is one of
+ * the steps and is hidden below `lg`).
+ */
+test('the dashboard tour opens, steps forward and closes', async ({ page }) => {
+  await page.goto('/dashboard');
+  await expect(
+    page.getByRole('heading', { name: /Connected repositories/ })
+  ).toBeVisible();
+
+  const invite = page.getByRole('button', {
+    name: 'Start the Vorpy guided tour',
+  });
+  await expect(invite).toBeVisible();
+  await invite.click();
+
+  const dialog = page.getByRole('dialog');
+  await expect(
+    dialog.getByRole('heading', { name: 'Your repositories' })
+  ).toBeVisible();
+  await expect(dialog.getByText(/1 \/ \d+/)).toBeVisible();
+
+  await dialog.getByRole('button', { name: 'Next' }).click();
+  await expect(dialog.getByText(/2 \/ \d+/)).toBeVisible();
+
+  await dialog.getByRole('button', { name: 'Close the tour' }).click();
+  await expect(dialog).toBeHidden();
+});

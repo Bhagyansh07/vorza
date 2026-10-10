@@ -7,6 +7,8 @@ import { ConnectRepoDialog } from '@/features/repos/components/ConnectRepoDialog
 import { RepoCard } from '@/features/repos/components/RepoCard';
 import { RepoListSkeleton } from '@/features/repos/components/RepoListSkeleton';
 import { useRepos } from '@/features/repos/hooks/use-repos';
+import { LazyGuidedTour } from '@/features/tour/LazyGuidedTour';
+import { DASHBOARD_TOUR } from '@/features/tour/steps';
 import type { Repo } from '@/lib/api-types';
 import { useDocumentMeta } from '@/lib/seo';
 
@@ -70,14 +72,19 @@ export function Dashboard() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div
+        className="mb-6 flex flex-wrap items-center justify-between gap-3"
+        data-tour="dash-header"
+      >
         <div>
           <h1 className="text-2xl font-semibold">Connected repositories</h1>
           <p className="text-sm text-muted-foreground">
             Pick a repo to open its live map.
           </p>
         </div>
-        <ConnectRepoDialog />
+        <div data-tour="dash-connect">
+          <ConnectRepoDialog />
+        </div>
       </div>
 
       {isPending || (isRefetching && !repos) ? (
@@ -90,8 +97,13 @@ export function Dashboard() {
         />
       ) : repos && repos.length > 0 ? (
         <>
-          <RepoMetrics repos={repos} />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div data-tour="dash-metrics">
+            <RepoMetrics repos={repos} />
+          </div>
+          <div
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            data-tour="dash-repos"
+          >
             {repos.map((repo) => (
               <RepoCard key={String(repo.id)} repo={repo} />
             ))}
@@ -108,6 +120,9 @@ export function Dashboard() {
           <ConnectRepoDialog />
         </div>
       )}
+
+      {/* Vorpy's guided tour. Lazy: see `mascot-boundary.test.ts`. */}
+      <LazyGuidedTour tour={DASHBOARD_TOUR} />
     </div>
   );
 }

@@ -147,7 +147,10 @@ export function GraphView({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex shrink-0 items-center gap-5 border-b border-line/70 bg-surface/60 px-4 py-3">
+      <header
+        className="flex shrink-0 items-center gap-5 border-b border-line/70 bg-surface/60 px-4 py-3"
+        data-tour="graph-toolbar"
+      >
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-ink">{repoName}</p>
           {model.snapshot && (
@@ -253,7 +256,10 @@ export function GraphView({
                   }}
                 />
               </div>
-              <div className="pointer-events-none absolute bottom-4 left-4 z-10">
+              <div
+                className="pointer-events-none absolute bottom-4 left-4 z-10"
+                data-tour="graph-legend"
+              >
                 <div className="pointer-events-auto">
                   <GraphLegend />
                 </div>

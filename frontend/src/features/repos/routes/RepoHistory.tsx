@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/errors/ErrorState';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSnapshotHistory } from '@/features/repos/hooks/use-repos';
+import { LazyGuidedTour } from '@/features/tour/LazyGuidedTour';
+import { HISTORY_TOUR } from '@/features/tour/steps';
 import { useDocumentMeta } from '@/lib/seo';
 
 /**
@@ -46,7 +48,7 @@ export function RepoHistory() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <div className="mb-6">
+      <div className="mb-6" data-tour="history-header">
         <Button
           asChild
           variant="ghost"
@@ -64,30 +66,35 @@ export function RepoHistory() {
         </p>
       </div>
 
-      {isPending ? (
-        <Skeleton className="h-[360px] w-full rounded-lg" />
-      ) : isError ? (
-        <ErrorState
-          title="Couldn't load history"
-          error={error}
-          onRetry={() => void refetch()}
-        />
-      ) : data && data.length > 0 ? (
-        <Suspense
-          fallback={
-            <Skeleton
-              className="h-[320px] w-full rounded-lg"
-              aria-label="Loading chart"
-            />
-          }
-        >
-          <TrendChart repoId={repoId} />
-        </Suspense>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          No snapshots recorded yet for this repo.
-        </p>
-      )}
+      <div data-tour="history-chart">
+        {isPending ? (
+          <Skeleton className="h-[360px] w-full rounded-lg" />
+        ) : isError ? (
+          <ErrorState
+            title="Couldn't load history"
+            error={error}
+            onRetry={() => void refetch()}
+          />
+        ) : data && data.length > 0 ? (
+          <Suspense
+            fallback={
+              <Skeleton
+                className="h-[320px] w-full rounded-lg"
+                aria-label="Loading chart"
+              />
+            }
+          >
+            <TrendChart repoId={repoId} />
+          </Suspense>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            No snapshots recorded yet for this repo.
+          </p>
+        )}
+      </div>
+
+      {/* Vorpy's guided tour. Lazy: see `mascot-boundary.test.ts`. */}
+      <LazyGuidedTour tour={HISTORY_TOUR} />
     </div>
   );
 }

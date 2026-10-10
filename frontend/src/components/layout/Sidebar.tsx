@@ -23,7 +23,10 @@ export function Sidebar() {
   const user = useUser();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-background lg:flex">
+    <aside
+      className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-background lg:flex"
+      data-tour="nav-rail"
+    >
       <div className="flex h-14 shrink-0 items-center border-b border-border px-4">
         <Link to="/dashboard" aria-label="Vorza dashboard">
           <Logo />

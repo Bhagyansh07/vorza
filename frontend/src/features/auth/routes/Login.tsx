@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useAuth } from '@/features/auth/hooks/use-auth';
+import { LazyGuidedTour } from '@/features/tour/LazyGuidedTour';
+import { LOGIN_TOUR } from '@/features/tour/steps';
 import { config, oauthRedirect } from '@/lib/config';
 import { toErrorMessage } from '@/lib/errors';
 import { useDocumentMeta } from '@/lib/seo';
@@ -225,7 +227,10 @@ export function LoginPage() {
 
   return (
     <main className="flex min-h-svh items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md border-border shadow-panel">
+      <Card
+        className="w-full max-w-md border-border shadow-panel"
+        data-tour="login-card"
+      >
         <CardHeader className="items-center text-center">
           <LogoMark className="mb-3 h-9 w-9 text-primary" />
           <CardTitle className="text-xl tracking-[-0.01em]">
@@ -279,7 +284,7 @@ export function LoginPage() {
             </>
           ) : null}
         </CardContent>
-        <CardFooter className="justify-center">
+        <CardFooter className="justify-center" data-tour="login-consent">
           {/*
             Rendered once the backend has reported what it will request. This
             used to be a hardcoded literal asserting "read access" -- untrue,
@@ -296,6 +301,9 @@ export function LoginPage() {
           ) : null}
         </CardFooter>
       </Card>
+
+      {/* Vorpy's guided tour. Lazy: see `mascot-boundary.test.ts`. */}
+      <LazyGuidedTour tour={LOGIN_TOUR} />
     </main>
   );
 }
