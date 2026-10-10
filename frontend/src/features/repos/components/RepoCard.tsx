@@ -89,7 +89,7 @@ export function RepoCard({ repo }: RepoCardProps) {
         </Badge>
         {repo.last_analyze_error ? (
           <p className="text-xs text-signal-warn">
-            Last analysis failed — open the map to retry.
+            Last analysis failed. Open the map to retry.
           </p>
         ) : null}
       </CardContent>
