@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Suspense, lazy, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { Logo } from '@/components/brand/Logo';
@@ -11,6 +11,18 @@ import { Metrics } from '../components/Metrics';
 import { ReviewDemo } from '../components/ReviewDemo';
 import { ScrollStory } from '../components/ScrollStory';
 import { demoFiles, demoLinks, demoMetrics, demoSeedPositions } from '../components/demoData';
+
+/**
+ * Vorpy, the site mascot, needs the Bible Strong runtime and a ~25 kB avatar
+ * definition. Neither is part of first paint, so it is loaded on demand. This
+ * import is asserted by `mascot-boundary.test.ts`; importing the component
+ * directly would pull the runtime into the initial bundle.
+ */
+const VorpyMascot = lazy(() =>
+  import('../components/VorpyMascot').then((module) => ({
+    default: module.VorpyMascot,
+  })),
+);
 
 /**
  * Public marketing page, and the only indexable page the app has.
@@ -468,6 +480,10 @@ export function Landing() {
           </nav>
         </div>
       </footer>
+
+      <Suspense fallback={null}>
+        <VorpyMascot />
+      </Suspense>
     </div>
   );
 }
