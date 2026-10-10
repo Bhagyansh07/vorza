@@ -379,9 +379,14 @@ export function Landing() {
               order of importance.
             </p>
             <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-stem border border-line bg-line sm:grid-cols-4">
+              {/*
+                Real counts, refreshed from an actual run. These drift as the
+                suites grow, so update them in the same commit that changes the
+                totals or the strip quietly becomes a fake metric.
+              */}
               {[
                 ['backend tests', '183'],
-                ['frontend tests', '143'],
+                ['frontend tests', '161'],
                 ['backend coverage', '81%'],
                 ['live stack', 'Render + Vercel + Neon'],
               ].map(([label, value]) => (
