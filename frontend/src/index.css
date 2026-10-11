@@ -64,6 +64,15 @@
     --primary-soft: 243 70% 95%;
 
     /* ---------------------------------------------------------------------
+     * Vorpy, the guided-tour mascot (see components/mascot/VorpyMascot.tsx).
+     * Strobi's palette: a periwinkle-blue ball with near-black eyes. Fixed
+     * rather than theme-flipped -- the mid blue and the near-black eye both
+     * read on the light and the dark surface.
+     * ------------------------------------------------------------------- */
+    --vorpy-body: #5b7fe5;
+    --vorpy-eye: #111316;
+
+    /* ---------------------------------------------------------------------
      * Status. These are the canonical three. The `health.*` and
      * `complexity.*` ramps alias them below so a node's health colour and a
      * risk badge's colour can never drift apart.
@@ -251,6 +260,296 @@
     to {
       transform: scale(1.9);
       opacity: 0;
+    }
+  }
+
+  /* -------------------------------------------------------------------------
+   * Vorpy, the guided-tour mascot (see components/mascot/VorpyMascot.tsx).
+   *
+   * Colour lives here so the parts can read the `--vorpy-*` tokens (an SVG
+   * presentation attribute cannot take a `var()`). Shape and motion are grouped
+   * by the class the component puts on each part: `vorpy-body`, the eye sets and
+   * `vorpy-sparkles`. Most moods act on the one open-eye shape; `celebrate`
+   * swaps in the happy arcs. Every mood's keyframes start and end on its still
+   * pose, so the global reduced-motion rule below freezes a clean frame rather
+   * than a half gesture.
+   * ----------------------------------------------------------------------- */
+  .vorpy-body {
+    fill: var(--vorpy-body);
+  }
+  .vorpy-sparkles {
+    fill: var(--vorpy-body);
+  }
+  .vorpy-eyes--open {
+    fill: var(--vorpy-eye);
+  }
+  .vorpy-eyes--happy {
+    fill: none;
+    stroke: var(--vorpy-eye);
+  }
+
+  .vorpy-body,
+  .vorpy-eyes,
+  .vorpy-sparkles {
+    transform-box: fill-box;
+  }
+  .vorpy-body {
+    transform-origin: 50% 72%;
+  }
+  .vorpy-eyes {
+    /* Squash from the bottom so a blink reads as a lid coming down. */
+    transform-origin: 50% 82%;
+  }
+  .vorpy-sparkles {
+    transform-origin: 50% 45%;
+  }
+
+  .vorpy-eyes--happy,
+  .vorpy-sparkles {
+    opacity: 0;
+  }
+  .vorpy--celebrate .vorpy-eyes--open {
+    opacity: 0;
+  }
+  .vorpy--celebrate .vorpy-eyes--happy {
+    opacity: 1;
+  }
+  .vorpy--excited .vorpy-sparkles,
+  .vorpy--celebrate .vorpy-sparkles {
+    opacity: 1;
+    animation: vorpy-sparkle 1.1s ease-in-out infinite;
+  }
+
+  /* Body motion. */
+  .vorpy--idle .vorpy-body {
+    animation: vorpy-breathe 3.6s ease-in-out infinite;
+  }
+  .vorpy--sleeping .vorpy-body {
+    animation: vorpy-sleep 4.8s ease-in-out infinite;
+  }
+  .vorpy--waking .vorpy-body {
+    animation: vorpy-wake 1.1s cubic-bezier(0.22, 0.9, 0.28, 1) both;
+  }
+  .vorpy--thinking .vorpy-body {
+    animation: vorpy-tilt 3.6s ease-in-out infinite;
+  }
+  .vorpy--working .vorpy-body {
+    animation: vorpy-work 0.9s ease-in-out infinite;
+  }
+  .vorpy--excited .vorpy-body {
+    animation: vorpy-bounce 0.62s ease-in-out infinite;
+  }
+  .vorpy--drowsy .vorpy-body {
+    animation: vorpy-drowse 4.6s ease-in-out infinite;
+  }
+  .vorpy--celebrate .vorpy-body {
+    animation: vorpy-hop 0.95s cubic-bezier(0.3, 0.7, 0.3, 1) infinite;
+  }
+
+  /* Eye motion. */
+  .vorpy--sleeping .vorpy-eyes--open {
+    animation: vorpy-asleep 4.8s ease-in-out infinite;
+  }
+  .vorpy--waking .vorpy-eyes--open {
+    animation: vorpy-peep 0.9s ease-out both;
+  }
+  .vorpy--idle .vorpy-eyes--open {
+    animation: vorpy-blink 5.2s ease-in-out infinite;
+  }
+  .vorpy--thinking .vorpy-eyes--open {
+    animation: vorpy-look 3.6s ease-in-out infinite;
+  }
+  .vorpy--working .vorpy-eyes--open {
+    animation: vorpy-focus 0.9s ease-in-out infinite;
+  }
+  .vorpy--excited .vorpy-eyes--open {
+    animation: vorpy-wide 0.62s ease-in-out infinite;
+  }
+  .vorpy--drowsy .vorpy-eyes--open {
+    animation: vorpy-lid 4.6s ease-in-out infinite;
+  }
+  .vorpy--celebrate .vorpy-eyes--happy {
+    animation: vorpy-pop 0.95s ease-in-out infinite;
+  }
+
+  @keyframes vorpy-breathe {
+    0%,
+    100% {
+      transform: scale(1, 1);
+    }
+    50% {
+      transform: scale(1.012, 1.03);
+    }
+  }
+  @keyframes vorpy-sleep {
+    0%,
+    100% {
+      transform: scale(1, 1) rotate(0deg);
+    }
+    50% {
+      transform: scale(1.02, 1.05) rotate(-1deg);
+    }
+  }
+  @keyframes vorpy-wake {
+    0% {
+      transform: scale(1.05, 0.82);
+    }
+    35% {
+      transform: scale(0.97, 1.09);
+    }
+    70% {
+      transform: scale(1.02, 0.99);
+    }
+    100% {
+      transform: scale(1, 1);
+    }
+  }
+  @keyframes vorpy-tilt {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    30% {
+      transform: rotate(-4deg);
+    }
+    70% {
+      transform: rotate(4deg);
+    }
+  }
+  @keyframes vorpy-work {
+    0%,
+    100% {
+      transform: translateY(0) scale(1, 1);
+    }
+    50% {
+      transform: translateY(-4px) scale(1.01, 0.99);
+    }
+  }
+  @keyframes vorpy-bounce {
+    0%,
+    100% {
+      transform: translateY(0) scale(1, 1);
+    }
+    45% {
+      transform: translateY(-12px) scale(0.98, 1.04);
+    }
+    75% {
+      transform: translateY(0) scale(1.04, 0.96);
+    }
+  }
+  @keyframes vorpy-drowse {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+    50% {
+      transform: translateY(5px) rotate(1.5deg) scale(1.01, 0.99);
+    }
+  }
+  @keyframes vorpy-hop {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg) scale(1, 1);
+    }
+    30% {
+      transform: translateY(-18px) rotate(-5deg) scale(0.97, 1.05);
+    }
+    55% {
+      transform: translateY(0) rotate(4deg) scale(1.05, 0.95);
+    }
+    78% {
+      transform: translateY(-4px) rotate(-2deg) scale(1, 1);
+    }
+  }
+  @keyframes vorpy-blink {
+    0%,
+    91%,
+    100% {
+      transform: scaleY(1);
+    }
+    94% {
+      transform: scaleY(0.12);
+    }
+  }
+  @keyframes vorpy-look {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    25% {
+      transform: translate(-7px, -6px);
+    }
+    60% {
+      transform: translate(6px, -5px);
+    }
+  }
+  @keyframes vorpy-focus {
+    0%,
+    100% {
+      transform: scaleY(0.88);
+    }
+    50% {
+      transform: scaleY(0.68);
+    }
+  }
+  @keyframes vorpy-wide {
+    0%,
+    100% {
+      transform: scale(1.12, 1.16);
+    }
+    50% {
+      transform: scale(1.2, 1.24);
+    }
+  }
+  @keyframes vorpy-lid {
+    0%,
+    100% {
+      transform: translateY(2px) scaleY(0.5);
+    }
+    50% {
+      transform: translateY(4px) scaleY(0.34);
+    }
+  }
+  @keyframes vorpy-pop {
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.14);
+    }
+  }
+  @keyframes vorpy-peep {
+    0% {
+      opacity: 0.5;
+      transform: scaleY(0.12);
+    }
+    55% {
+      transform: scaleY(1.12);
+    }
+    100% {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+  }
+  @keyframes vorpy-asleep {
+    0%,
+    100% {
+      transform: scaleY(0.16);
+    }
+    50% {
+      transform: scaleY(0.24);
+    }
+  }
+  @keyframes vorpy-sparkle {
+    0%,
+    100% {
+      opacity: 0.25;
+      transform: scale(0.85);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.05);
     }
   }
 

@@ -120,7 +120,7 @@ Current state:
 | | |
 |---|---|
 | Backend | **183 passing**, coverage **81%** (gate 60%) |
-| Frontend | **173 passing** across 28 files |
+| Frontend | **169 passing** across 27 files |
 | E2E (Playwright) | 7 specs on chromium, 3 shards, against a mock backend + GitHub OAuth |
 | Lighthouse (T2) | landing perf ≥ 0.85 / a11y ≥ 0.95; login perf ≥ 0.70 / a11y ≥ 0.95 |
 | `mypy` (strict) | clean |

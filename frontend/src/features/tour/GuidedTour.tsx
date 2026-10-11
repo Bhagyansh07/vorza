@@ -16,9 +16,9 @@
  *  - Escape closes it, arrow keys step, focus moves into the panel and returns
  *    to the invite on close.
  *
- * Loading: this module imports the mascot, so it pulls in the avatar runtime.
- * Mount it through `LazyGuidedTour`, never directly, to keep that out of first
- * paint (asserted by `mascot-boundary.test.ts`).
+ * Loading: this module is the tour engine and the mascot together, so mount it
+ * through `LazyGuidedTour`, never directly, to keep both out of first paint
+ * (asserted by `mascot-boundary.test.ts`).
  */
 import {
   useCallback,

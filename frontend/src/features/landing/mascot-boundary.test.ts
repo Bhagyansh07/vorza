@@ -1,20 +1,22 @@
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 /**
- * The avatar runtime must stay out of the initial bundle.
+ * Vorpy and the guided tour stay out of the initial bundle, and Vorpy is our
+ * own code.
  *
- * `@bible-strong/avatar-core` drags in its geometry code and a schema validator,
- * and it is only relevant to the mascot. Every screen reaches it through
- * `LazyGuidedTour`, which dynamic-imports the engine, which imports the mascot --
- * never a static import of the engine -- the same trap the graph feature hit
- * with `recharts` (see `features/graph/bundle-boundary.test.ts`).
+ * Two things are pinned here. First, the loading boundary: every screen reaches
+ * the tour through `LazyGuidedTour`, which dynamic-imports the engine, which
+ * imports the mascot -- never a static import of the engine -- the same trap the
+ * graph feature hit with `recharts` (see `features/graph/bundle-boundary.test.ts`).
+ * Second, ownership: the mascot used to render through an AGPL avatar library
+ * and a Studio export; both are gone, and these assertions keep them gone.
  *
- * The assertions read source, not behaviour: a component rendering correctly is
- * no evidence about what Rollup puts in the entry chunk. Comments are stripped
- * the same way the graph test does, so prose cannot pass or fail these checks.
+ * The checks read source, not behaviour: a component rendering correctly is no
+ * evidence about what Rollup puts in the entry chunk. Comments are stripped the
+ * same way the graph test does, so prose cannot pass or fail them.
  */
 
 const here = dirname(fileURLToPath(import.meta.url)); // src/features/landing
@@ -22,7 +24,7 @@ const SRC = resolve(here, '../..');
 const MASCOT = 'components/mascot/VorpyMascot.tsx';
 const ENGINE = 'features/tour/GuidedTour.tsx';
 const LAZY = 'features/tour/LazyGuidedTour.tsx';
-const RUNTIME = '@bible-strong/avatar-core';
+const REMOVED_RUNTIME = '@bible-strong/avatar-core';
 
 const readCode = (file: string): string =>
   readFileSync(file, 'utf8')
@@ -30,7 +32,7 @@ const readCode = (file: string): string =>
     .replace(/^[ \t]*\/\/.*$/gm, ' ')
     .replace(/\/\/.*$/gm, ' ')
     // Type-only imports are erased at build time, so they never pull a module
-    // (or its runtime) into a chunk. Drop them before looking for importers.
+    // into a chunk. Drop them before looking for importers.
     .replace(/\bimport\s+type\b[\s\S]*?from\s+['"][^'"]+['"]\s*;?/g, ' ');
 
 function sourceFiles(dir: string): string[] {
@@ -55,7 +57,7 @@ const importersOf = (file: string): string[] => {
     .map((candidate) => relative(SRC, candidate).replace(/\\/g, '/'));
 };
 
-describe('the avatar runtime stays out of the initial bundle', () => {
+describe('the guided tour stays out of the initial bundle', () => {
   it(`${LAZY} dynamic-imports the engine instead of importing it`, () => {
     const lazy = readCode(resolve(SRC, LAZY));
     expect(lazy).toMatch(/\blazy\s*\(/);
@@ -64,30 +66,45 @@ describe('the avatar runtime stays out of the initial bundle', () => {
     expect(lazy).not.toMatch(/^\s*import\s+\{[^}]*\bGuidedTour\b\s*\}/m);
   });
 
-  it('the engine reaches the runtime only through the mascot', () => {
-    const engine = readCode(resolve(SRC, ENGINE));
-    // The engine imports the mascot ...
-    expect(engine).toMatch(/from\s+['"][^'"]*mascot\/VorpyMascot['"]/);
-    // ... but never names the runtime, so the boundary stays in one file.
-    expect(engine).not.toContain(RUNTIME);
-  });
-
   it('no module statically imports the engine', () => {
-    // A static import anywhere in the eager graph would pull the runtime in.
-    // The only reference is `LazyGuidedTour`'s dynamic import(), which this
-    // helper (matching `from '...'`) deliberately does not count.
+    // A static import anywhere in the eager graph would pull the tour in. The
+    // only reference is `LazyGuidedTour`'s dynamic import(), which this helper
+    // (matching `from '...'`) deliberately does not count.
     expect(importersOf(ENGINE)).toEqual([]);
   });
 
   it('only the engine imports the mascot', () => {
     expect(importersOf(MASCOT)).toEqual([ENGINE]);
   });
+});
 
-  it(`only ${MASCOT} imports the runtime`, () => {
+describe('Vorpy is Vorza\u2019s own mascot', () => {
+  it('no source file imports the AGPL avatar runtime', () => {
     const importers = sourceFiles(SRC)
       .filter((file) => !/\.test\.tsx?$/.test(file))
-      .filter((file) => readCode(file).includes(RUNTIME))
+      .filter((file) => readCode(file).includes(REMOVED_RUNTIME))
       .map((file) => relative(SRC, file).replace(/\\/g, '/'));
-    expect(importers).toEqual([MASCOT]);
+    expect(importers).toEqual([]);
+  });
+
+  it('the manifest does not depend on it either', () => {
+    const manifest = readFileSync(resolve(SRC, '../package.json'), 'utf8');
+    expect(manifest).not.toContain('@bible-strong');
+  });
+
+  it('ships no Studio export beside the mascot', () => {
+    expect(existsSync(resolve(SRC, 'components/mascot/vorpy.avatar.json'))).toBe(
+      false,
+    );
+  });
+
+  it('the mascot colours come from the palette tokens', () => {
+    const css = readFileSync(resolve(SRC, 'index.css'), 'utf8');
+    // Defined once (Strobi's palette reads on both themes) and consumed by the
+    // mascot's parts.
+    expect(css.match(/--vorpy-body:/g)).toHaveLength(1);
+    expect(css.match(/--vorpy-eye:/g)).toHaveLength(1);
+    expect(css).toContain('fill: var(--vorpy-body)');
+    expect(css).toContain('fill: var(--vorpy-eye)');
   });
 });
