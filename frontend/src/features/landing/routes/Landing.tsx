@@ -396,7 +396,7 @@ export function Landing() {
               */}
               {[
                 ['backend tests', '183'],
-                ['frontend tests', '169'],
+                ['frontend tests', '174'],
                 ['backend coverage', '81%'],
                 ['live stack', 'Render + Vercel + Neon'],
               ].map(([label, value]) => (
