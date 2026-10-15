@@ -41,7 +41,7 @@ dev = [
     # mypy --strict flags an unresolvable import even in the fallback branch.
     # Runtime never needs it: REDIS_URL is unset on the free single-instance
     # deploy and the gateway uses the in-process hub.
-    "redis<7.0.0,>=5.0.0",
+    "redis>=5.0.0,<9.0.0",
 ]
 
 [project.optional-dependencies]
@@ -53,7 +53,7 @@ dev = [
 # is NOT installed by the deploy path. That is the same trap as the `.[dev]`
 # extra that broke CI (audit finding H2).
 pubsub = [
-    "redis<7.0.0,>=5.0.0",
+    "redis>=5.0.0,<9.0.0",
 ]
 
 [build-system]
