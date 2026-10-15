@@ -5,6 +5,12 @@ on:
     branches: [main]
   pull_request:
 
+# Reads the checkout, installs, builds and runs Playwright. The report upload
+# goes through the Actions runtime token, not the repository token, so this
+# workflow never needs write access.
+permissions:
+  contents: read
+
 jobs:
   e2e:
     runs-on: ubuntu-latest
