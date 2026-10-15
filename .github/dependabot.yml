@@ -1,0 +1,23 @@
+# Two manifests (backend/pyproject.toml, frontend/package-lock.json) plus the
+# workflow actions, none of which was being refreshed by anything. Dependabot
+# opens a weekly pull request per ecosystem; auto-merge stays off so a bump
+# lands only once ruff/mypy/pytest and typecheck/lint/test/build have run
+# against it.
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
