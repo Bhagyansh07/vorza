@@ -1,67 +1,57 @@
-# Two manifests (backend/pyproject.toml, frontend/package-lock.json) plus the
-# workflow actions.
+# Two manifests (backend/pyproject.toml, frontend/package-lock.json) plus
+# the workflow actions.
 #
-# Minor and patch updates are batched into one pull request per ecosystem so the
-# queue stays short. Major updates are held, not offered: react 18 -> 19 is a
-# migration, and widening the openai/redis requirement caps admits a new major
-# of each. Delete a line from `ignore:` when you are ready to do that work on
-# purpose.
+# Minor and patch updates arrive as one grouped pull request per
+# ecosystem, capped at three open PRs each. Major updates are ignored
+# outright: react 18 -> 19 is a migration, and widening a pip
+# requirement cap to admit a new major is the same kind of work.
 #
-# Auto-merge is deliberately absent: every bump lands through CI, and the
-# backend suite gates a 60% coverage floor.
+# Auto-merge is deliberately absent: every bump lands through CI, and
+# the backend suite gates a 60% coverage floor.
 version: 2
 updates:
-  - package-ecosystem: "pip"
-    directory: "/backend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-    groups:
-      minor-and-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
-    ignore:
-      - dependency-name: "openai"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "redis"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: "npm"
-    directory: "/frontend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-    groups:
-      minor-and-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
-    ignore:
-      - dependency-name: "react"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@types/react"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "lucide-react"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@eslint/js"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-    groups:
-      minor-and-patch:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
-    ignore:
-      - dependency-name: "actions/checkout"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "actions/setup-node"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "actions/setup-python"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "actions/upload-artifact"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "docker/build-push-action"
-        update-types: ["version-update:semver-major"]
+- package-ecosystem: "pip"
+  directory: "/backend"
+  schedule:
+    interval: "weekly"
+  open-pull-requests-limit: 3
+  groups:
+    minor-and-patch:
+      patterns: ["*"]
+      update-types: ["minor", "patch"]
+  ignore:
+    # A major is a migration with its own test pass, so it is taken on
+    # deliberately rather than offered weekly. Delete this rule when you
+    # want to be told about majors again.
+    - dependency-name: "*"
+      update-types: ["version-update:semver-major"]
+- package-ecosystem: "npm"
+  directory: "/frontend"
+  schedule:
+    interval: "weekly"
+  open-pull-requests-limit: 3
+  groups:
+    minor-and-patch:
+      patterns: ["*"]
+      update-types: ["minor", "patch"]
+  ignore:
+    # A major is a migration with its own test pass, so it is taken on
+    # deliberately rather than offered weekly. Delete this rule when you
+    # want to be told about majors again.
+    - dependency-name: "*"
+      update-types: ["version-update:semver-major"]
+- package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+  open-pull-requests-limit: 3
+  groups:
+    minor-and-patch:
+      patterns: ["*"]
+      update-types: ["minor", "patch"]
+  ignore:
+    # A major is a migration with its own test pass, so it is taken on
+    # deliberately rather than offered weekly. Delete this rule when you
+    # want to be told about majors again.
+    - dependency-name: "*"
+      update-types: ["version-update:semver-major"]
