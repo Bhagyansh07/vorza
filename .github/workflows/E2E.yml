@@ -5,6 +5,13 @@ on:
     branches: [main]
   pull_request:
 
+# A push during review cancels the shard runs it supersedes: the report that
+# matters is the one against the commit being reviewed, not the one that
+# started first.
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
 # Reads the checkout, installs, builds and runs Playwright. The report upload
 # goes through the Actions runtime token, not the repository token, so this
 # workflow never needs write access.
