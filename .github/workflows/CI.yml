@@ -10,6 +10,13 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# Nothing here publishes or pushes: the two build jobs only read the checkout,
+# and the docker job builds without pushing (`push: false`). The default token
+# permission is read-write over the whole repository, which this workflow has
+# no use for.
+permissions:
+  contents: read
+
 jobs:
   backend:
     runs-on: ubuntu-latest
