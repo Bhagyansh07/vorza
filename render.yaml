@@ -80,7 +80,7 @@ services:
         value: INFO
 
     # Docker is the only deploy path that has been verified to work: the repo
-    # has a Dockerfile, and CI builds it on every push to master. Render's
+    # has a Dockerfile, and CI builds it on every push to main. Render's
     # native Python runtime resolves dependencies from a requirements.txt that
     # this repo does not have (it uses pyproject.toml).
     #

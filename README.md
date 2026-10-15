@@ -52,8 +52,9 @@ copy .env.example .env                        # fill in GitHub OAuth keys
 .\.venv\Scripts\python -m uvicorn app.main:app --reload
 ```
 
-Interactive API docs at `http://localhost:8000/docs`. There is **no `/health`
-endpoint** — use `/openapi.json`.
+Interactive API docs at `http://localhost:8000/docs`. There is a `GET /health`
+liveness endpoint (public, no database access); the full schema is at
+`/openapi.json`.
 
 ### Frontend
 
@@ -143,7 +144,7 @@ Both targets are configuration-as-code.
 | `.github/workflows/E2E.yml` | Playwright E2E, 3 shards, against the mock backend |
 | `.github/workflows/Lighthouse.yml` | perf + a11y gates on the public origin |
 
-`master` auto-deploys to both. Click-by-click setup (Neon, Render, Vercel, the
+`main` auto-deploys to both. Click-by-click setup (Neon, Render, Vercel, the
 GitHub OAuth app, the webhook): [`docs/MANUAL_STEPS.md`](docs/MANUAL_STEPS.md).
 
 ## Documentation

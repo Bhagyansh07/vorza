@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -36,12 +36,14 @@ jobs:
       - name: Type check (mypy)
         run: mypy app
       - name: Test (pytest + coverage)
-        # Gate is 60%. Measured total is 69.5% (1725 statements), so there is
-        # headroom, but the gate was deliberately not raised: a higher bar that
-        # then gets lowered to go green is worse than a bar that reflects what
-        # the suite actually protects. Raise it when the suite grows into it.
+        # Gate is 60%. The exact measured total is whatever this job prints
+        # (`term-missing`); do not hard-code a percentage in docs, they drift.
+        # The gate was deliberately kept at 60 rather than raised to the current
+        # value: a higher bar that then gets lowered to go green is worse than a
+        # bar that reflects what the suite actually protects. Raise it when the
+        # suite grows into it.
         #
-        # This step was previously failing because pytest-cov was not installed,
+        # This step once failed silently because pytest-cov was not installed,
         # not because coverage was below the bar.
         run: |
           python -m pytest tests --cov=app --cov-report=term-missing --cov-fail-under=60

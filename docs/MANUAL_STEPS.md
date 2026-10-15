@@ -12,7 +12,7 @@ Current state, verified 2026-10-07:
 | Thing | State |
 |---|---|
 | Backend on Render | **Live** at `https://codeatlas-qr0e.onrender.com` (Free tier, ~50 s cold start after idle) |
-| Frontend on Vercel | **Live** at `https://vorza-sigma.vercel.app` (project `vorza`, linked to `master`, auto-deploy on push) |
+| Frontend on Vercel | **Live** at `https://vorza-sigma.vercel.app` (project `vorza`, linked to `main`, auto-deploy on push) |
 | Database | **Neon Postgres** (Free); the live DB URL is a Render env var (`DATABASE_URL`), not committed |
 | Deploy config | `render.yaml` (backend) and Vercel project settings (frontend, root dir `frontend`) |
 | Site origin | `VITE_SITE_URL=https://vorza-sigma.vercel.app` on Vercel prod; canonical/`og:url`/JSON-LD follow it |
@@ -441,7 +441,7 @@ canonical equal to your frontend origin.
 ## 9. (Optional) Lighthouse comments on pull requests
 
 `.github/workflows/Lighthouse.yml` runs Lighthouse against the **public** Vercel
-origin (landing + login, mobile + desktop presets) on every push to `master`.
+origin (landing + login, mobile + desktop presets) on every push to `main`.
 It gates on `performance >= 85` and `accessibility >= 95` for the landing, and
 `accessibility >= 95` (performance floor 70) for the login shell. Reports are
 uploaded as build artifacts on every run.

@@ -15,7 +15,7 @@ review with a risk score.
 | Repository | https://github.com/Bhagyansh07/vorza |
 | Database | Neon Postgres (free tier, no expiry clock) |
 
-Both apps auto-deploy from `master`. The backend runs Alembic migrations on
+Both apps auto-deploy from `main`. The backend runs Alembic migrations on
 boot (see `backend/app/core/schema.py`), so pushing a new revision is enough —
 no dashboard step.
 

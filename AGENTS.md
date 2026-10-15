@@ -59,9 +59,9 @@ CONTRACTS.md  Single source of truth for API shapes and WebSocket events.
   `mypy`; frontend: `npm run typecheck`, `npm run lint`, `npm test`).
 - Tests exist for new logic and pass.
 - `CONTRACTS.md` is up to date if anything was exposed or changed.
-- The change is a small, well-named commit (or a PR against `master`).
+- The change is a small, well-named commit (or a PR against `main`).
 
 ## Deploys
 
-`master` auto-deploys to Render (backend) and Vercel (frontend). Keep `master`
+`main` auto-deploys to Render (backend) and Vercel (frontend). Keep `main`
 deployable at every commit. See `docs/GIT_WORKFLOW.md` for the branch flow.
