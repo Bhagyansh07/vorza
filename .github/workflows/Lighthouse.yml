@@ -20,6 +20,14 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Only the audit against the current commit is worth reading: scores for a
+# commit that has already been superseded describe code that is no longer live.
+# A manual dispatch and a push share the ref, so a newer push retires an
+# in-flight audit instead of queueing behind it.
+concurrency:
+  group: lighthouse-${{ github.ref }}
+  cancel-in-progress: true
+
 # Checks out, audits the public origin and uploads the reports. Nothing is
 # committed, commented or pushed, so the repository token only needs to read.
 permissions:
