@@ -34,7 +34,7 @@ the risk live*, and *what breaks when I touch this*.
 |---|---|
 | Backend | FastAPI · SQLModel · PostgreSQL (Neon) · Alembic |
 | Analysis | Pure-Python pipeline over a git checkout (complexity, churn, imports) |
-| AI | OpenAI-compatible endpoint (Groq, `openai/gpt-oss-120b` by default) — review skipped with a logged reason if unconfigured |
+| AI | OpenAI-compatible endpoint (`OPENAI_BASE_URL` + `OPENAI_MODEL`, default `gpt-4o-mini`) — review skipped with a logged reason if unconfigured |
 | Frontend | React 18 · TypeScript · Vite · TanStack Query · Tailwind + shadcn/ui |
 | Graph | `d3-force` + `d3-zoom` |
 | Real-time | FastAPI WebSockets (Redis pub/sub optional) |
@@ -167,7 +167,6 @@ Honest, ordered by how much they matter.
 | Gap | Why it matters |
 |---|---|
 | AI review not live in production | The OpenAI-compatible review path is coded but gated: until `OPENAI_API_KEY`, `OPENAI_BASE_URL` and `OPENAI_MODEL` are set on Render and it redeploys, the webhook still verifies PR events and the review is skipped and logged |
-| OAuth `state` is not single-use | Impact is limited because GitHub's `code` is single-use, but the guard is weaker than the docstring once claimed |
 | Docker Compose orchestration unverified | The Docker images are built by CI on every push; the compose stack never ran on this machine |
 
 ## License

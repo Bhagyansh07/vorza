@@ -32,7 +32,7 @@
 services:
   - type: web
     name: vorza-api
-    runtime: python
+    runtime: docker
     plan: free
     region: oregon
     healthCheckPath: /openapi.json
@@ -74,10 +74,10 @@ services:
       # deploying.
       - key: FRONTEND_HOST
         sync: false
-      - key: ENVIRONMENT
+      # config.py reads FASTAPI_ENV; ENVIRONMENT and LOG_LEVEL were
+      # never read by anything, so setting them did nothing.
+      - key: FASTAPI_ENV
         value: production
-      - key: LOG_LEVEL
-        value: INFO
 
     # Docker is the only deploy path that has been verified to work: the repo
     # has a Dockerfile, and CI builds it on every push to main. Render's

@@ -142,8 +142,8 @@ anyone reading the repo.
   - `no Alembic revision found; creating tables from the models` -- the database
     was empty, so the tables were created and the revision stamped. Also correct,
     and `alembic upgrade head` immediately after is a no-op.
-- **Settings -> Health Check Path** should be `/openapi.json`. There is no
-  `/health` route; requesting one returns 404.
+- **Settings -> Health Check Path** should be `/openapi.json`. A public
+  `/health` liveness route also exists and is fine.
 
 ### 2.3 Verify
 

@@ -1,4 +1,4 @@
-# The Idea: CodeAtlas
+# The Idea: Vorza
 
 ## The problem
 
@@ -36,30 +36,6 @@ CodeAtlas connects to a GitHub repo and gives it a face:
 - It has a built-in, impressive live demo: open two browser tabs side by side,
   open a PR on the connected repo, and watch the map react in real time in
   front of the interviewer.
-
-## The meta talking point (use this in interviews)
-
-*"I designed the architecture and coordinated six parallel AI coding agents —
-each with a scoped role and a shared contract file — to build this end to end.
-I wrote the specs, the API contracts, and the coordination protocol; the agents
-implemented against them."*
-
-This is itself a legitimate, current, in-demand skill: **directing multi-agent
-AI development workflows.** Say this out loud in interviews — it is 2026, and
-"I can orchestrate AI agents to ship real systems" is a hiring signal, not a
-shortcut to hide.
-
-## Demo script (for the recruiter / interview)
-
-1. Show the landing page → connect a GitHub repo (use a real public repo you
-   picked ahead of time, ideally one with real history).
-2. Watch the graph render — call out size = complexity, color = health.
-3. Open the same URL in a second browser/incognito window → show the second
-   cursor appear live, drop a comment together.
-4. Push a small PR to the connected repo (or replay a captured webhook) → watch
-   the AI review comment appear and the map re-color within seconds.
-5. Show the trend chart — "this repo's average file complexity went up 12% this
-   month, and here's the file that caused it."
 
 ## Scope discipline — what NOT to build (v1)
 
