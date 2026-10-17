@@ -22,7 +22,10 @@ task and never leaks the request-scoped session or the GitHub token.
 
 from __future__ import annotations
 
+import base64
 import logging
+import os
+import re
 import subprocess
 import uuid
 from pathlib import Path
@@ -49,18 +52,65 @@ def _checkout_path(repo_id: uuid.UUID) -> Path:
     return CHECKOUTS_DIR / str(repo_id)
 
 
-def _git(args: list[str], cwd: Path, *, check: bool = True) -> str:
+# Git repeats the failing remote URL in its error text, and vorza used to embed
+# the access token in that URL. The message travels through
+# ``Repo.last_analyze_error`` and is served by GET /repos, so a failed clone
+# could publish a live credential. Both the URL shape and the subprocess
+# timeout are handled here.
+_CREDENTIAL_RE = re.compile(r"x-access-token:[^@\s]+@")
+
+
+def _redact(text: str) -> str:
+    """Replace an embedded git credential with a placeholder."""
+    return _CREDENTIAL_RE.sub("x-access-token:***@", text)
+
+
+def _checkout_env(access_token: str) -> dict[str, str]:
+    """Environment that authenticates git without the token appearing in argv.
+
+    A token on the command line shows up in process listings and in git's own
+    error output. GitHub accepts ``x-access-token:<token>`` as basic auth, so
+    the credential is passed as an http extraheader through the environment.
+    """
+    basic = base64.b64encode(f"x-access-token:{access_token}".encode()).decode()
+    return {
+        **os.environ,
+        "GIT_CONFIG_COUNT": "1",
+        "GIT_CONFIG_KEY_0": "http.extraheader",
+        "GIT_CONFIG_VALUE_0": f"AUTHORIZATION: basic {basic}",
+    }
+
+
+def _git(
+    args: list[str],
+    cwd: Path,
+    *,
+    check: bool = True,
+    env: dict[str, str] | None = None,
+) -> str:
     """Run git, raise RepoCheckoutError on failure, return stdout."""
-    result = subprocess.run(args, cwd=cwd, capture_output=True, text=True, timeout=600)
-    merged = (result.stdout or "") + (result.stderr or "")
+    try:
+        result = subprocess.run(
+            args, cwd=cwd, capture_output=True, text=True, timeout=600, env=env
+        )
+    except subprocess.TimeoutExpired as exc:
+        # str(TimeoutExpired) repeats the argv, so it must not escape raw.
+        raise RepoCheckoutError(_redact(f"git timed out: {exc}")) from None
+    merged = _redact((result.stdout or "") + (result.stderr or ""))
     if check and result.returncode != 0:
         raise RepoCheckoutError(merged.strip() or "git command failed")
     return result.stdout or ""
 
 
 def _ensure_checkout(repo: Repo, access_token: str) -> Path:
-    """Clone once, then a cheap ``git fetch`` on every later run."""
+    """Clone once, then a cheap ``git fetch`` on every later run.
+
+    The token is handed to git through the environment (see ``_checkout_env``)
+    rather than the clone URL, because ``str()`` of a subprocess failure -- or
+    of a ``TimeoutExpired`` -- includes the argv.
+    """
     target = _checkout_path(repo.id)
+    env = _checkout_env(access_token)
     if (target / ".git").exists():
         try:
             # cwd must be passed explicitly: _git() has no default, and a
@@ -71,34 +121,32 @@ def _ensure_checkout(repo: Repo, access_token: str) -> Path:
                 ["git", "-C", str(target), "reset", "--quiet", "--hard", "HEAD"],
                 target,
             )
-            _git(["git", "-C", str(target), "pull", "--quiet", "--ff-only"], target)
+            # The worktree remote carries no credentials, so a refresh has to
+            # authenticate itself. Without this a private repo was never
+            # actually re-fetched and got analysed on a stale checkout.
+            _git(
+                ["git", "-C", str(target), "pull", "--quiet", "--ff-only"],
+                target,
+                env=env,
+            )
         except RepoCheckoutError as exc:
             logger.warning(
                 "checkout refresh failed for %s: %s", repo.github_full_name, exc
             )
         return target
     target.parent.mkdir(parents=True, exist_ok=True)
-    authed_url = (
-        f"https://x-access-token:{access_token}@github.com/{repo.github_full_name}.git"
-    )
     try:
-        _git(
-            ["git", "clone", "--quiet", "--depth=1", authed_url, str(target)],
-            target.parent,
-        )
-        # Persist the token-less remote so refreshes don't re-embed secrets
-        # in the worktree config.
         _git(
             [
                 "git",
-                "-C",
-                str(target),
-                "remote",
-                "set-url",
-                "origin",
+                "clone",
+                "--quiet",
+                "--depth=1",
                 f"https://github.com/{repo.github_full_name}.git",
+                str(target),
             ],
-            target,
+            target.parent,
+            env=env,
         )
     except RepoCheckoutError as exc:
         raise RepoCheckoutError(

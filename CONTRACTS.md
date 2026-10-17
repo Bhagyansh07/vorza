@@ -49,7 +49,8 @@ AiReviewRow { id, repo_id, pr_number, risk_score, summary, flags, updated_files,
 | POST | `/repos/{id}/analyze` | Trigger a manual re-analysis |
 | POST | `/webhooks/github` | GitHub PR webhook receiver → triggers the AI review pipeline |
 | GET/POST | `/repos/{id}/comments` | List / create comment pins |
-| GET | `/openapi.json` | OpenAPI schema. **This is the deploy health check path** — there is no `/health` route. |
+| GET | `/health` | Public liveness probe (`{"status": "ok", "version": <build>}`). No auth, no DB |
+| GET | `/openapi.json` | OpenAPI schema, and the documented deploy health check path |
 
 ### List endpoints return an envelope
 
@@ -76,7 +77,8 @@ trend endpoint, because it is chart data and the file set can be large.
 
 ### Auth and failure modes
 
-- Every endpoint except `/openapi.json`, `/auth/github/*` and `/webhooks/github`
+- Every endpoint except `/health`, `/openapi.json`, `/auth/github/*` and
+  `/webhooks/github`
   requires `Authorization: Bearer <JWT>`.
 - **403, not 500, for an unusable token.** If the token verifies but its `sub`
   claim is missing or not a UUID, the server returns **403**. It used to return

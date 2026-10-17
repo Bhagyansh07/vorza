@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import uuid
 from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -136,6 +137,34 @@ async def repo_socket(websocket: WebSocket, repo_id: str) -> None:
             )
 
 
+def repo_is_owned_by(repo_id: str, user_id: str) -> bool:
+    """True only when ``user_id`` owns the repo behind ``repo_id``.
+
+    Every REST route resolves its row through ``api.deps.get_owned_repo``; the
+    socket had no equivalent, so any valid JWT could join any repo's channel
+    and read or post its comments. The imports are function-local so the
+    gateway keeps no module-level database dependency.
+    """
+    try:
+        repo_uuid = uuid.UUID(repo_id)
+        owner_uuid = uuid.UUID(user_id)
+    except (TypeError, ValueError):
+        return False
+    from sqlmodel import Session
+
+    from app.core.db import engine
+    from app.models.repo import Repo
+
+    try:
+        with Session(engine) as session:
+            repo = session.get(Repo, repo_uuid)
+    except Exception:
+        # A lookup failure has to deny access, never grant it.
+        logger.exception("ws connect: repository lookup failed for %s", repo_id)
+        return False
+    return repo is not None and repo.owner_id == owner_uuid
+
+
 async def _await_join(websocket: WebSocket, repo_id: str) -> str | None:
     """Wait for the mandatory first message ``presence:join {repo_id, user_id}``."""
     try:
@@ -168,6 +197,9 @@ async def _await_join(websocket: WebSocket, repo_id: str) -> str | None:
     user_id = decode_access_token(str(payload["token"]))
     if user_id is None:
         logger.info("ws connect aborted: invalid JWT in presence:join")
+        return None
+    if not repo_is_owned_by(repo_id, user_id):
+        logger.info("ws connect aborted: %s does not own %s", user_id, repo_id)
         return None
     return user_id
 

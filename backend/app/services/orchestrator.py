@@ -19,6 +19,7 @@ makes them safe to run inside FastAPI ``BackgroundTasks``.
 from __future__ import annotations
 
 import logging
+import re
 import uuid
 from typing import Any, cast
 
@@ -97,13 +98,21 @@ def trim_snapshots(
 # ------------------------------------------------------------------
 
 
+# str() of a failed subprocess repeats its argv, and the git remote URL used to
+# carry the access token. This column is served back by GET /repos, so the
+# shape is scrubbed here as well as at its source (app/services/pipeline.py).
+_TOKEN_IN_URL = re.compile(r"x-access-token:[^@\s]+@")
+
+
 def _record_analyze_error(repo_id: uuid.UUID, message: str) -> None:
     """Persist why the latest analyze attempt failed for the UI to surface."""
     try:
         with Session(engine) as session:
             repo = session.get(Repo, repo_id)
             if repo is not None:
-                repo.last_analyze_error = message[:1000]
+                repo.last_analyze_error = _TOKEN_IN_URL.sub(
+                    "x-access-token:***@", message
+                )[:1000]
                 session.add(repo)
                 session.commit()
     except Exception:

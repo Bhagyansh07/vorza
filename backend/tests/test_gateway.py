@@ -38,6 +38,17 @@ def hub():
     reset_hub()
 
 
+@pytest.fixture(autouse=True)
+def _stub_repo_ownership(monkeypatch):
+    """These tests cover fan-out, not authz.
+
+    Real ownership needs a database row and these tests use plain string ids
+    like ``"u1"`` with no DB at all; the check itself is covered by
+    ``test_rejects_a_socket_for_a_repo_you_do_not_own``.
+    """
+    monkeypatch.setattr(gateway_module, "repo_is_owned_by", lambda *_: True)
+
+
 def until(
     ws: Any, wanted: str, *, where: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -77,6 +88,24 @@ def test_connection_without_join_is_rejected(monkeypatch, hub) -> None:
     with TestClient(make_app()) as client:
         with pytest.raises(WebSocketDisconnect) as exc_info:
             with client.websocket_connect(f"/ws/repos/{REPO}") as ws:
+                ws.receive_json()
+        assert exc_info.value.code == 4408
+
+
+def test_rejects_a_socket_for_a_repo_you_do_not_own(monkeypatch, hub) -> None:
+    """A valid JWT must not open a channel for a repo the user does not own."""
+    monkeypatch.setattr(gateway_module, "repo_is_owned_by", lambda *_: False)
+    token = create_access_token("u1", expires_delta=timedelta(hours=1))
+
+    with TestClient(make_app()) as client:
+        with pytest.raises(WebSocketDisconnect) as exc_info:
+            with client.websocket_connect(f"/ws/repos/{REPO}") as ws:
+                ws.send_json(
+                    {
+                        "type": "presence:join",
+                        "payload": {"repo_id": REPO, "token": token},
+                    }
+                )
                 ws.receive_json()
         assert exc_info.value.code == 4408
 
