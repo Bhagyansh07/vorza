@@ -49,7 +49,7 @@ export function BentoCard({
   return (
     <div
       className={cn(
-        'group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-line/70 bg-surface/70 shadow-panel backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10',
+        'group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-line/70 bg-surface/75 p-6 shadow-panel backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10',
         className
       )}
       {...props}
@@ -64,23 +64,32 @@ export function BentoCard({
         <div className="pointer-events-none absolute inset-0">{background}</div>
       ) : null}
 
-      <div className="relative flex flex-col gap-1.5 p-6">
-        {icon ? (
-          <div className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-xs mb-1">
-            {icon}
-          </div>
-        ) : null}
-        {stat ? (
-          <div className="text-3xl font-semibold leading-none tracking-tight text-ink tabular">
-            {stat}
-          </div>
-        ) : null}
-        <h3 className="text-lg font-semibold leading-tight text-ink">{title}</h3>
-        <p className="text-xs sm:text-sm text-ink-dim leading-relaxed">{description}</p>
+      <div className="relative flex flex-col gap-4">
+        <div className="flex items-center justify-between gap-3">
+          {icon ? (
+            <div className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-xs transition-transform duration-300 group-hover:scale-105">
+              {icon}
+            </div>
+          ) : <div />}
+          {stat ? (
+            <div className="text-3xl sm:text-4xl font-extrabold tracking-tight text-ink tabular">
+              {stat}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="space-y-1">
+          <h3 className="text-base sm:text-lg font-bold tracking-tight text-ink">
+            {title}
+          </h3>
+          <p className="text-xs sm:text-sm text-ink-dim leading-relaxed">
+            {description}
+          </p>
+        </div>
       </div>
 
       {to && actionLabel ? (
-        <div className="relative flex items-center gap-2 p-6 pt-0">
+        <div className="relative mt-4 flex items-center gap-2 pt-3 border-t border-line/40">
           <Link
             to={to}
             className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary transition-all group-hover:gap-2.5"

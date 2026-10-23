@@ -28,29 +28,14 @@ import {
   useRef,
   useState,
 } from 'react';
-import { ArrowLeft, ArrowRight, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, X } from 'lucide-react';
 
 import { VorpyMascot } from '@/components/mascot/VorpyMascot';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
+import { computeAnchor, type Anchor, type TargetRect } from './placement';
 import { readTourState, writeTourState } from './tour-storage';
 import type { TourDefinition, TourStep } from './types';
-
-/** Desktop panel size, used only to decide which side to dock it on. */
-const PANEL_WIDTH = 380;
-const PANEL_HEIGHT = 250;
-
-type Placement = 'bottom-right' | 'bottom-left';
-
-interface TargetRect {
-  top: number;
-  right: number;
-  bottom: number;
-  left: number;
-  width: number;
-  height: number;
-}
 
 function prefersReducedMotion(): boolean {
   return (
@@ -78,22 +63,7 @@ function rectOf(selector: string): TargetRect | null {
 
 function resolveSteps(steps: readonly TourStep[]): TourStep[] {
   const present = steps.filter((step) => rectOf(`[data-tour="${step.target}"]`));
-  // If nothing is on screen (a route still loading), keep the copy rather than
-  // silently opening an empty tour.
   return present.length > 0 ? present : [...steps];
-}
-
-function pickPlacement(
-  rect: TargetRect,
-  viewportWidth: number,
-  viewportHeight: number,
-): Placement {
-  // Small screens dock the panel as a bottom sheet, where the side is moot.
-  if (viewportWidth < 640) return 'bottom-right';
-  const panelLeftEdge = viewportWidth - 24 - PANEL_WIDTH;
-  const panelTopEdge = viewportHeight - 24 - PANEL_HEIGHT;
-  const overlaps = rect.right > panelLeftEdge && rect.bottom > panelTopEdge;
-  return overlaps ? 'bottom-left' : 'bottom-right';
 }
 
 export function GuidedTour({ tour }: { tour: TourDefinition }) {
@@ -101,12 +71,13 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
   const [index, setIndex] = useState(0);
   const [steps, setSteps] = useState<readonly TourStep[]>(tour.steps);
   const [rect, setRect] = useState<TargetRect | null>(null);
-  const [placement, setPlacement] = useState<Placement>('bottom-right');
+  const [anchor, setAnchor] = useState<Anchor | null>(null);
   const [hasSeen, setHasSeen] = useState(true);
   const [dismissed, setDismissed] = useState(false);
 
   const reduceMotion = useMemo(prefersReducedMotion, []);
 
+  const groupRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
   const inviteRef = useRef<HTMLButtonElement | null>(null);
   const wasOpen = useRef(false);
@@ -117,7 +88,6 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
   const total = steps.length;
   const step = steps[Math.min(index, total - 1)];
 
-  // Read once whether this visitor has seen the tour
   useEffect(() => {
     setHasSeen(readTourState(tour.id) !== null);
   }, [tour.id]);
@@ -180,10 +150,11 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
     }
   }, [open]);
 
-  // Scroll the current target into view and keep the ring glued to it
+  // Scroll the current target into view and keep Vorpy floating glued to its side in the air
   useEffect(() => {
     if (!open || !step) {
       setRect(null);
+      setAnchor(null);
       return;
     }
     const selector = `[data-tour="${step.target}"]`;
@@ -195,10 +166,19 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
     const update = () => {
       const measured = rectOf(selector);
       setRect(measured);
-      if (measured) {
-        setPlacement(
-          pickPlacement(measured, window.innerWidth, window.innerHeight),
+      const group = groupRef.current;
+      if (measured && group) {
+        const box = group.getBoundingClientRect();
+        setAnchor(
+          computeAnchor(
+            measured,
+            { width: box.width, height: box.height },
+            window.innerWidth,
+            window.innerHeight,
+          ),
         );
+      } else {
+        setAnchor(null);
       }
     };
     update();
@@ -257,125 +237,171 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
 
   const pct = total > 0 ? ((index + 1) / total) * 100 : 0;
 
-  return (
+  const tourOverlay = (
     <>
       {rect && (
         <div
           aria-hidden="true"
-          className="pointer-events-none fixed z-40 rounded-stem ring-2 ring-primary transition-all duration-300 motion-reduce:transition-none"
+          className="pointer-events-none fixed z-[90] rounded-stem ring-2 ring-primary transition-all duration-300 motion-reduce:transition-none"
           style={{
-            top: Math.max(6, rect.top - 6),
-            left: Math.max(6, rect.left - 6),
-            width: rect.width + 12,
-            height: rect.height + 12,
-            boxShadow: '0 0 0 9999px hsl(222 25% 11% / 0.52)',
+            top: Math.max(6, rect.top - 8),
+            left: Math.max(6, rect.left - 8),
+            width: rect.width + 16,
+            height: rect.height + 16,
+            boxShadow: '0 0 0 9999px hsl(222 25% 11% / 0.55)',
           }}
         >
           <div className="absolute -inset-1 rounded-[inherit] ring-4 ring-primary/20 motion-reduce:hidden" />
         </div>
       )}
 
+      {/*
+        Vorpy the pet hovers in the air beside whichever element the step is about,
+        thinking the copy in an elevated thought cloud. When changing steps,
+        Vorpy smoothly flies across the screen to the next target element.
+      */}
       <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="false"
-        aria-labelledby={titleId}
-        aria-describedby={bodyId}
-        tabIndex={-1}
-        className={cn(
-          'fixed z-50 overflow-hidden rounded-3xl border border-line/80 bg-surface/95 shadow-[0_24px_64px_rgba(0,0,0,0.35)] backdrop-blur-2xl focus:outline-none sm:w-[400px]',
-          placement === 'bottom-left'
-            ? 'bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-auto'
-            : 'bottom-4 left-4 right-4 sm:bottom-6 sm:left-auto sm:right-6',
-        )}
+        className="vorpy-anchor"
+        style={{
+          left: anchor?.left ?? 0,
+          top: anchor?.top ?? 0,
+          zIndex: 100,
+          opacity: anchor ? 1 : 0,
+          transition: reduceMotion
+            ? 'none'
+            : 'left 0.45s cubic-bezier(0.16, 1, 0.3, 1), top 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease',
+        }}
       >
-        {/* Luminous Multi-Spectrum Progress Bar */}
-        <div className="h-1.5 w-full bg-line/60" aria-hidden="true">
-          <div
-            className="h-full bg-gradient-to-r from-primary via-emerald-400 to-cyan-400 transition-[width] duration-300 motion-reduce:transition-none shadow-xs"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-
-        {/* Studio Window Chrome Banner */}
-        <div className="flex items-center justify-between border-b border-line/60 bg-surface/60 px-5 py-2 text-[10px] font-mono backdrop-blur-md">
-          <div className="flex items-center gap-1.5">
-            <span className="h-1.5 w-1.5 rounded-full bg-signal-good animate-pulse" />
-            <span className="font-semibold uppercase tracking-wider text-ink-dim">
-              Vorza Copilot Telemetry
+        <div
+          ref={groupRef}
+          className="vorpy-group"
+          data-side={anchor?.side ?? 'right'}
+        >
+          {/* Flying Pet with floating bob & energy trail */}
+          <div className="vorpy-pet" aria-hidden="true">
+            <span className="vorpy-trail">
+              <i />
+              <i />
+              <i />
             </span>
-          </div>
-          <span className="rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-primary font-bold">
-            Active
-          </span>
-        </div>
-
-        <div className="flex items-start gap-4 p-5">
-          <div className="relative shrink-0 flex items-center justify-center rounded-2xl bg-surface/80 border border-line/70 p-1.5 shadow-sm">
-            <VorpyMascot embedded size={64} animation={step.animation} />
-          </div>
-          <div className="min-w-0 flex-1" aria-live="polite">
-            <div className="flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-primary font-bold">
-              <span>{step.eyebrow}</span>
-              <span className="text-ink-faint font-semibold">
-                {index + 1} / {total}
-              </span>
+            <div className="vorpy-pet-float">
+              <VorpyMascot embedded size={88} animation={step.animation} />
             </div>
-            <h2
-              id={titleId}
-              className="mt-1 text-base font-bold leading-tight text-ink"
-            >
-              {step.title}
-            </h2>
-            <p
-              id={bodyId}
-              className="mt-2 text-xs sm:text-sm leading-relaxed text-ink-dim"
-            >
-              {step.body}
-            </p>
           </div>
-          <button
-            type="button"
-            onClick={() => close()}
-            aria-label="Close the tour"
-            className="-mr-1.5 -mt-1.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink-faint transition-colors hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <X className="h-4 w-4" aria-hidden="true" />
-          </button>
-        </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-line/60 px-5 py-3.5 bg-surface/50">
-          <button
-            type="button"
-            onClick={() => close(true)}
-            className="text-xs text-ink-faint underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          {/* Elevated Frosted Glass Thought Cloud */}
+          <div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="false"
+            aria-labelledby={titleId}
+            aria-describedby={bodyId}
+            tabIndex={-1}
+            className="vorpy-cloud focus:outline-none overflow-hidden"
           >
-            Skip tour
-          </button>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={back}
-              disabled={index === 0}
-              className="rounded-xl text-xs shadow-xs font-medium"
+            {/* Ambient specular highlight */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -inset-px opacity-70 bg-radial-at-tl from-primary/20 via-transparent to-transparent"
+            />
+
+            <div className="relative px-6 pb-5 pt-5 sm:px-7 sm:pt-6">
+              <div aria-live="polite">
+                <div className="flex items-center justify-between gap-3 pb-1">
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                    </span>
+                    <Sparkles className="h-3 w-3 text-primary" aria-hidden="true" />
+                    <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary font-bold">
+                      {step.eyebrow}
+                    </span>
+                  </div>
+                  <span className="rounded-full bg-surface-elevated/70 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim border border-line/50">
+                    {index + 1} / {total}
+                  </span>
+                </div>
+
+                <h2
+                  id={titleId}
+                  className="mt-2 pr-6 text-base sm:text-lg font-bold leading-snug tracking-tight text-ink drop-shadow-xs"
+                >
+                  {step.title}
+                </h2>
+                <p
+                  id={bodyId}
+                  className="mt-2 text-xs sm:text-sm leading-relaxed text-ink-dim"
+                >
+                  {step.body}
+                </p>
+              </div>
+
+              <div className="mt-5 flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => close(true)}
+                  className="text-xs text-ink-faint transition-colors hover:text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring font-medium"
+                >
+                  Skip
+                </button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={back}
+                    disabled={index === 0}
+                    className="rounded-xl border-line/60 bg-surface/40 backdrop-blur-md text-xs font-semibold hover:bg-surface/80"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+                    Back
+                  </Button>
+                  {index < total - 1 ? (
+                    <Button
+                      size="sm"
+                      onClick={next}
+                      className="rounded-xl text-xs font-bold shadow-md shadow-primary/20 bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      Next
+                      <ArrowRight className="h-3.5 w-3.5 ml-1" aria-hidden="true" />
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      onClick={() => close(true)}
+                      className="rounded-xl text-xs font-bold shadow-md shadow-primary/20 bg-primary text-primary-foreground hover:bg-primary/90"
+                    >
+                      Done
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Laser neon progress bar */}
+              <div
+                className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-surface-elevated/80 border border-line/30"
+                aria-hidden="true"
+              >
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-primary via-emerald-400 to-cyan-400 shadow-[0_0_8px_rgba(34,197,94,0.5)] transition-[width] duration-300 motion-reduce:transition-none"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => close()}
+              aria-label="Close the tour"
+              className="absolute right-3.5 top-3.5 inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-surface-elevated hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring border border-transparent hover:border-line/40"
             >
-              <ArrowLeft className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
-              Back
-            </Button>
-            {index < total - 1 ? (
-              <Button size="sm" onClick={next} className="rounded-xl text-xs font-semibold shadow-xs">
-                Next
-                <ArrowRight className="h-3.5 w-3.5 ml-1" aria-hidden="true" />
-              </Button>
-            ) : (
-              <Button size="sm" onClick={() => close(true)} className="rounded-xl text-xs font-semibold shadow-xs">
-                Done
-              </Button>
-            )}
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
           </div>
         </div>
       </div>
     </>
   );
+
+  return tourOverlay;
 }

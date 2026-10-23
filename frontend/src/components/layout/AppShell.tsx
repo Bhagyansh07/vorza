@@ -27,7 +27,7 @@ export function AppShell() {
       <div className="pointer-events-none fixed inset-0 bg-cyber-grid bg-[size:40px_40px] opacity-15 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_40%,black_35%,transparent_100%)] z-0" />
 
       <Sidebar />
-      <div className="relative z-10 flex min-h-svh flex-col lg:pl-64">
+      <div className="relative z-40 flex min-h-svh flex-col lg:pl-64">
         <Navbar className="lg:hidden" />
         <main className="flex-1">
           <Suspense fallback={<ShellFallback />}>

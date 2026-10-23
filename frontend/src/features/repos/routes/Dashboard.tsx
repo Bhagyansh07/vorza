@@ -23,13 +23,13 @@ function RepoMetrics({ repos }: { repos: Repo[] }) {
   const mapped = total - needingAttention;
 
   return (
-    <BentoGrid className="mb-8 auto-rows-[9rem]">
+    <BentoGrid className="mb-8 auto-rows-auto grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
       <BentoCard
         title="Repositories"
         description="Connected to GitHub and mapped"
         icon={<GitFork className="h-5 w-5" />}
         stat={<NumberTicker value={total} />}
-        className="col-span-3 sm:col-span-1"
+        className="col-span-1"
       />
       <BentoCard
         title="Mapped without issues"
@@ -40,7 +40,7 @@ function RepoMetrics({ repos }: { repos: Repo[] }) {
           </span>
         }
         stat={<NumberTicker value={mapped} />}
-        className="col-span-3 sm:col-span-1"
+        className="col-span-1"
       />
       <BentoCard
         title="Re-analysis needed"
@@ -51,7 +51,7 @@ function RepoMetrics({ repos }: { repos: Repo[] }) {
           </span>
         }
         stat={<NumberTicker value={needingAttention} />}
-        className="col-span-3 sm:col-span-1"
+        className="col-span-1"
       />
     </BentoGrid>
   );
@@ -69,26 +69,29 @@ export function Dashboard() {
     useRepos();
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
       <div
-        className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-line/70 bg-surface/75 p-6 backdrop-blur-2xl shadow-xl transition-all"
+        className="mb-8 flex flex-wrap items-center justify-between gap-6 rounded-3xl border border-line/70 bg-surface/75 p-6 sm:p-8 backdrop-blur-2xl shadow-xl transition-all"
         data-tour="dash-header"
       >
-        <div>
+        <div className="space-y-1.5">
           <div className="flex items-center gap-2">
-            <span className="flex h-2 w-2 rounded-full bg-signal-good shadow-xs" />
-            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary font-bold">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-signal-good opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-signal-good" />
+            </span>
+            <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-primary font-bold">
               Repository Workspace · Codebase Radar
             </span>
           </div>
-          <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          <h1 className="text-2xl font-extrabold tracking-tight text-ink sm:text-3xl">
             Connected repositories
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-ink-dim">
+          <p className="max-w-xl text-xs sm:text-sm text-ink-dim leading-relaxed">
             Pick a repository to open its live force-directed map and health analytics.
           </p>
         </div>
-        <div data-tour="dash-connect">
+        <div data-tour="dash-connect" className="flex items-center gap-3">
           <ConnectRepoDialog />
         </div>
       </div>
@@ -106,8 +109,16 @@ export function Dashboard() {
           <div data-tour="dash-metrics">
             <RepoMetrics repos={repos} />
           </div>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-xs sm:text-sm font-semibold uppercase tracking-wider text-ink-dim">
+              Active Repositories ({repos.length})
+            </h2>
+            <span className="font-mono text-[11px] text-ink-faint">
+              Auto-sync active
+            </span>
+          </div>
           <div
-            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
+            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
             data-tour="dash-repos"
           >
             {repos.map((repo) => (
