@@ -74,6 +74,14 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const [hasSeen, setHasSeen] = useState(true);
   const [dismissed, setDismissed] = useState(false);
+  const [pokeMood, setPokeMood] = useState<any>(null);
+
+  const handlePoke = useCallback(() => {
+    const moods = ['celebrate', 'excited', 'proud', 'happy', 'laughing'];
+    const nextMood = moods[Math.floor(Math.random() * moods.length)];
+    setPokeMood(nextMood);
+    window.setTimeout(() => setPokeMood(null), 1800);
+  }, []);
 
   const reduceMotion = useMemo(prefersReducedMotion, []);
 
@@ -279,13 +287,18 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
         >
           {/* Flying Pet with floating bob & energy trail */}
           <div className="vorpy-pet" aria-hidden="true">
+            <div className="vorpy-pet-halo" />
             <span className="vorpy-trail">
               <i />
               <i />
               <i />
             </span>
-            <div className="vorpy-pet-float">
-              <VorpyMascot embedded size={88} animation={step.animation} />
+            <div
+              className="vorpy-pet-float cursor-pointer hover:scale-110 active:scale-95 transition-transform"
+              onClick={handlePoke}
+              title="Click Vorpy to interact!"
+            >
+              <VorpyMascot embedded size={88} animation={pokeMood ?? step.animation} />
             </div>
           </div>
 
@@ -317,6 +330,12 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
                     <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary font-bold">
                       {step.eyebrow}
                     </span>
+                    <div className="flex items-end gap-[2px] h-3 px-1 py-0.5 rounded-sm bg-primary/10 border border-primary/20" title="Vorpy Neural Stream">
+                      <span className="w-[2px] rounded-full bg-primary animate-[equalizer_0.8s_ease-in-out_infinite]" />
+                      <span className="w-[2px] rounded-full bg-primary animate-[equalizer_1.2s_ease-in-out_infinite_0.2s]" />
+                      <span className="w-[2px] rounded-full bg-primary animate-[equalizer_0.6s_ease-in-out_infinite_0.4s]" />
+                      <span className="w-[2px] rounded-full bg-primary animate-[equalizer_1.0s_ease-in-out_infinite_0.1s]" />
+                    </div>
                   </div>
                   <span className="rounded-full bg-surface-elevated/70 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim border border-line/50">
                     {index + 1} / {total}
@@ -355,6 +374,7 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
                   >
                     <ArrowLeft className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
                     Back
+                    <kbd className="ml-1.5 hidden sm:inline-flex text-[9px] font-mono px-1 py-0.2 rounded bg-surface border border-line/60 text-ink-faint">←</kbd>
                   </Button>
                   {index < total - 1 ? (
                     <Button
@@ -363,6 +383,7 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
                       className="rounded-xl text-xs font-bold shadow-md shadow-primary/20 bg-primary text-primary-foreground hover:bg-primary/90"
                     >
                       Next
+                      <kbd className="ml-1.5 hidden sm:inline-flex text-[9px] font-mono px-1 py-0.2 rounded bg-black/30 border border-white/20 text-white">→</kbd>
                       <ArrowRight className="h-3.5 w-3.5 ml-1" aria-hidden="true" />
                     </Button>
                   ) : (
