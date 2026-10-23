@@ -139,34 +139,42 @@ export function Landing() {
 
   return (
     <div className="bg-background min-h-screen text-foreground relative overflow-x-hidden selection:bg-primary/20 selection:text-primary">
+      {/* Background Ambient Atmospheric Glow */}
+      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[1100px] h-[600px] bg-gradient-to-b from-primary/15 via-emerald-500/8 to-transparent blur-3xl opacity-70 dark:opacity-40" />
+      <div className="pointer-events-none absolute top-40 left-1/2 -translate-x-1/2 w-[850px] h-[380px] bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-500/10 via-primary/5 to-transparent blur-3xl" />
+
       {/* Floating Island Navbar */}
       <header className="sticky top-4 z-40 mx-auto max-w-5xl px-4">
-        <div className="flex items-center justify-between rounded-full border border-line/70 bg-surface/85 px-5 py-2.5 shadow-[0_12px_36px_rgba(0,0,0,0.18)] backdrop-blur-2xl transition-all">
+        <div className="flex items-center justify-between rounded-full border border-line/80 bg-surface/85 px-5 py-2.5 shadow-[0_12px_36px_rgba(0,0,0,0.22)] backdrop-blur-2xl transition-all hover:border-line">
           <Link to="/" aria-label="Vorza home" className="flex items-center gap-2.5">
             <Logo />
-            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-line/60 bg-surface/50 px-2 py-0.5 text-[10px] font-mono font-medium text-ink-dim">
+            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-line/70 bg-surface/60 px-2.5 py-0.5 text-[10px] font-mono font-medium text-ink-dim shadow-xs">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-signal-good opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-signal-good"></span>
+              </span>
               <span>v2.4</span>
             </span>
           </Link>
 
-          <nav aria-label="Quick links" className="hidden sm:flex items-center gap-7 text-xs font-medium text-ink-dim">
-            <a href="#features" className="hover:text-ink transition-colors">
+          <nav aria-label="Quick links" className="hidden sm:flex items-center gap-7 text-xs font-semibold text-ink-dim tracking-wide">
+            <a href="#features" className="hover:text-primary transition-colors">
               Features
             </a>
-            <a href="#reading-the-map" className="hover:text-ink transition-colors">
+            <a href="#reading-the-map" className="hover:text-primary transition-colors">
               Architecture
             </a>
           </nav>
 
           <nav aria-label="Primary" className="flex items-center gap-2 sm:gap-3">
             <ThemeToggle />
-            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex font-medium text-xs text-ink-dim hover:text-ink">
+            <Button variant="ghost" size="sm" asChild className="hidden sm:inline-flex font-semibold text-xs text-ink-dim hover:text-ink">
               <Link to="/login">Sign in</Link>
             </Button>
             <Button
               size="sm"
               asChild
-              className="rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4 py-1.5 text-xs shadow-xs transition-all hover:scale-105 active:scale-95"
+              className="rounded-full bg-gradient-to-r from-primary via-primary to-emerald-400 hover:opacity-95 text-primary-foreground font-semibold px-4 py-1.5 text-xs shadow-[0_0_16px_rgba(168,242,90,0.3)] transition-all hover:scale-105 active:scale-95"
             >
               <Link to="/login">
                 Connect a repo
@@ -187,19 +195,26 @@ export function Landing() {
           {/* Centered Hero Content */}
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
             {/* Luminous Pill Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-line/70 bg-surface/75 px-3.5 py-1 text-xs font-medium text-ink backdrop-blur-xl shadow-xs mb-8">
-              <span className="flex h-1.5 w-1.5 rounded-full bg-signal-good" />
-              <span>01 · Survey</span>
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 dark:bg-primary/10 px-4 py-1.5 text-xs font-medium text-ink backdrop-blur-2xl shadow-[0_0_24px_rgba(168,242,90,0.15)] mb-8 transition-transform hover:scale-105">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-signal-good opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-signal-good"></span>
+              </span>
+              <span className="font-semibold tracking-wide">01 · Survey</span>
               <span className="text-ink-faint">/</span>
-              <span className="font-mono text-[11px] text-ink-dim uppercase tracking-wider">Interactive Codebase Intelligence</span>
+              <span className="font-mono text-[11px] text-ink-dim uppercase tracking-wider font-semibold">Interactive Codebase Intelligence</span>
             </div>
 
             {/* Main Headline */}
             <h1
               id="hero-heading"
-              className="text-4xl sm:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05] text-balance text-ink max-w-4xl"
+              className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.06] text-balance text-ink max-w-4xl"
             >
-              The living, AI-reviewed map of your codebase.
+              The living,{' '}
+              <span className="bg-gradient-to-r from-primary via-emerald-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-sm">
+                AI-reviewed map
+              </span>{' '}
+              of your codebase.
             </h1>
 
             {/* Subtitle */}
@@ -211,7 +226,7 @@ export function Landing() {
             <div data-tour="hero-actions" className="mt-9 flex flex-wrap items-center justify-center gap-3.5">
               <Button
                 size="lg"
-                className="rounded-full bg-primary text-primary-foreground hover:bg-primary/90 px-8 py-6 text-sm font-semibold shadow-[0_0_24px_hsl(var(--primary)/0.25)] transition-all hover:scale-[1.02] active:scale-[0.98]"
+                className="rounded-full bg-gradient-to-r from-primary via-primary to-emerald-400 text-primary-foreground font-semibold px-8 py-6 text-sm shadow-[0_0_30px_rgba(168,242,90,0.35)] hover:shadow-[0_0_40px_rgba(168,242,90,0.5)] transition-all hover:scale-[1.03] active:scale-[0.98]"
                 asChild
               >
                 <Link to="/login">
@@ -222,7 +237,7 @@ export function Landing() {
               <Button
                 size="lg"
                 variant="outline"
-                className="rounded-full px-8 py-6 text-sm font-medium border-line/70 bg-surface/60 hover:bg-raised text-ink backdrop-blur-xl transition-all shadow-xs"
+                className="rounded-full px-8 py-6 text-sm font-semibold border border-line/80 bg-surface/70 hover:bg-surface text-ink backdrop-blur-xl transition-all shadow-sm hover:border-primary/40"
                 asChild
               >
                 <Link to="/login">Sign in</Link>
@@ -230,9 +245,10 @@ export function Landing() {
             </div>
 
             {/* Security Trust Note */}
-            <div className="mt-7 inline-flex items-center gap-2 font-mono text-xs text-ink-faint">
+            <div className="mt-7 inline-flex items-center gap-2 font-mono text-xs text-ink-faint rounded-full border border-line/60 bg-surface/50 px-3.5 py-1.5 backdrop-blur-md shadow-xs">
+              <Shield className="h-3.5 w-3.5 text-primary/80 shrink-0" />
               <span>Sign in with GitHub. Vorza asks for the</span>
-              <code className="rounded bg-raised px-1.5 py-0.5 font-semibold text-ink border border-line/60">
+              <code className="rounded bg-raised px-1.5 py-0.5 font-bold text-ink border border-line/60">
                 repo
               </code>
               <span>scope, which is the scope GitHub offers for cloning.</span>

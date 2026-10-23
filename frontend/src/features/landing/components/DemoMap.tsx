@@ -212,16 +212,16 @@ export function DemoMap({
   return (
     <div className={`relative group/map w-full overflow-hidden rounded-2xl bg-background ${className}`}>
       {/* Top Floating Controls Bar */}
-      <div className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-        {/* Health Filter Pills */}
-        <div className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-line/60 bg-surface/85 px-2.5 py-1 shadow-md backdrop-blur-md">
-          <span className="text-[10px] font-mono uppercase tracking-wider text-ink-faint mr-1 hidden sm:inline">
+      <div className="absolute top-3.5 left-3.5 right-3.5 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+        {/* Health Filter Segmented Glass Pill */}
+        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-line/80 bg-surface/85 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.15)] backdrop-blur-2xl">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-ink-faint px-2 hidden sm:inline font-semibold">
             Filter:
           </span>
           <button
             type="button"
             onClick={() => setHealthFilter('all')}
-            className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-all ${
+            className={`rounded-full px-2.5 py-1 text-[11px] font-medium transition-all ${
               healthFilter === 'all'
                 ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
                 : 'text-ink-dim hover:text-ink hover:bg-raised'
@@ -232,49 +232,49 @@ export function DemoMap({
           <button
             type="button"
             onClick={() => setHealthFilter('bad')}
-            className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-all ${
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all ${
               healthFilter === 'bad'
-                ? 'bg-signal-bad text-white font-semibold shadow-xs'
+                ? 'bg-signal-bad text-white font-semibold shadow-[0_0_12px_rgba(239,68,68,0.4)]'
                 : 'text-signal-bad hover:bg-signal-bad/10'
             }`}
           >
-            <ShieldAlert className="h-2.5 w-2.5" />
+            <ShieldAlert className="h-3 w-3" />
             <span>Risk (&lt;45)</span>
           </button>
           <button
             type="button"
             onClick={() => setHealthFilter('warn')}
-            className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-all ${
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all ${
               healthFilter === 'warn'
-                ? 'bg-signal-warn text-white font-semibold shadow-xs'
+                ? 'bg-signal-warn text-white font-semibold shadow-[0_0_12px_rgba(245,158,11,0.4)]'
                 : 'text-signal-warn hover:bg-signal-warn/10'
             }`}
           >
-            <AlertTriangle className="h-2.5 w-2.5" />
+            <AlertTriangle className="h-3 w-3" />
             <span>Warn (45-69)</span>
           </button>
           <button
             type="button"
             onClick={() => setHealthFilter('good')}
-            className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-all ${
+            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all ${
               healthFilter === 'good'
-                ? 'bg-signal-good text-white font-semibold shadow-xs'
+                ? 'bg-signal-good text-white font-semibold shadow-[0_0_12px_rgba(16,185,129,0.4)]'
                 : 'text-signal-good hover:bg-signal-good/10'
             }`}
           >
-            <ShieldCheck className="h-2.5 w-2.5" />
+            <ShieldCheck className="h-3 w-3" />
             <span>Healthy (≥70)</span>
           </button>
         </div>
 
-        {/* Zoom Controls */}
-        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-line/60 bg-surface/85 p-1 shadow-md backdrop-blur-md">
+        {/* Zoom Controls Island */}
+        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-line/80 bg-surface/85 p-1 shadow-[0_8px_24px_rgba(0,0,0,0.15)] backdrop-blur-2xl">
           <button
             type="button"
             onClick={() => handleZoom(1.2)}
             title="Zoom In"
             aria-label="Zoom In"
-            className="rounded-full p-1 text-ink-dim hover:bg-raised hover:text-ink transition-colors"
+            className="rounded-full p-1.5 text-ink-dim hover:bg-raised hover:text-ink transition-colors"
           >
             <ZoomIn className="h-3.5 w-3.5" />
           </button>
@@ -283,7 +283,7 @@ export function DemoMap({
             onClick={() => handleZoom(0.8)}
             title="Zoom Out"
             aria-label="Zoom Out"
-            className="rounded-full p-1 text-ink-dim hover:bg-raised hover:text-ink transition-colors"
+            className="rounded-full p-1.5 text-ink-dim hover:bg-raised hover:text-ink transition-colors"
           >
             <ZoomOut className="h-3.5 w-3.5" />
           </button>
@@ -292,7 +292,7 @@ export function DemoMap({
             onClick={handleResetZoom}
             title="Reset View"
             aria-label="Reset View"
-            className="rounded-full p-1 text-ink-dim hover:bg-raised hover:text-ink transition-colors"
+            className="rounded-full p-1.5 text-ink-dim hover:bg-raised hover:text-ink transition-colors"
           >
             <RotateCcw className="h-3.5 w-3.5" />
           </button>
@@ -470,26 +470,32 @@ export function DemoMap({
       </svg>
 
       {/* Bottom Floating File Inspector Card */}
-      <div className="absolute bottom-3.5 left-3 right-3 z-10 pointer-events-none">
-        <div className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-line/80 bg-surface/90 px-4 py-2.5 shadow-2xl backdrop-blur-xl transition-all">
+      <div className="absolute bottom-3.5 left-3.5 right-3.5 z-10 pointer-events-none">
+        <div className="pointer-events-auto mx-auto max-w-xl rounded-2xl border border-line/80 bg-surface/90 px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.3)] backdrop-blur-2xl transition-all">
           {hoveredNode ? (
             <div className="flex items-center justify-between gap-3 text-xs">
               <div className="min-w-0 flex-1">
-                <p className="truncate font-mono font-medium text-ink">
-                  {hoveredNode.path}
-                </p>
-                <p className="text-[11px] text-ink-dim">
-                  {hoveredNode.loc} lines · {dependents.get(hoveredNode.path)?.length ?? 0} files depend on this
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-2 w-2 rounded-full shrink-0 shadow-sm"
+                    style={{ backgroundColor: healthFill(hoveredNode.health_score) }}
+                  />
+                  <p className="truncate font-mono font-semibold text-ink text-xs">
+                    {hoveredNode.path}
+                  </p>
+                </div>
+                <p className="text-[11px] text-ink-dim mt-0.5 font-mono">
+                  {hoveredNode.loc} lines · {dependents.get(hoveredNode.path)?.length ?? 0} downstream files
                 </p>
               </div>
               <div className="shrink-0 flex items-center gap-1.5">
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold border shadow-xs ${
                     hoveredNode.health_score >= 70
-                      ? 'bg-signal-good/15 text-signal-good border border-signal-good/30'
+                      ? 'bg-signal-good/15 text-signal-good border-signal-good/30'
                       : hoveredNode.health_score >= 45
-                        ? 'bg-signal-warn/15 text-signal-warn border border-signal-warn/30'
-                        : 'bg-signal-bad/15 text-signal-bad border border-signal-bad/30'
+                        ? 'bg-signal-warn/15 text-signal-warn border-signal-warn/30'
+                        : 'bg-signal-bad/15 text-signal-bad border-signal-bad/30'
                   }`}
                 >
                   {hoveredNode.health_score >= 70 ? (
@@ -499,13 +505,14 @@ export function DemoMap({
                   ) : (
                     <ShieldAlert className="h-3 w-3" />
                   )}
-                  {healthLabel(hoveredNode.health_score)} ({hoveredNode.health_score}/100)
+                  <span>{healthLabel(hoveredNode.health_score)}</span>
+                  <span className="font-mono text-[10px] opacity-75">({hoveredNode.health_score}/100)</span>
                 </span>
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-center gap-2 text-[11px] text-ink-dim">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <div className="flex items-center justify-center gap-2.5 text-xs text-ink-dim font-medium py-0.5">
+              <Sparkles className="h-3.5 w-3.5 text-primary animate-pulse" />
               <span>Hover or click any node to inspect health score &amp; downstream dependencies</span>
             </div>
           )}
