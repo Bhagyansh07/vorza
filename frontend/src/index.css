@@ -695,6 +695,36 @@
     50% { transform: translateY(-9px); }
   }
 
+  @keyframes vorpy-free-roam {
+    0%, 100% {
+      transform: translate(0px, 0px) rotate(0deg);
+    }
+    25% {
+      transform: translate(8px, -14px) rotate(2.5deg);
+    }
+    50% {
+      transform: translate(-6px, -20px) rotate(-2deg);
+    }
+    75% {
+      transform: translate(-10px, -8px) rotate(1.8deg);
+    }
+  }
+
+  @keyframes vorpy-particle-spark {
+    0% {
+      transform: scale(0.3) translate(0, 0);
+      opacity: 0.9;
+    }
+    50% {
+      transform: scale(1.1) translate(-6px, 10px);
+      opacity: 0.75;
+    }
+    100% {
+      transform: scale(0.1) translate(-12px, 20px);
+      opacity: 0;
+    }
+  }
+
   @media (max-width: 560px) {
     .vorpy-group {
       flex-direction: column;

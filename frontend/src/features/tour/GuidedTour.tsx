@@ -83,6 +83,13 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
     window.setTimeout(() => setPokeMood(null), 1800);
   }, []);
 
+  // Draggable and free-roaming pet state
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragVelocity, setDragVelocity] = useState({ vx: 0, vy: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+  const dragStartRef = useRef<{ startX: number; startY: number; mouseX: number; mouseY: number; moved: boolean } | null>(null);
+
   const reduceMotion = useMemo(prefersReducedMotion, []);
 
   const groupRef = useRef<HTMLDivElement | null>(null);
@@ -134,6 +141,78 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
     [total],
   );
   const back = useCallback(() => setIndex((i) => Math.max(i - 1, 0)), []);
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
+    const target = e.target as HTMLElement;
+    if (target.closest('button[aria-label="Dismiss Vorpy"]')) return;
+
+    const el = e.currentTarget;
+    const box = el.getBoundingClientRect();
+    try {
+      el.setPointerCapture(e.pointerId);
+    } catch {
+      // Ignored if capture unsupported
+    }
+    dragStartRef.current = {
+      startX: box.left,
+      startY: box.top,
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      moved: false,
+    };
+    setIsDragging(true);
+  }, []);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragStartRef.current) return;
+    const { startX, startY, mouseX, mouseY } = dragStartRef.current;
+    const dx = e.clientX - mouseX;
+    const dy = e.clientY - mouseY;
+    if (Math.hypot(dx, dy) > 5) {
+      dragStartRef.current.moved = true;
+    }
+    const maxW = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const maxH = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const clampedX = Math.max(16, Math.min(maxW - 320, startX + dx));
+    const clampedY = Math.max(16, Math.min(maxH - 120, startY + dy));
+    setPos({ x: clampedX, y: clampedY });
+    setDragVelocity({ vx: e.movementX, vy: e.movementY });
+  }, []);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragStartRef.current) return;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignored
+    }
+    const moved = dragStartRef.current.moved;
+    dragStartRef.current = null;
+    setIsDragging(false);
+    setDragVelocity({ vx: 0, vy: 0 });
+    if (!moved) {
+      start();
+    }
+  }, [start]);
+
+  // Screen double click / tap: Vorpy flies to the clicked spot!
+  useEffect(() => {
+    if (open) return;
+    const handleDblClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('button, a, input, textarea, select, [role="button"]')) return;
+      const maxW = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const maxH = typeof window !== 'undefined' ? window.innerHeight : 800;
+      const clampedX = Math.max(16, Math.min(maxW - 320, e.clientX - 100));
+      const clampedY = Math.max(16, Math.min(maxH - 120, e.clientY - 40));
+      setPos({ x: clampedX, y: clampedY });
+      setPokeMood('excited');
+      window.setTimeout(() => setPokeMood(null), 2000);
+    };
+    window.addEventListener('dblclick', handleDblClick);
+    return () => window.removeEventListener('dblclick', handleDblClick);
+  }, [open]);
 
   // Keyboard: Escape leaves, arrows step.
   useEffect(() => {
@@ -201,10 +280,59 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
   if (!open) {
     if (dismissed) return null;
     return (
-      <div className="fixed bottom-4 right-4 z-30 sm:bottom-6 sm:right-6 max-w-[calc(100vw-32px)]">
-        <div className="group/pill pointer-events-auto relative flex items-center gap-2.5 rounded-3xl border border-primary/35 bg-surface/90 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-all duration-300 hover:scale-[1.04] hover:border-primary/60 hover:shadow-[0_0_30px_hsl(var(--primary)/0.35)] active:scale-[0.98] max-w-full">
+      <div
+        className="fixed z-40 select-none touch-none"
+        style={
+          pos
+            ? {
+                left: `${pos.x}px`,
+                top: `${pos.y}px`,
+                transition: isDragging
+                  ? 'none'
+                  : 'left 0.55s cubic-bezier(0.16, 1, 0.3, 1), top 0.55s cubic-bezier(0.16, 1, 0.3, 1)',
+              }
+            : { bottom: '1.5rem', right: '1.5rem' }
+        }
+      >
+        {/* Floating Interactive Companion Capsule */}
+        <div
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          className={`group/pill pointer-events-auto relative flex items-center gap-2.5 rounded-3xl border bg-surface/90 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-all duration-200 cursor-grab active:cursor-grabbing max-w-[calc(100vw-32px)] ${
+            isDragging
+              ? 'border-primary scale-105 shadow-[0_0_35px_hsl(var(--primary)/0.5)]'
+              : 'border-primary/35 hover:scale-[1.03] hover:border-primary/60 hover:shadow-[0_0_30px_hsl(var(--primary)/0.35)]'
+          }`}
+          style={{
+            transform: isDragging
+              ? `rotate(${Math.max(-18, Math.min(18, dragVelocity.vx * 0.75))}deg)`
+              : undefined,
+            animation: !isDragging && !reduceMotion ? 'vorpy-free-roam 8s ease-in-out infinite' : undefined,
+          }}
+        >
           {/* Ambient Lighting Glow Behind Pill */}
-          <div className="pointer-events-none absolute -inset-1 rounded-3xl bg-gradient-to-r from-primary/25 via-emerald-400/15 to-transparent blur-md opacity-70 group-hover/pill:opacity-100 transition-opacity" />
+          <div className="pointer-events-none absolute -inset-1.5 rounded-3xl bg-gradient-to-r from-primary/30 via-emerald-400/20 to-transparent blur-md opacity-75 group-hover/pill:opacity-100 transition-opacity" />
+
+          {/* Floating Magic Particle Wake / Light Thruster Trail */}
+          <div className="pointer-events-none absolute -bottom-3 left-6 flex items-center gap-1.5 z-0">
+            <span className="inline-block h-2 w-2 rounded-full bg-primary/80 blur-[1px] animate-[vorpy-particle-spark_1.8s_ease-out_infinite]" />
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-cyan-400/80 blur-[1px] animate-[vorpy-particle-spark_2.2s_ease-out_infinite_0.4s]" />
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-emerald-400/70 blur-[1.5px] animate-[vorpy-particle-spark_1.5s_ease-out_infinite_0.8s]" />
+          </div>
+
+          {/* Floating Dynamic Speech Thought Tag (e.g. 'Vorpy is flying! 🚀' or 'Drag me anywhere! ✨') */}
+          {(isDragging || isHovered) && (
+            <div className="pointer-events-none absolute -top-8 left-4 z-30 animate-in fade-in zoom-in-90 duration-200">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-surface/95 px-3 py-1 font-mono text-[10px] font-bold text-primary shadow-lg backdrop-blur-md whitespace-nowrap">
+                <span className="flex h-1.5 w-1.5 rounded-full bg-primary animate-ping" />
+                {isDragging ? 'Vorpy is flying! 🚀' : '✨ Drag me or double-click to fly!'}
+              </span>
+            </div>
+          )}
 
           {/* Live copilot telemetry beacon */}
           <span className="pointer-events-none absolute -top-1 -right-1 flex h-3.5 w-3.5 z-20">
@@ -229,7 +357,11 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
 
               {/* Floating Mascot Body */}
               <div className="relative z-10 transition-transform duration-300 group-hover/pill:scale-110 animate-[vorpy-float_3.8s_ease-in-out_infinite]">
-                <VorpyMascot embedded size={56} animation={hasSeen ? 'idle' : 'excited'} />
+                <VorpyMascot
+                  embedded
+                  size={56}
+                  animation={isDragging ? 'excited' : isHovered ? 'happy' : (pokeMood ?? (hasSeen ? 'idle' : 'excited'))}
+                />
               </div>
             </div>
 
@@ -242,7 +374,7 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
                 </span>
                 <span className="text-ink-faint text-[9px]">·</span>
                 <span className="font-mono text-[8px] uppercase tracking-wider text-ink-dim font-semibold bg-surface-elevated/70 px-1 py-0.2 rounded border border-line/40">
-                  AI COPILOT
+                  DRAGGABLE PET
                 </span>
               </div>
 
