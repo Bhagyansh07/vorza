@@ -202,11 +202,14 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
     if (dismissed) return null;
     return (
       <div className="fixed bottom-4 right-4 z-30 sm:bottom-6 sm:right-6 max-w-[calc(100vw-32px)]">
-        <div className="group/pill pointer-events-auto relative flex items-center gap-2 rounded-2xl border border-line/80 bg-surface/90 p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-[1.03] hover:border-primary/50 hover:shadow-[0_0_24px_hsl(var(--primary)/0.25)] active:scale-[0.98] max-w-full">
+        <div className="group/pill pointer-events-auto relative flex items-center gap-2.5 rounded-3xl border border-primary/35 bg-surface/90 p-2 shadow-[0_16px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl transition-all duration-300 hover:scale-[1.04] hover:border-primary/60 hover:shadow-[0_0_30px_hsl(var(--primary)/0.35)] active:scale-[0.98] max-w-full">
+          {/* Ambient Lighting Glow Behind Pill */}
+          <div className="pointer-events-none absolute -inset-1 rounded-3xl bg-gradient-to-r from-primary/25 via-emerald-400/15 to-transparent blur-md opacity-70 group-hover/pill:opacity-100 transition-opacity" />
+
           {/* Live copilot telemetry beacon */}
-          <span className="pointer-events-none absolute -top-1 -right-1 flex h-3 w-3">
+          <span className="pointer-events-none absolute -top-1 -right-1 flex h-3.5 w-3.5 z-20">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-signal-good opacity-75" />
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-signal-good border-2 border-surface" />
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-signal-good border-2 border-surface shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
           </span>
 
           <button
@@ -214,27 +217,61 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
             type="button"
             onClick={start}
             aria-label="Start the Vorpy guided tour"
-            className="flex items-center gap-3 rounded-xl pr-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex items-center gap-3.5 rounded-2xl pr-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <div className="relative flex items-center justify-center rounded-xl bg-primary/10 border border-primary/20 p-1 shadow-inner">
-              <VorpyMascot embedded size={44} animation={hasSeen ? 'idle' : 'excited'} />
+            {/* Luminous Animated Mascot Vessel */}
+            <div className="relative flex items-center justify-center rounded-2xl bg-gradient-to-b from-primary/15 to-emerald-500/10 border border-primary/30 p-1.5 shadow-[inset_0_1px_2px_rgba(255,255,255,0.25)]">
+              {/* Outer Orbiting Cyber Light Ring */}
+              <div className="pointer-events-none absolute -inset-1.5 rounded-full border border-primary/35 border-dashed animate-[vorpy-orbit-glow_14s_linear_infinite]" />
+
+              {/* Glowing Aura Lighting */}
+              <div className="pointer-events-none absolute -inset-2 rounded-full bg-[radial-gradient(circle,_rgba(168,242,90,0.45)_0%,_rgba(16,185,129,0.2)_45%,_transparent_75%)] blur-md animate-pulse" />
+
+              {/* Floating Mascot Body */}
+              <div className="relative z-10 transition-transform duration-300 group-hover/pill:scale-110 animate-[vorpy-float_3.8s_ease-in-out_infinite]">
+                <VorpyMascot embedded size={56} animation={hasSeen ? 'idle' : 'excited'} />
+              </div>
             </div>
-            <span className="pr-1">
-              <span className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-primary font-bold">
-                <span className="h-1.5 w-1.5 rounded-full bg-signal-good" />
-                <span>{tour.label}</span>
-              </span>
-              <span className="block text-xs font-semibold leading-tight text-ink mt-0.5">
-                {tour.invite}
-              </span>
-            </span>
+
+            <div className="pr-1 flex flex-col justify-center">
+              {/* AI Copilot Tagline & Live Radar Indicator */}
+              <div className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-primary font-bold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-signal-good shadow-[0_0_6px_var(--primary)]" />
+                  <span>{tour.label}</span>
+                </span>
+                <span className="text-ink-faint text-[9px]">·</span>
+                <span className="font-mono text-[8px] uppercase tracking-wider text-ink-dim font-semibold bg-surface-elevated/70 px-1 py-0.2 rounded border border-line/40">
+                  AI COPILOT
+                </span>
+              </div>
+
+              {/* Title & Interactive Voice Wave Equalizer Row */}
+              <div className="flex items-center gap-2.5 mt-1">
+                <span className="block text-xs font-bold leading-tight text-ink group-hover/pill:text-primary transition-colors tracking-tight">
+                  {tour.invite}
+                </span>
+
+                {/* Voice Waves / Audio Frequency Pulse Equalizer */}
+                <div
+                  className="flex items-center gap-[2.5px] h-4 px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/25 shadow-[0_0_8px_rgba(168,242,90,0.25)]"
+                  title="Vorpy Neural Voice Wave Active"
+                >
+                  <span className="w-[2px] rounded-full bg-primary animate-[voiceWave1_0.75s_ease-in-out_infinite]" />
+                  <span className="w-[2px] rounded-full bg-emerald-400 animate-[voiceWave2_1.1s_ease-in-out_infinite_0.15s]" />
+                  <span className="w-[2px] rounded-full bg-primary animate-[voiceWave3_0.6s_ease-in-out_infinite_0.3s]" />
+                  <span className="w-[2px] rounded-full bg-cyan-400 animate-[voiceWave2_0.95s_ease-in-out_infinite_0.05s]" />
+                  <span className="w-[2px] rounded-full bg-primary animate-[voiceWave1_1.25s_ease-in-out_infinite_0.2s]" />
+                </div>
+              </div>
+            </div>
           </button>
           <button
             type="button"
             onClick={dismiss}
             aria-label="Dismiss Vorpy"
             title="Dismiss Vorpy"
-            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-foreground/10 hover:text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-faint transition-all hover:bg-foreground/10 hover:text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring hover:scale-110 ml-0.5"
           >
             <X className="h-3.5 w-3.5" aria-hidden="true" />
           </button>
@@ -294,11 +331,11 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
               <i />
             </span>
             <div
-              className="vorpy-pet-float cursor-pointer hover:scale-110 active:scale-95 transition-transform"
+              className="vorpy-pet-float cursor-pointer hover:scale-115 active:scale-95 transition-all duration-300"
               onClick={handlePoke}
               title="Click Vorpy to interact!"
             >
-              <VorpyMascot embedded size={88} animation={pokeMood ?? step.animation} />
+              <VorpyMascot embedded size={92} animation={pokeMood ?? step.animation} />
             </div>
           </div>
 
@@ -315,7 +352,7 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
             {/* Ambient specular highlight */}
             <div
               aria-hidden="true"
-              className="pointer-events-none absolute -inset-px opacity-70 bg-radial-at-tl from-primary/20 via-transparent to-transparent"
+              className="pointer-events-none absolute -inset-px opacity-75 bg-radial-at-tl from-primary/25 via-transparent to-transparent"
             />
 
             <div className="relative px-6 pb-5 pt-5 sm:px-7 sm:pt-6">
@@ -330,14 +367,15 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
                     <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary font-bold">
                       {step.eyebrow}
                     </span>
-                    <div className="flex items-end gap-[2px] h-3 px-1 py-0.5 rounded-sm bg-primary/10 border border-primary/20" title="Vorpy Neural Stream">
-                      <span className="w-[2px] rounded-full bg-primary animate-[equalizer_0.8s_ease-in-out_infinite]" />
-                      <span className="w-[2px] rounded-full bg-primary animate-[equalizer_1.2s_ease-in-out_infinite_0.2s]" />
-                      <span className="w-[2px] rounded-full bg-primary animate-[equalizer_0.6s_ease-in-out_infinite_0.4s]" />
-                      <span className="w-[2px] rounded-full bg-primary animate-[equalizer_1.0s_ease-in-out_infinite_0.1s]" />
+                    {/* Live Voice Waves in Header */}
+                    <div className="flex items-center gap-[2.5px] h-3.5 px-1.5 py-0.5 rounded-full bg-primary/10 border border-primary/25" title="Vorpy Neural Voice Wave">
+                      <span className="w-[2px] rounded-full bg-primary animate-[voiceWave1_0.75s_ease-in-out_infinite]" />
+                      <span className="w-[2px] rounded-full bg-primary animate-[voiceWave2_1.1s_ease-in-out_infinite_0.2s]" />
+                      <span className="w-[2px] rounded-full bg-emerald-400 animate-[voiceWave3_0.6s_ease-in-out_infinite_0.4s]" />
+                      <span className="w-[2px] rounded-full bg-primary animate-[voiceWave2_1.0s_ease-in-out_infinite_0.1s]" />
                     </div>
                   </div>
-                  <span className="rounded-full bg-surface-elevated/70 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-ink-dim border border-line/50">
+                  <span className="rounded-full bg-surface-elevated/80 px-2.5 py-0.5 font-mono text-[10px] font-bold text-ink-dim border border-line/60 shadow-xs">
                     {index + 1} / {total}
                   </span>
                 </div>
