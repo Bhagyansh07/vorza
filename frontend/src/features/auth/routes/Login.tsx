@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Github, LoaderCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { LogoMark } from '@/components/brand/Logo';
+import { Logo, LogoMark } from '@/components/brand/Logo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuth } from '@/features/auth/hooks/use-auth';
 import { LazyGuidedTour } from '@/features/tour/LazyGuidedTour';
 import { LOGIN_TOUR } from '@/features/tour/steps';
@@ -34,11 +35,6 @@ function readQuery(search: string): QueryState {
 
 /**
  * What the backend says it is about to ask GitHub for.
- *
- * Returned alongside the URL so the consent line below describes the real grant.
- * This used to return just the URL while the page asserted "read access" in
- * hardcoded copy -- about a value that lives in the backend and was `repo`,
- * which is read *and write*. See `consentCopy`.
  */
 interface AuthorizeGrant {
   authorizeUrl: string;
@@ -46,7 +42,6 @@ interface AuthorizeGrant {
   writeAccess: boolean;
 }
 
-/** Backend owns the OAuth URL (client_id, redirect_uri, signed state). */
 async function fetchAuthorizeGrant(): Promise<AuthorizeGrant> {
   const response = await fetch(`${config.apiUrl}/auth/github/login`);
   if (!response.ok) {
@@ -63,26 +58,10 @@ async function fetchAuthorizeGrant(): Promise<AuthorizeGrant> {
   return {
     authorizeUrl: body.authorize_url,
     scopes: body.scopes ?? [],
-    // A missing field is `false` only for a backend too old to report it.
-    // Defaulting the other way would repeat the bug this fixes, so the copy is
-    // written to be correct without this field being present.
     writeAccess: body.write_access === true,
   };
 }
 
-/**
- * The consent sentence, derived from the grant the backend reports.
- *
- * The point of this function is that "read access" cannot be written as a
- * literal here. If the backend asks for a write scope, the copy says so, in
- * words someone clicking a consent button would understand -- not the scope
- * name, which means nothing to them.
- *
- * `repo` is GitHub's broad repository scope: read and write to code, plus
- * invitations, collaborators, webhooks and org resources. Vorza uses it to
- * clone and never writes -- but the grant is what the user accepts, and a
- * consent screen that understates the grant is the problem, not the scope.
- */
 export function consentCopy(grant: AuthorizeGrant): string {
   const names = grant.scopes.length > 0 ? grant.scopes.join(', ') : null;
 
@@ -98,7 +77,6 @@ export function consentCopy(grant: AuthorizeGrant): string {
 }
 
 export function LoginPage() {
-  // Indexed but thin: this page is the second sitemap entry.
   useDocumentMeta({
     title: 'Sign in',
     description:
@@ -110,21 +88,9 @@ export function LoginPage() {
   const location = useLocation();
   const { user, status, login, completeLogin } = useAuth();
   const [handling, setHandling] = useState(false);
-  // The grant the backend reported, fetched on mount rather than on click.
-  //
-  // This timing is the whole point. Fetching on click and then calling
-  // `window.location.assign` means any copy rendered at that moment is never
-  // seen -- the browser is already leaving the page. A consent claim that
-  // appears after the decision is not a consent claim.
-  //
-  // Fetching on mount also means the URL we navigate to is the exact one whose
-  // scopes were described, rather than a second request that could disagree.
   const [grant, setGrant] = useState<AuthorizeGrant | null>(null);
   const [grantError, setGrantError] = useState<string | null>(null);
 
-  // `from` comes from `ProtectedRoute`, which sets it from `location.pathname`
-  // -- i.e. from the address bar, so it is attacker-supplied. Sanitised here
-  // rather than trusted: see safe-redirect.ts for the advisory this guards.
   const from = safeInternalPath(
     (location.state as { from?: string } | null)?.from
   );
@@ -169,9 +135,6 @@ export function LoginPage() {
     };
   }, [query.code, query.token, query.error, query.state, completeLogin, login, navigate, from]);
 
-  // Runs once on mount. A failure here is not fatal: the GitHub button reports
-  // it on click, because the alternative -- navigating to an authorize URL whose
-  // scopes nobody displayed -- is what this change exists to stop.
   useEffect(() => {
     let cancelled = false;
     fetchAuthorizeGrant().then(
@@ -195,12 +158,9 @@ export function LoginPage() {
 
   const startOAuth = async () => {
     if (grant) {
-      // Navigate to the very URL whose scopes the footer just described.
       oauthRedirect(grant.authorizeUrl);
       return;
     }
-    // No grant yet -- the mount fetch failed, likely because the backend was
-    // still starting. Retry rather than dead-ending.
     setHandling(true);
     try {
       const next = await fetchAuthorizeGrant();
@@ -226,84 +186,99 @@ export function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-svh items-center justify-center bg-background px-4">
-      <Card
-        className="w-full max-w-md border-border shadow-panel"
-        data-tour="login-card"
-      >
-        <CardHeader className="items-center text-center">
-          <LogoMark className="mb-3 h-9 w-9 text-primary" />
-          <CardTitle className="text-xl tracking-[-0.01em]">
-            Sign in to Vorza
-          </CardTitle>
-          <CardDescription>
-            The living, AI-reviewed map of your codebase. Continue with GitHub
-            to see your repos.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-3">
-          <Button
-            size="lg"
-            onClick={startOAuth}
-            disabled={handling || status === 'loading'}
-          >
-            <Github />
-            Continue with GitHub
-          </Button>
+    <div className="relative min-h-svh flex flex-col justify-between bg-background overflow-hidden">
+      {/* Unified cyber grid and radial auras */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-15%,rgba(168,242,90,0.12),transparent_70%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-cyber-grid bg-[size:44px_44px] opacity-20 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_45%,black_40%,transparent_100%)]" />
 
-          {/*
-            Shown when the mount fetch failed. Without it the button looks ready
-            and clicking produces an unrelated toast.
-          */}
-          {grantError ? (
-            <p className="text-xs text-muted-foreground">{grantError}</p>
-          ) : null}
+      <header className="relative z-10 flex items-center justify-between p-6 max-w-6xl w-full mx-auto">
+        <Link to="/" aria-label="Vorza home">
+          <Logo />
+        </Link>
+        <ThemeToggle />
+      </header>
 
-          {config.useMocks ? (
-            <>
-              <div className="flex items-center gap-3">
-                <Separator className="flex-1" />
-                <span className="text-xs text-muted-foreground">
-                  backend not wired, demo mode
-                </span>
-                <Separator className="flex-1" />
-              </div>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={useDemoAccount}
-                disabled={handling || status === 'loading'}
-              >
-                {handling || status === 'loading' ? (
-                  <LoaderCircle className="animate-spin" />
-                ) : (
-                  <Github className="text-muted-foreground" />
-                )}
-                Use demo account
-              </Button>
-            </>
-          ) : null}
-        </CardContent>
-        <CardFooter className="justify-center" data-tour="login-consent">
-          {/*
-            Rendered once the backend has reported what it will request. This
-            used to be a hardcoded literal asserting "read access" -- untrue,
-            because `repo` is read and write, and unverifiable from the
-            frontend because the value was on the other side of the network.
-          */}
-          {grant ? (
-            <p
-              className="text-xs text-muted-foreground"
-              data-testid="consent-copy"
+      <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-8">
+        <Card
+          className="w-full max-w-md rounded-3xl border border-line/70 bg-surface/85 p-4 shadow-2xl backdrop-blur-2xl transition-all shadow-primary/5"
+          data-tour="login-card"
+        >
+          <CardHeader className="items-center text-center pt-6">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary border border-primary/25 shadow-xs transition-transform hover:scale-105">
+              <LogoMark className="h-8 w-8" />
+            </div>
+            <CardTitle className="text-2xl font-bold tracking-tight text-ink">
+              Sign in to Vorza
+            </CardTitle>
+            <CardDescription className="text-xs sm:text-sm text-ink-dim mt-1.5 leading-relaxed">
+              The living, AI-reviewed map of your codebase. Continue with GitHub
+              to see your repos.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="grid gap-3.5 px-6">
+            <Button
+              size="lg"
+              onClick={startOAuth}
+              disabled={handling || status === 'loading'}
+              className="h-12 rounded-xl text-sm font-semibold shadow-md gap-3 bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              {consentCopy(grant)}
-            </p>
-          ) : null}
-        </CardFooter>
-      </Card>
+              <Github className="h-5 w-5" />
+              Continue with GitHub
+            </Button>
+
+            {grantError ? (
+              <p className="text-xs text-signal-warn bg-signal-warn/10 p-2.5 rounded-lg border border-signal-warn/25">
+                {grantError}
+              </p>
+            ) : null}
+
+            {config.useMocks ? (
+              <>
+                <div className="flex items-center gap-3 my-1">
+                  <Separator className="flex-1" />
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-ink-faint">
+                    Demo Mode
+                  </span>
+                  <Separator className="flex-1" />
+                </div>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={useDemoAccount}
+                  disabled={handling || status === 'loading'}
+                  className="h-12 rounded-xl border-line/80 font-medium hover:bg-raised/80 transition-all"
+                >
+                  {handling || status === 'loading' ? (
+                    <LoaderCircle className="animate-spin h-4 w-4" />
+                  ) : (
+                    <Github className="h-4 w-4 text-ink-dim" />
+                  )}
+                  Use demo account
+                </Button>
+              </>
+            ) : null}
+          </CardContent>
+
+          <CardFooter className="justify-center px-6 pb-6 pt-2" data-tour="login-consent">
+            {grant ? (
+              <p
+                className="text-xs text-ink-faint text-center leading-relaxed"
+                data-testid="consent-copy"
+              >
+                {consentCopy(grant)}
+              </p>
+            ) : null}
+          </CardFooter>
+        </Card>
+      </main>
+
+      <footer className="relative z-10 py-6 text-center text-xs text-ink-faint">
+        Vorza · Software intelligence for modern engineering teams
+      </footer>
 
       {/* Vorpy's guided tour. Lazy: see `mascot-boundary.test.ts`. */}
       <LazyGuidedTour tour={LOGIN_TOUR} />
-    </main>
+    </div>
   );
 }

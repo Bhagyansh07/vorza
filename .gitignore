@@ -46,3 +46,4 @@ docs/SEO_BACKLINKS.md
 .idea/
 .DS_Store
 Thumbs.db
+.copilot-cockpit-logs/

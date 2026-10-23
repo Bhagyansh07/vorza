@@ -58,8 +58,6 @@ function RepoMetrics({ repos }: { repos: Repo[] }) {
 }
 
 export function Dashboard() {
-  // Authed: no standalone value in a search result, and it renders nothing
-  // for a crawler because it sits behind ProtectedRoute.
   useDocumentMeta({
     title: 'Connected repositories',
     description: 'Your connected repositories in Vorza.',
@@ -71,15 +69,20 @@ export function Dashboard() {
     useRepos();
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-8">
+    <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
       <div
-        className="mb-6 flex flex-wrap items-center justify-between gap-3"
+        className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line/60 bg-surface/60 p-6 backdrop-blur-xl shadow-xs"
         data-tour="dash-header"
       >
         <div>
-          <h1 className="text-2xl font-semibold">Connected repositories</h1>
-          <p className="text-sm text-muted-foreground">
-            Pick a repo to open its live map.
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-primary font-semibold">
+            Repository Workspace
+          </span>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+            Connected repositories
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-ink-dim">
+            Pick a repo to open its live force-directed map and health analytics.
           </p>
         </div>
         <div data-tour="dash-connect">
@@ -101,7 +104,7 @@ export function Dashboard() {
             <RepoMetrics repos={repos} />
           </div>
           <div
-            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+            className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
             data-tour="dash-repos"
           >
             {repos.map((repo) => (
@@ -110,13 +113,17 @@ export function Dashboard() {
           </div>
         </>
       ) : (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-border px-6 py-16 text-center">
-          <GitFork className="h-10 w-10 text-muted-foreground" />
-          <p className="font-medium">No repos connected yet</p>
-          <p className="max-w-sm text-sm text-muted-foreground">
-            Connect your first GitHub repository and Vorza will analyze its
-            shape and health.
-          </p>
+        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-line/80 bg-surface/40 px-6 py-20 text-center backdrop-blur-xl">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary border border-primary/20 shadow-xs">
+            <GitFork className="h-7 w-7" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-lg text-ink">No repos connected yet</h3>
+            <p className="mt-1 max-w-sm text-xs sm:text-sm text-ink-dim leading-relaxed">
+              Connect your first GitHub repository and Vorza will analyze its
+              shape, dependencies, and health.
+            </p>
+          </div>
           <ConnectRepoDialog />
         </div>
       )}

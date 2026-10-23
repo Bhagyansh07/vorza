@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useConnectRepo, useGithubRepos, useRepos } from '@/features/repos/hooks/use-repos';
 import { toErrorMessage } from '@/lib/errors';
+import { cn } from '@/lib/utils';
 
 export function ConnectRepoDialog() {
   const [open, setOpen] = useState(false);
@@ -65,91 +66,93 @@ export function ConnectRepoDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="lg">
-          <PlusIcon />
+        <Button size="lg" className="rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 shadow-md gap-2 transition-all hover:scale-[1.02] active:scale-[0.98]">
+          <PlusIcon className="h-4 w-4" />
           Connect repo
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-h-[85vh] overflow-y-auto rounded-3xl border border-line/80 bg-surface/95 backdrop-blur-2xl shadow-2xl">
         <form onSubmit={submit}>
           <DialogHeader>
-            <DialogTitle>Connect a GitHub repo</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl font-bold tracking-tight text-ink">Connect a GitHub repo</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm text-ink-dim">
               Pick from your GitHub repos or type an `owner/name` manually.
             </DialogDescription>
           </DialogHeader>
 
           <div className="py-4">
             <div className="mb-3 flex items-center gap-2">
-              <Label htmlFor="github-picker-search">Your GitHub repos</Label>
+              <Label htmlFor="github-picker-search" className="text-xs font-semibold uppercase tracking-wider text-ink-dim">
+                Your GitHub repos
+              </Label>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 text-muted-foreground"
+                className="h-6 w-6 text-ink-dim hover:text-ink hover:bg-raised rounded-full"
                 onClick={() => void refetch()}
                 disabled={isRefetching}
                 aria-label="Refresh GitHub repos"
               >
-                <RefreshCcw className={isRefetching ? 'animate-spin' : ''} />
+                <RefreshCcw className={`h-3.5 w-3.5 ${isRefetching ? 'animate-spin' : ''}`} />
               </Button>
             </div>
 
             {isPending ? (
-              <div className="flex items-center gap-2 rounded-md border border-border px-3 py-6 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
+              <div className="flex items-center gap-2 rounded-2xl border border-line/60 bg-surface/50 px-4 py-8 text-sm text-ink-dim">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
                 Loading your repos from GitHub…
               </div>
             ) : isError ? (
-              <div className="flex flex-col gap-2 rounded-md border border-border px-3 py-4 text-sm text-muted-foreground">
-                <span>Couldn't load your GitHub repos: {toErrorMessage(error)}</span>
+              <div className="flex flex-col gap-2 rounded-2xl border border-signal-warn/30 bg-signal-warn/10 px-4 py-5 text-sm text-ink-dim">
+                <span className="text-signal-warn font-medium">Couldn't load your GitHub repos: {toErrorMessage(error)}</span>
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="w-fit"
+                  className="w-fit rounded-xl border-signal-warn/40"
                   onClick={() => void refetch()}
                 >
-                  <RefreshCcw /> Retry
+                  <RefreshCcw className="h-3.5 w-3.5 mr-1" /> Retry
                 </Button>
               </div>
             ) : filtered.length === 0 ? (
-              <div className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
+              <div className="rounded-2xl border border-dashed border-line/80 bg-surface/40 px-4 py-8 text-center text-sm text-ink-dim">
                 {query.trim()
                   ? `No GitHub repos match "${query.trim()}"`
                   : 'No GitHub repos found to list.'}
               </div>
             ) : (
               <>
-                <div className="relative mb-2">
-                  <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <div className="relative mb-3">
+                  <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
                   <Input
                     id="github-picker-search"
-                    className="pl-8"
+                    className="pl-9 rounded-xl border-line/70 bg-surface/80 text-sm focus:border-primary/50"
                     placeholder="Search your repos…"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                   />
                 </div>
-                <ul className="max-h-64 divide-y divide-border overflow-y-auto rounded-md border border-border">
+                <ul className="max-h-64 divide-y divide-line/40 overflow-y-auto rounded-2xl border border-line/60 bg-surface/60 backdrop-blur-md">
                   {filtered.map((repo) => {
                     const connected = connectedNames.has(repo.full_name);
                     return (
                       <li
                         key={repo.full_name}
-                        className="flex items-center justify-between gap-3 px-3 py-2"
+                        className="flex items-center justify-between gap-3 px-3.5 py-2.5 transition-colors hover:bg-raised/60"
                       >
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">
+                          <p className="truncate text-sm font-medium text-ink">
                             {repo.full_name}
                             {repo.private ? (
-                              <span className="ml-1.5 rounded bg-muted px-1 py-0.5 text-[10px] font-normal text-muted-foreground">
+                              <span className="ml-1.5 rounded-md bg-raised px-1.5 py-0.5 text-[10px] font-medium text-ink-dim border border-line/60">
                                 private
                               </span>
                             ) : null}
                           </p>
                           {repo.description ? (
-                            <p className="truncate text-xs text-muted-foreground">
+                            <p className="truncate text-xs text-ink-dim">
                               {repo.description}
                             </p>
                           ) : null}
@@ -158,16 +161,21 @@ export function ConnectRepoDialog() {
                           type="button"
                           size="sm"
                           variant={connected ? 'outline' : 'default'}
-                          className="shrink-0"
+                          className={cn(
+                            'shrink-0 rounded-lg text-xs font-semibold gap-1.5',
+                            connected
+                              ? 'border-line/70 text-ink-dim'
+                              : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                          )}
                           disabled={connected || connectRepo.isPending}
                           onClick={() => void connectFromPicker(repo.full_name)}
                         >
                           {connected ? (
                             <>
-                              <CheckIcon /> Connected
+                              <CheckIcon className="h-3.5 w-3.5 text-signal-good" /> Connected
                             </>
                           ) : (
-                            <PlusIcon />
+                            <PlusIcon className="h-3.5 w-3.5" />
                           )}
                         </Button>
                       </li>
@@ -178,11 +186,13 @@ export function ConnectRepoDialog() {
             )}
           </div>
 
-          <div className="mb-2">
-            <Label htmlFor="repo-name">Or type an `owner/repo`</Label>
+          <div className="mb-4">
+            <Label htmlFor="repo-name" className="text-xs font-semibold uppercase tracking-wider text-ink-dim">
+              Or type an `owner/repo`
+            </Label>
             <Input
               id="repo-name"
-              className="mt-1"
+              className="mt-1.5 rounded-xl border-line/70 bg-surface/80 text-sm focus:border-primary/50"
               placeholder="owner/repo"
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -190,16 +200,21 @@ export function ConnectRepoDialog() {
               disabled={connectRepo.isPending}
             />
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button
               type="button"
               variant="ghost"
+              className="rounded-xl text-ink-dim hover:text-ink"
               onClick={() => setOpen(false)}
               disabled={connectRepo.isPending}
             >
               Done
             </Button>
-            <Button type="submit" disabled={connectRepo.isPending || !name.trim()}>
+            <Button
+              type="submit"
+              disabled={connectRepo.isPending || !name.trim()}
+              className="rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 shadow-md"
+            >
               {connectRepo.isPending ? 'Connecting…' : 'Connect'}
             </Button>
           </DialogFooter>

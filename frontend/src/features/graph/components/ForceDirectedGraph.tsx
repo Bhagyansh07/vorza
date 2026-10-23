@@ -53,385 +53,362 @@ export const ForceDirectedGraph = forwardRef<ForceGraphHandle, Props>(
     { files, links, pulse = {}, selectedPath, onSelect }: Props,
     ref,
   ) {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const worldRef = useRef<SVGGElement>(null);
-  const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
-  const zoomKRef = useRef(1);
-  const zoomRef = useRef<{ x: number; y: number; k: number }>({ x: 0, y: 0, k: 1 });
-  const sizeRef = useRef({ width: 0, height: 0 });
-  const positionsRef = useRef(new Map<string, { x: number; y: number }>());
-  const selectedRef = useRef<string | null>(null);
-  const hoveredRef = useRef<string | null>(null);
-  const focusedRef = useRef<string | null>(null);
-  const [hovered, setHovered] = useState<string | null>(null);
-  const [focused, setFocused] = useState<string | null>(null);
-  const onSelectRef = useRef(onSelect);
-  onSelectRef.current = onSelect;
-  selectedRef.current = selectedPath;
-  hoveredRef.current = hovered;
-  focusedRef.current = focused;
+    const svgRef = useRef<SVGSVGElement>(null);
+    const worldRef = useRef<SVGGElement>(null);
+    const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
+    const zoomKRef = useRef(1);
+    const zoomRef = useRef<{ x: number; y: number; k: number }>({ x: 0, y: 0, k: 1 });
+    const sizeRef = useRef({ width: 0, height: 0 });
+    const positionsRef = useRef(new Map<string, { x: number; y: number }>());
+    const selectedRef = useRef<string | null>(null);
+    const hoveredRef = useRef<string | null>(null);
+    const focusedRef = useRef<string | null>(null);
+    const [hovered, setHovered] = useState<string | null>(null);
+    const [focused, setFocused] = useState<string | null>(null);
+    const onSelectRef = useRef(onSelect);
+    onSelectRef.current = onSelect;
+    selectedRef.current = selectedPath;
+    hoveredRef.current = hovered;
+    focusedRef.current = focused;
 
-  const latestPulse = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const [path, stamp] of Object.entries(pulse)) {
-      const cur = map.get(path);
-      if (cur === undefined || stamp > cur) map.set(path, stamp);
-    }
-    return map;
-  }, [pulse]);
-
-  const nodeById = useMemo(() => {
-    const map = new Map<string, FileNode>();
-    for (const f of files) map.set(f.path, f);
-    return map;
-  }, [files]);
-
-  const labeled = useMemo(() => {
-    const ranked = [...files]
-      .sort((a, b) => b.complexity_score - a.complexity_score)
-      .slice(0, 26)
-      .map((f) => f.path);
-    const paths = new Set(ranked);
-    if (selectedPath) paths.add(selectedPath);
-    if (hovered) paths.add(hovered);
-    if (focused) paths.add(focused);
-    return paths;
-  }, [files, selectedPath, hovered, focused]);
-
-  const refreshLabels = useCallback(() => {
-    const world = worldRef.current;
-    if (!world) return;
-    const k = zoomKRef.current;
-    const selected = selectedRef.current;
-    const hoveredNow = hoveredRef.current;
-    const focusedNow = focusedRef.current;
-    const fontSize = Math.min(12, 10 / k);
-    select(world)
-      .selectAll<SVGGElement, SimNode>("g[data-node]")
-      .each(function () {
-        // Same rule as the tick maps: these are React-owned elements with no
-        // d3 datum, so read the id from the attribute, not from a bound `d`.
-        const path = this.dataset.nodeId ?? "";
-        const keep = path === selected || path === hoveredNow || path === focusedNow;
-        const label = select(this).select<SVGTextElement>("text[data-label]");
-        label.attr("display", keep || k >= 0.7 ? "" : "none");
-        label.attr("font-size", `${fontSize}`);
-      });
-  }, []);
-
-  const applyTransform = useCallback(
-    (t: ZoomTransform) => {
-      if (worldRef.current) {
-        worldRef.current.setAttribute(
-          "transform",
-          `translate(${t.x},${t.y}) scale(${t.k})`,
-        );
+    const latestPulse = useMemo(() => {
+      const map = new Map<string, number>();
+      for (const [path, stamp] of Object.entries(pulse)) {
+        const cur = map.get(path);
+        if (cur === undefined || stamp > cur) map.set(path, stamp);
       }
-      zoomKRef.current = t.k;
-      zoomRef.current = { x: t.x, y: t.y, k: t.k };
-      refreshLabels();
-    },
-    [refreshLabels],
-  );
+      return map;
+    }, [pulse]);
 
-  const fit = useCallback(() => {
-    const sim = simRef.current;
-    const svg = svgRef.current;
-    if (!sim || !svg) return;
-    const { width, height } = sizeRef.current;
-    if (width < 10 || height < 10) return;
-    const nodes = sim.nodes();
-    if (nodes.length === 0) return;
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
-    for (const n of nodes) {
-      minX = Math.min(minX, n.x - n.r);
-      minY = Math.min(minY, n.y - n.r);
-      maxX = Math.max(maxX, n.x + n.r);
-      maxY = Math.max(maxY, n.y + n.r);
-    }
-    const w = maxX - minX || 1;
-    const h = maxY - minY || 1;
-    const pad = 70;
-    const k = Math.min((width - pad * 2) / w, (height - pad * 2) / h, 1.5);
-    const tx = width / 2 - ((minX + maxX) / 2) * k;
-    const ty = height / 2 - ((minY + maxY) / 2) * k;
-    applyTransform(zoomIdentity.translate(tx, ty).scale(k));
-  }, [applyTransform]);
+    const labeled = useMemo(() => {
+      const ranked = [...files]
+        .sort((a, b) => b.complexity_score - a.complexity_score)
+        .slice(0, 26)
+        .map((f) => f.path);
+      const paths = new Set(ranked);
+      if (selectedPath) paths.add(selectedPath);
+      if (hovered) paths.add(hovered);
+      if (focused) paths.add(focused);
+      return paths;
+    }, [files, selectedPath, hovered, focused]);
 
-  useEffect(() => {
-    const svg = svgRef.current;
-    if (!svg) return;
-    sizeRef.current = (() => {
-      const rect = svg.getBoundingClientRect();
-      return { width: rect.width, height: rect.height };
-    })();
-    const behavior = d3Zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.12, 7])
-      .on("zoom", (event) => applyTransform(event.transform));
-    select(svg).call(behavior).on("dblclick.zoom", null);
-    return () => {
-      simRef.current?.stop();
-      simRef.current = null;
-    };
-  }, [applyTransform]);
+    const fit = useCallback(() => {
+      const svg = svgRef.current;
+      const world = worldRef.current;
+      if (!svg || !world) return;
+      const { width, height } = svg.getBoundingClientRect();
+      if (width < 10 || height < 10) return;
 
-  useEffect(() => {
-    const svg = svgRef.current;
-    const world = worldRef.current;
-    if (!svg || !world) return;
+      const pos = Array.from(positionsRef.current.values());
+      if (pos.length === 0) return;
 
-    const simNodes: SimNode[] = files.map((f, i) => {
-      const prev = positionsRef.current.get(f.path);
-      return {
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      for (const p of pos) {
+        minX = Math.min(minX, p.x);
+        minY = Math.min(minY, p.y);
+        maxX = Math.max(maxX, p.x);
+        maxY = Math.max(maxY, p.y);
+      }
+
+      const pad = 64;
+      const graphW = maxX - minX || 1;
+      const graphH = maxY - minY || 1;
+      const k = Math.min((width - pad * 2) / graphW, (height - pad * 2) / graphH, 1.3);
+      const tx = width / 2 - ((minX + maxX) / 2) * k;
+      const ty = height / 2 - ((minY + maxY) / 2) * k;
+
+      const z = d3Zoom<SVGSVGElement, unknown>();
+      select(svg).call(z.transform, zoomIdentity.translate(tx, ty).scale(k));
+    }, []);
+
+    useImperativeHandle(
+      ref,
+      () => ({
+        fit,
+        nodeScreenPoint: (path: string) => {
+          const p = positionsRef.current.get(path);
+          if (!p) return null;
+          const { x, y, k } = zoomRef.current;
+          return { x: p.x * k + x, y: p.y * k + y };
+        },
+        nodeNearestScreenPoint: (screenX: number, screenY: number) => {
+          const { x, y, k } = zoomRef.current;
+          const wx = (screenX - x) / k;
+          const wy = (screenY - y) / k;
+          let nearest: string | null = null;
+          let bestDist = Infinity;
+          for (const [path, p] of positionsRef.current.entries()) {
+            const d = Math.hypot(p.x - wx, p.y - wy);
+            if (d < bestDist) {
+              bestDist = d;
+              nearest = path;
+            }
+          }
+          return bestDist < 120 ? nearest : null;
+        },
+        canvasSize: () => sizeRef.current,
+      }),
+      [fit],
+    );
+
+    useEffect(() => {
+      const svg = svgRef.current;
+      const world = worldRef.current;
+      if (!svg || !world) return;
+
+      const simNodes: SimNode[] = files.map((f) => ({
         ...f,
         id: f.path,
-        index: i,
         r: nodeRadius(f.complexity_score, f.loc),
-        x: Number.isFinite(prev?.x) ? (prev?.x as number) : (Math.random() - 0.5) * 700,
-        y: Number.isFinite(prev?.y) ? (prev?.y as number) : (Math.random() - 0.5) * 700,
-      };
-    });
+        x: (Math.random() - 0.5) * 500,
+        y: (Math.random() - 0.5) * 500,
+      }));
 
-    positionsRef.current.clear();
-    for (const n of simNodes) {
-      positionsRef.current.set(n.id, { x: n.x, y: n.y });
-    }
+      const present = new Set(simNodes.map((n) => n.id));
+      const validLinks: SimLink[] = links
+        .filter((l) => present.has(l.source) && present.has(l.target) && l.source !== l.target)
+        .map((l) => ({ id: stampKey(l.source, l.target), source: l.source, target: l.target }));
 
-    const validLinks: SimLink[] = links
-      .filter((l) => nodeById.has(l.source) && nodeById.has(l.target) && l.source !== l.target)
-      .map((l) => ({ id: stampKey(l.source, l.target), source: l.source, target: l.target }));
+      const charge = -42 - Math.sqrt(simNodes.length) * 16;
+      const sim = d3
+        .forceSimulation<SimNode>(simNodes)
+        .force(
+          "link",
+          d3
+            .forceLink<SimNode, SimLink>(validLinks)
+            .id((n) => n.id)
+            .distance((d) => {
+              const s = d.source as SimNode;
+              const t = d.target as SimNode;
+              return 32 + s.r + t.r;
+            })
+            .strength(0.4),
+        )
+        .force("charge", d3.forceManyBody<SimNode>().strength(charge).distanceMax(900))
+        .force("collide", d3.forceCollide<SimNode>().radius((n) => n.r + 2).strength(0.95))
+        .force("x", d3.forceX<SimNode>(0).strength(0.04))
+        .force("y", d3.forceY<SimNode>(0).strength(0.04))
+        .velocityDecay(0.35)
+        .alphaMin(0.005)
+        .alphaDecay(0.05);
 
-    const chargeStrength = -38 - Math.sqrt(simNodes.length) * 15;
-    const sim = d3
-      .forceSimulation<SimNode>(simNodes)
-      .force(
-        "link",
-        d3
-          .forceLink<SimNode, SimLink>(validLinks)
-          .id((d) => d.id)
-          .distance((d) => {
-            const s = d.source as SimNode;
-            const t = d.target as SimNode;
-            return 26 + s.r + t.r;
-          })
-          .strength(0.45),
-      )
-      .force("charge", d3.forceManyBody().strength(chargeStrength).distanceMax(800))
-      .force(
-        "collide",
-        d3.forceCollide<SimNode>().radius((d) => d.r + 1.5).strength(0.9).iterations(2),
-      )
-      .force("x", d3.forceX<SimNode>(0).strength(0.04))
-      .force("y", d3.forceY<SimNode>(0).strength(0.04))
-      .velocityDecay(0.36);
-    simRef.current = sim;
+      simRef.current = sim;
 
-    // These elements are React-owned, so they carry no d3-bound `__data__`:
-    // a `selection.each` callback would receive `undefined` as the datum and
-    // crash (`n.id` on `undefined`). Read the ids the SVG already carries
-    // (`data-node-id` / `data-link-id`) and key the maps on those instead.
-    const nodeEls = new Map<string, SVGGElement>();
-    for (const el of Array.from(
-      world.querySelectorAll<SVGGElement>("g[data-node-id]"),
-    )) {
-      nodeEls.set(el.dataset.nodeId ?? "", el);
-    }
-    const linkEls = new Map<string, SVGLineElement>();
-    for (const el of Array.from(
-      world.querySelectorAll<SVGLineElement>("line[data-link-id]"),
-    )) {
-      linkEls.set(el.dataset.linkId ?? "", el);
-    }
-
-    sim.on("tick", () => {
-      for (const link of validLinks) {
-        const el = linkEls.get(link.id);
-        if (!el) continue;
-        const s = link.source as SimNode;
-        const t = link.target as SimNode;
-        el.setAttribute("x1", `${s.x}`);
-        el.setAttribute("y1", `${s.y}`);
-        el.setAttribute("x2", `${t.x}`);
-        el.setAttribute("y2", `${t.y}`);
+      const nodeEls = new Map<string, SVGGElement>();
+      for (const el of Array.from(world.querySelectorAll<SVGGElement>("g[data-node-id]"))) {
+        nodeEls.set(el.dataset.nodeId ?? "", el);
       }
-      const k = zoomKRef.current;
-      const linkOpacity = k < 0.42 ? "0.22" : "0.5";
-      linkEls.forEach((el) => el.setAttribute("opacity", linkOpacity));
-      for (const n of simNodes) {
-        const el = nodeEls.get(n.id);
-        if (!el) continue;
-        n.x = Math.max(-BOUNDING, Math.min(BOUNDING, n.x));
-        n.y = Math.max(-BOUNDING, Math.min(BOUNDING, n.y));
-        el.setAttribute("transform", `translate(${n.x},${n.y})`);
+      const linkEls = new Map<string, SVGLineElement>();
+      for (const el of Array.from(world.querySelectorAll<SVGLineElement>("line[data-link-id]"))) {
+        linkEls.set(el.dataset.linkId ?? "", el);
       }
-    });
 
-    const settleTimer = setTimeout(() => {
-      fit();
-      sim.alphaTarget(0.02);
-      setTimeout(() => sim.alphaTarget(0), 500);
-    }, 1300);
+      let fittedOnce = false;
 
-    return () => {
-      clearTimeout(settleTimer);
-      sim.stop();
-      simRef.current = null;
-    };
-  }, [fit, files, links, nodeById]);
+      sim.on("tick", () => {
+        for (const n of simNodes) {
+          n.x = Math.max(-BOUNDING, Math.min(BOUNDING, n.x));
+          n.y = Math.max(-BOUNDING, Math.min(BOUNDING, n.y));
+          positionsRef.current.set(n.id, { x: n.x, y: n.y });
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      fit,
-      nodeScreenPoint: (path: string) => {
-        const sim = simRef.current;
-        if (!sim) return null;
-        const node = sim
-          .nodes()
-          .find((n) => n.id === path);
-        if (!node) return null;
-        const { x, y, k } = zoomRef.current;
-        return { x: node.x * k + x, y: node.y * k + y };
-      },
-      nodeNearestScreenPoint: (screenX: number, screenY: number) => {
-        const sim = simRef.current;
-        if (!sim) return null;
-        const { x, y, k } = zoomRef.current;
-        const wx = (screenX - x) / k;
-        const wy = (screenY - y) / k;
-        let best: SimNode | null = null;
-        let bestDist = Infinity;
-        for (const n of sim.nodes()) {
-          const d = Math.hypot(n.x - wx, n.y - wy);
-          if (d < bestDist) {
-            bestDist = d;
-            best = n;
-          }
+          const el = nodeEls.get(n.id);
+          if (el) el.setAttribute("transform", `translate(${n.x},${n.y})`);
         }
-        const threshold = best ? Math.max(best.r + 24, 28) : 0;
-        return best && bestDist <= threshold ? best.id : null;
-      },
-      canvasSize: () => sizeRef.current,
-    }),
-    [fit],
-  );
 
-  const handleNodeClick = (path: string) => {
-    onSelectRef.current(path === selectedPath ? null : path);
-  };
+        for (const l of validLinks) {
+          const el = linkEls.get(l.id);
+          if (!el) continue;
+          const s = l.source as SimNode;
+          const t = l.target as SimNode;
+          el.setAttribute("x1", `${s.x}`);
+          el.setAttribute("y1", `${s.y}`);
+          el.setAttribute("x2", `${t.x}`);
+          el.setAttribute("y2", `${t.y}`);
+        }
 
-  const handleHover = (path: string) => {
-    setHovered((prev) => (prev === path ? prev : path));
-  };
+        if (!fittedOnce && sim.alpha() < 0.2) {
+          fittedOnce = true;
+          fit();
+        }
+      });
 
-  const handleNodeKeyDown = (e: React.KeyboardEvent<SVGGElement>, path: string) => {
-    // role="button" on a native-less <g> gets no built-in activation, so
-    // Enter and Space both toggle the selection, matching a real button.
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleNodeClick(path);
-    }
-  };
+      const z = d3Zoom<SVGSVGElement, unknown>()
+        .scaleExtent([0.15, 4])
+        .on("zoom", (event: { transform: ZoomTransform }) => {
+          const { x, y, k } = event.transform;
+          zoomKRef.current = k;
+          zoomRef.current = { x, y, k };
+          world.setAttribute("transform", `translate(${x},${y}) scale(${k})`);
+        });
 
-  return (
-    <svg
-      ref={svgRef}
-      role="group"
-      aria-label="Force-directed map of the codebase. Each file is a focusable node: Tab to a node and press Enter to inspect it. Use the Map/List toggle for a table of every file with its scores."
-      className="h-full w-full touch-none select-none"
-    >
-      <defs>
-        <pattern id="atlas-dots" width="26" height="26" patternUnits="userSpaceOnUse">
-          <circle cx="1.25" cy="1.25" r="1" fill="hsl(var(--line) / 0.35)" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#atlas-dots)" pointerEvents="none" />
-      <g ref={worldRef}>
-        <g data-links-container>
-          {links.map((l) => (
-            <line
-              key={stampKey(l.source, l.target)}
-              data-link
-              data-link-id={stampKey(l.source, l.target)}
-              stroke="hsl(var(--line) / 0.55)"
-              strokeWidth="1"
-            />
-          ))}
-        </g>
-        <g data-nodes-container>
-          {files.map((f) => {
-            const r = nodeRadius(f.complexity_score, f.loc);
-            const isSelected = f.path === selectedPath;
-            const isHovered = f.path === hovered;
-            const isFocused = f.path === focused;
-            const stamp = latestPulse.get(f.path);
-            return (
-              <g
-                key={f.path}
-                data-node
-                data-node-id={f.path}
-                role="button"
-                tabIndex={0}
-                aria-label={`${f.path}, ${healthLabel(f.health_score)} health, complexity ${f.complexity_score}`}
-                aria-pressed={isSelected}
-                className="cursor-pointer outline-none"
-                onClick={() => handleNodeClick(f.path)}
-                onKeyDown={(e) => handleNodeKeyDown(e, f.path)}
-                onMouseEnter={() => handleHover(f.path)}
-                onMouseLeave={() => setHovered(null)}
-                onFocus={() => setFocused(f.path)}
-                onBlur={() => setFocused(null)}
-              >
-                {stamp !== undefined && (
+      select(svg).call(z);
+
+      return () => {
+        sim.stop();
+        simRef.current = null;
+      };
+    }, [files, links, fit]);
+
+    useEffect(() => {
+      const updateSize = () => {
+        if (!svgRef.current) return;
+        const rect = svgRef.current.getBoundingClientRect();
+        sizeRef.current = { width: rect.width, height: rect.height };
+      };
+      updateSize();
+      window.addEventListener("resize", updateSize);
+      return () => window.removeEventListener("resize", updateSize);
+    }, []);
+
+    const handleNodeClick = (path: string) => {
+      onSelectRef.current(selectedRef.current === path ? null : path);
+    };
+
+    const handleNodeKeyDown = (e: React.KeyboardEvent, path: string) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        onSelectRef.current(selectedRef.current === path ? null : path);
+      }
+    };
+
+    const handleHover = (path: string) => {
+      setHovered(path);
+    };
+
+    return (
+      <svg
+        ref={svgRef}
+        role="group"
+        aria-label="Force-directed map of the codebase. Each file is a focusable node: Tab to a node and press Enter to inspect it. Use the Map/List toggle for a table of every file with its scores."
+        className="h-full w-full touch-none select-none bg-background/50"
+      >
+        <defs>
+          <pattern id="atlas-dots" width="28" height="28" patternUnits="userSpaceOnUse">
+            <circle cx="1.5" cy="1.5" r="1" fill="hsl(var(--line) / 0.4)" />
+          </pattern>
+          <radialGradient id="node-gloss" cx="30%" cy="28%" r="65%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.45" />
+            <stop offset="50%" stopColor="#ffffff" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="#000000" stopOpacity="0.25" />
+          </radialGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#atlas-dots)" pointerEvents="none" />
+
+        <g ref={worldRef}>
+          <g data-links-container>
+            {links.map((l) => (
+              <line
+                key={stampKey(l.source, l.target)}
+                data-link
+                data-link-id={stampKey(l.source, l.target)}
+                stroke="hsl(var(--line) / 0.6)"
+                strokeWidth="1.2"
+                opacity="0.75"
+              />
+            ))}
+          </g>
+
+          <g data-nodes-container>
+            {files.map((f) => {
+              const r = nodeRadius(f.complexity_score, f.loc);
+              const isSelected = f.path === selectedPath;
+              const isHovered = f.path === hovered;
+              const isFocused = f.path === focused;
+              const stamp = latestPulse.get(f.path);
+              return (
+                <g
+                  key={f.path}
+                  data-node
+                  data-node-id={f.path}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${f.path}, ${healthLabel(f.health_score)} health, complexity ${f.complexity_score}`}
+                  aria-pressed={isSelected}
+                  className="cursor-pointer outline-none transition-transform"
+                  onClick={() => handleNodeClick(f.path)}
+                  onKeyDown={(e) => handleNodeKeyDown(e, f.path)}
+                  onMouseEnter={() => handleHover(f.path)}
+                  onMouseLeave={() => setHovered(null)}
+                  onFocus={() => setFocused(f.path)}
+                  onBlur={() => setFocused(null)}
+                >
+                  {stamp !== undefined && (
+                    <circle
+                      key={`ring-${stamp}`}
+                      className="atlas-pulse-ring"
+                      r={Math.max(r + 2, 9)}
+                      fill={healthFill(f.health_score)}
+                      opacity={0.5}
+                      pointerEvents="none"
+                    />
+                  )}
+
+                  {/* Active / hover glowing halo */}
+                  {(isSelected || isHovered || isFocused) && (
+                    <circle
+                      r={r + 6}
+                      fill="none"
+                      stroke={isSelected ? "hsl(var(--primary))" : "hsl(var(--ink-dim))"}
+                      strokeWidth={1.5}
+                      strokeDasharray={isSelected ? "3 3" : undefined}
+                      opacity={0.8}
+                      pointerEvents="none"
+                    />
+                  )}
+
+                  {/* Invisible hit target for smooth mouse/touch interaction */}
                   <circle
-                    key={`ring-${stamp}`}
-                    className="atlas-pulse-ring"
-                    r={Math.max(r + 2, 9)}
+                    r={Math.max(r + 5, 12)}
+                    fill="transparent"
+                    pointerEvents="all"
+                  />
+
+                  {/* Core Node Circle */}
+                  <circle
+                    r={r}
                     fill={healthFill(f.health_score)}
-                    opacity={0.45}
+                    opacity={isHovered || isSelected || isFocused ? 1 : 0.92}
+                    stroke={
+                      isSelected
+                        ? "hsl(var(--primary))"
+                        : isFocused
+                          ? "hsl(var(--ink-faint))"
+                          : "hsl(var(--surface) / 0.6)"
+                    }
+                    strokeWidth={isSelected ? 2.5 : isFocused ? 1.5 : 0.8}
                     pointerEvents="none"
                   />
-                )}
-                <circle
-                  r={Math.max(r + 4, 11)}
-                  fill="transparent"
-                  pointerEvents="all"
-                />
-                <circle
-                  r={r}
-                  fill={healthFill(f.health_score)}
-                  opacity={isHovered || isSelected || isFocused ? 1 : 0.88}
-                  stroke={
-                    isSelected
-                      ? "hsl(var(--primary))"
-                      : isFocused
-                        ? "hsl(var(--ink-faint))"
-                        : "none"
-                  }
-                  strokeWidth={isSelected ? 2 : isFocused ? 1.5 : 0}
-                  pointerEvents="none"
-                />
-                {labeled.has(f.path) && (
-                  <text
-                    data-label
-                    y={-r - 5}
-                    textAnchor="middle"
-                    fill="hsl(var(--ink-dim))"
-                    fontSize="10"
+
+                  {/* 3D Specular Highlight Dome */}
+                  <circle
+                    r={r}
+                    fill="url(#node-gloss)"
                     pointerEvents="none"
-                  >
-                    {f.path.slice(f.path.lastIndexOf("/") + 1)}
-                  </text>
-                )}
-              </g>
-            );
-          })}
+                  />
+
+                  {labeled.has(f.path) && (
+                    <text
+                      data-label
+                      y={-r - 6}
+                      textAnchor="middle"
+                      fill="hsl(var(--ink))"
+                      fontSize="10"
+                      fontWeight={isSelected ? 600 : 500}
+                      className="font-mono select-none"
+                      pointerEvents="none"
+                    >
+                      {f.path.slice(f.path.lastIndexOf("/") + 1)}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </g>
         </g>
-      </g>
-    </svg>
-  );
+      </svg>
+    );
   },
 );

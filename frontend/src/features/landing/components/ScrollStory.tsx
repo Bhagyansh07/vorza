@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
 
 import { DemoMap } from './DemoMap';
 import { MapFrame } from './MapFrame';
@@ -87,6 +86,7 @@ function usePrefersReducedMotion(): boolean {
 export function ScrollStory() {
   const reducedMotion = usePrefersReducedMotion();
   const [progress, setProgress] = useState(0);
+  const [activeBeatOverride, setActiveBeatOverride] = useState<number | null>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
   const files = useMemo(() => demoFiles(), []);
   const links = useMemo(() => demoLinks(), []);
@@ -154,80 +154,95 @@ export function ScrollStory() {
     );
   }
 
-  const zoom = zoomAt(progress);
-  const beat = progress < 0.34 ? 0 : progress < 0.67 ? 1 : 2;
-
-  return (
+  const effectiveBeat = activeBeatOverride ?? (progress < 0.34 ? 0 : progress < 0.67 ? 1 : 2);
+  const zoom = activeBeatOverride !== null ? KEYFRAMES[activeBeatOverride + 1] : zoomAt(progress);  return (
     <section
       aria-labelledby="reading-the-map"
       ref={sectionRef}
       data-tour="reading"
-      className="relative"
-      style={{ height: '280vh' }}
+      className="relative border-t border-line/70 bg-surface/30 backdrop-blur-md py-16 sm:py-20"
     >
-      <div className="sticky top-0 flex h-screen flex-col overflow-hidden">
-        <div className="mx-auto grid w-full max-w-6xl flex-1 grid-cols-1 items-center gap-8 px-6 py-10 lg:grid-cols-12 lg:gap-12">
-          {/* Beat text, left column */}
-          <div className="relative z-10 lg:col-span-5">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-primary">
-              Reading the map · {BEATS[beat].index} / 03
-            </p>
-            <h2
-              id="reading-the-map"
-              className="mt-4 text-3xl font-semibold leading-tight tracking-[-0.015em] text-ink sm:text-4xl"
-            >
-              {BEATS[beat].title}
-            </h2>
-            <p className="mt-4 max-w-md text-base leading-relaxed text-ink-dim">
-              {BEATS[beat].body}
-            </p>
-
-            {/* Progress rail */}
-            <div
-              role="progressbar"
-              aria-label="Story progress"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(progress * 100)}
-              className="mt-8 flex items-center gap-3"
-            >
-              {BEATS.map((b, i) => (
-                <span
-                  key={b.index}
-                  className="flex items-center gap-1 font-mono text-[10px] text-ink-faint"
-                >
-                  <span
-                    aria-hidden="true"
-                    className={`h-px w-8 ${i <= beat ? 'bg-primary' : 'bg-line'}`}
-                  />
-                  {b.index}
-                </span>
-              ))}
-            </div>
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-10 px-6 lg:grid-cols-12 lg:gap-14">
+        {/* Beat text, left column */}
+        <div className="relative z-10 lg:col-span-5">
+          <div className="inline-flex items-center gap-2 rounded-full border border-line/60 bg-surface/60 px-3 py-1 text-xs font-mono text-ink-dim backdrop-blur-md mb-4">
+            <span className="h-1.5 w-1.5 rounded-full bg-signal-good" />
+            <span className="uppercase tracking-[0.14em]">
+              Reading the map · {BEATS[effectiveBeat].index} / 03
+            </span>
           </div>
 
-          {/* Sticky map, right column */}
-          <div className="lg:col-span-7">
-            <MapFrame
-              sheet="Survey · demo data"
-              coords="backend hub → frontend hub → docs"
-              scale={`zoom ${zoom.k.toFixed(2)}x`}
-            >
-              <DemoMap
-                files={files}
-                links={links}
-                positions={positions}
-                externalZoom={zoom}
-                height={440}
-              />
-            </MapFrame>
+          {/* Quick Interactive Beat Switcher */}
+          <div className="mb-5 flex flex-wrap gap-2">
+            {BEATS.map((b, i) => (
+              <button
+                key={b.index}
+                type="button"
+                onClick={() => setActiveBeatOverride(i)}
+                className={`rounded-full px-3.5 py-1 text-xs font-mono font-medium transition-all ${
+                  effectiveBeat === i
+                    ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                    : 'bg-surface/60 text-ink-dim hover:text-ink hover:bg-raised border border-line/60'
+                }`}
+              >
+                {b.index} · {b.title.split(' ')[0]}
+              </button>
+            ))}
+          </div>
+
+          <h2
+            id="reading-the-map"
+            className="text-3xl font-bold leading-tight tracking-tight text-ink sm:text-4xl"
+          >
+            {BEATS[effectiveBeat].title}
+          </h2>
+          <p className="mt-4 max-w-md text-base leading-relaxed text-ink-dim">
+            {BEATS[effectiveBeat].body}
+          </p>
+
+          {/* Progress rail */}
+          <div
+            role="progressbar"
+            aria-label="Story progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(((effectiveBeat + 1) / 3) * 100)}
+            className="mt-8 flex items-center gap-3"
+          >
+            {BEATS.map((b, i) => (
+              <button
+                key={b.index}
+                type="button"
+                onClick={() => setActiveBeatOverride(i)}
+                className="flex items-center gap-1 font-mono text-[10px] text-ink-faint hover:text-ink cursor-pointer"
+              >
+                <span
+                  aria-hidden="true"
+                  className={`h-1.5 rounded-full transition-all ${
+                    i === effectiveBeat ? 'w-10 bg-primary' : 'w-6 bg-line/80'
+                  }`}
+                />
+                <span>{b.index}</span>
+              </button>
+            ))}
           </div>
         </div>
 
-        <div className="absolute inset-x-0 bottom-6 mx-auto flex w-full max-w-6xl items-center gap-2 px-6 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-faint">
-          <span>Scroll</span>
-          <span aria-hidden="true" className="h-px flex-1 bg-line" />
-          <ChevronDown aria-hidden="true" className="h-3 w-3" />
+        {/* Sticky map, right column */}
+        <div className="lg:col-span-7">
+          <MapFrame
+            sheet="Survey · demo data"
+            coords="backend hub → frontend hub → docs"
+            scale={`zoom ${zoom.k.toFixed(2)}x`}
+          >
+            <DemoMap
+              files={files}
+              links={links}
+              positions={positions}
+              externalZoom={zoom}
+              height={440}
+            />
+          </MapFrame>
         </div>
       </div>
     </section>

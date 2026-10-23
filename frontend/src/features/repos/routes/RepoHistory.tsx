@@ -1,6 +1,6 @@
 import { Suspense, lazy } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Clock } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { ErrorState } from '@/components/errors/ErrorState';
@@ -47,28 +47,38 @@ export function RepoHistory() {
   const { data, isPending, isError, error, refetch } = useSnapshotHistory(repoId);
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 py-8">
-      <div className="mb-6" data-tour="history-header">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className="mb-2 -ml-2 text-muted-foreground"
-        >
-          <Link to={`/repos/${repoId}`}>
-            <ArrowLeft />
-            Back to map
-          </Link>
-        </Button>
-        <h1 className="text-2xl font-semibold">Health history</h1>
-        <p className="text-sm text-muted-foreground">
-          Overall health score trend across analysis snapshots.
-        </p>
+    <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
+      <div
+        className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line/60 bg-surface/60 p-6 backdrop-blur-xl shadow-xs"
+        data-tour="history-header"
+      >
+        <div>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="mb-1.5 -ml-2 text-ink-dim hover:text-ink"
+          >
+            <Link to={`/repos/${repoId}`}>
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Back to map
+            </Link>
+          </Button>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">Health history</h1>
+            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary border border-primary/20">
+              Analytics
+            </span>
+          </div>
+          <p className="mt-1 text-xs sm:text-sm text-ink-dim">
+            Overall health score trend across analysis snapshots and git refactors.
+          </p>
+        </div>
       </div>
 
       <div data-tour="history-chart">
         {isPending ? (
-          <Skeleton className="h-[360px] w-full rounded-lg" />
+          <Skeleton className="h-[360px] w-full rounded-2xl" />
         ) : isError ? (
           <ErrorState
             title="Couldn't load history"
@@ -87,9 +97,15 @@ export function RepoHistory() {
             <TrendChart repoId={repoId} />
           </Suspense>
         ) : (
-          <p className="text-sm text-muted-foreground">
-            No snapshots recorded yet for this repo.
-          </p>
+          <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-line/80 bg-surface/40 px-6 py-16 text-center backdrop-blur-xl">
+            <Clock className="h-8 w-8 text-ink-faint" />
+            <p className="text-sm font-medium text-ink">
+              No snapshots recorded yet for this repo.
+            </p>
+            <p className="text-xs text-ink-dim max-w-xs">
+              Run your first analysis from the map view to record baseline health metrics.
+            </p>
+          </div>
         )}
       </div>
 

@@ -2,23 +2,23 @@
  * The guided tour engine.
  *
  * One component powers every screen: it sits bottom-right inviting a start, and
- * when a visitor takes the tour Vorpy the pet floats to the side of each target
- * with the copy in a thought cloud beside it, changing expression to match. The
- * element being explained keeps a soft spotlight over a dimmed page.
+ * when a visitor takes the tour it walks the page stop by stop. Vorpy scrolls
+ * each target into view, dims everything else with a spotlight, rings the target
+ * and explains it in one short step at a time, changing expression to match.
  *
  * It is deliberately well behaved:
  *  - Nothing runs on its own. The tour only exists after a click, so it can
  *    never become motion the visitor did not ask for.
- *  - `prefers-reduced-motion: reduce` jumps instead of gliding and freezes the
- *    pet's float and the cloud's entrance on their still frames.
+ *  - `prefers-reduced-motion: reduce` jumps instead of gliding, drops the ring
+ *    transition and paints Vorpy as a static frame.
  *  - A step whose `data-tour` anchor is missing or hidden (a mobile rail, a graph
- *    that has not loaded) is dropped, so Vorpy never points at nothing.
- *  - Escape closes it, arrow keys step, focus moves into the cloud and returns
+ *    that has not loaded) is dropped, so the ring never points at nothing.
+ *  - Escape closes it, arrow keys step, focus moves into the panel and returns
  *    to the invite on close.
  *
- * Loading: this module is the tour engine and the mascot together, so mount it
- * through `LazyGuidedTour`, never directly, to keep both out of first paint
- * (asserted by `mascot-boundary.test.ts`).
+ * Loading: this module imports the mascot, so it pulls in the avatar runtime.
+ * Mount it through `LazyGuidedTour`, never directly, to keep that out of first
+ * paint (asserted by `mascot-boundary.test.ts`).
  */
 import {
   useCallback,
@@ -34,10 +34,23 @@ import { VorpyMascot } from '@/components/mascot/VorpyMascot';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-import { computeAnchor } from './placement';
-import type { Anchor, TargetRect } from './placement';
 import { readTourState, writeTourState } from './tour-storage';
 import type { TourDefinition, TourStep } from './types';
+
+/** Desktop panel size, used only to decide which side to dock it on. */
+const PANEL_WIDTH = 380;
+const PANEL_HEIGHT = 250;
+
+type Placement = 'bottom-right' | 'bottom-left';
+
+interface TargetRect {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+  width: number;
+  height: number;
+}
 
 function prefersReducedMotion(): boolean {
   return (
@@ -70,19 +83,32 @@ function resolveSteps(steps: readonly TourStep[]): TourStep[] {
   return present.length > 0 ? present : [...steps];
 }
 
+function pickPlacement(
+  rect: TargetRect,
+  viewportWidth: number,
+  viewportHeight: number,
+): Placement {
+  // Small screens dock the panel as a bottom sheet, where the side is moot.
+  if (viewportWidth < 640) return 'bottom-right';
+  const panelLeftEdge = viewportWidth - 24 - PANEL_WIDTH;
+  const panelTopEdge = viewportHeight - 24 - PANEL_HEIGHT;
+  const overlaps = rect.right > panelLeftEdge && rect.bottom > panelTopEdge;
+  return overlaps ? 'bottom-left' : 'bottom-right';
+}
+
 export function GuidedTour({ tour }: { tour: TourDefinition }) {
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
   const [steps, setSteps] = useState<readonly TourStep[]>(tour.steps);
   const [rect, setRect] = useState<TargetRect | null>(null);
-  const [anchor, setAnchor] = useState<Anchor | null>(null);
+  const [placement, setPlacement] = useState<Placement>('bottom-right');
   const [hasSeen, setHasSeen] = useState(true);
+  const [dismissed, setDismissed] = useState(false);
 
   const reduceMotion = useMemo(prefersReducedMotion, []);
 
   const panelRef = useRef<HTMLDivElement | null>(null);
   const inviteRef = useRef<HTMLButtonElement | null>(null);
-  const groupRef = useRef<HTMLDivElement | null>(null);
   const wasOpen = useRef(false);
 
   const titleId = useId();
@@ -91,10 +117,22 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
   const total = steps.length;
   const step = steps[Math.min(index, total - 1)];
 
-  // Read once whether this visitor has seen the tour, so the invite can lean in
-  // the first time and stay quiet after.
+  // Read once whether this visitor has seen the tour
   useEffect(() => {
     setHasSeen(readTourState(tour.id) !== null);
+  }, [tour.id]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      setDismissed(window.sessionStorage.getItem(`vorza:dismissed:${tour.id}`) === '1');
+    }
+  }, [tour.id]);
+
+  const dismiss = useCallback(() => {
+    setDismissed(true);
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      window.sessionStorage.setItem(`vorza:dismissed:${tour.id}`, '1');
+    }
   }, [tour.id]);
 
   const start = useCallback(() => {
@@ -131,8 +169,7 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, close, next, back]);
 
-  // Focus enters the panel on open and returns to the invite on close. Doing the
-  // restore here (not in `close`) waits for the invite to be mounted again.
+  // Focus enters the panel on open and returns to the invite on close.
   useEffect(() => {
     if (open) {
       wasOpen.current = true;
@@ -143,12 +180,10 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
     }
   }, [open]);
 
-  // Scroll the current target into view and keep Vorpy glued to its side as the
-  // page moves. Reduced motion jumps instead of gliding.
+  // Scroll the current target into view and keep the ring glued to it
   useEffect(() => {
     if (!open || !step) {
       setRect(null);
-      setAnchor(null);
       return;
     }
     const selector = `[data-tour="${step.target}"]`;
@@ -160,21 +195,10 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
     const update = () => {
       const measured = rectOf(selector);
       setRect(measured);
-      // Vorpy hovers beside the target. The cloud group is measured, not guessed,
-      // so the side is chosen from the room the copy actually leaves.
-      const group = groupRef.current;
-      if (measured && group) {
-        const box = group.getBoundingClientRect();
-        setAnchor(
-          computeAnchor(
-            measured,
-            { width: box.width, height: box.height },
-            window.innerWidth,
-            window.innerHeight,
-          ),
+      if (measured) {
+        setPlacement(
+          pickPlacement(measured, window.innerWidth, window.innerHeight),
         );
-      } else {
-        setAnchor(null);
       }
     };
     update();
@@ -187,28 +211,37 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
   }, [open, index, step, reduceMotion]);
 
   if (!open) {
+    if (dismissed) return null;
     return (
-      <div className="fixed bottom-4 right-4 z-30 sm:bottom-6 sm:right-6">
-        <button
-          ref={inviteRef}
-          type="button"
-          onClick={start}
-          aria-label="Start the Vorpy guided tour"
-          className={cn(
-            'pointer-events-auto flex items-center gap-2.5 rounded-stem border bg-surface/95 py-2 pl-2 pr-3.5 text-left shadow-panel backdrop-blur transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-            hasSeen ? 'border-line' : 'border-primary/50',
-          )}
-        >
-          <VorpyMascot embedded size={54} animation={hasSeen ? 'idle' : 'excited'} />
-          <span className="pr-0.5">
-            <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-primary">
-              {tour.label}
+      <div className="fixed bottom-4 right-4 z-30 sm:bottom-6 sm:right-6 max-w-[calc(100vw-32px)]">
+        <div className="group/pill pointer-events-auto flex items-center gap-1.5 rounded-2xl border border-line/80 bg-surface/90 py-1.5 pl-2 pr-2 text-left shadow-[0_8px_30px_rgb(0_0_0/0.12)] backdrop-blur-xl transition-all hover:scale-[1.02] hover:border-primary/40 active:scale-[0.98] max-w-full">
+          <button
+            ref={inviteRef}
+            type="button"
+            onClick={start}
+            aria-label="Start the Vorpy guided tour"
+            className="flex items-center gap-2.5 rounded-xl pr-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <VorpyMascot embedded size={46} animation={hasSeen ? 'idle' : 'excited'} />
+            <span className="pr-1">
+              <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-primary font-semibold">
+                {tour.label}
+              </span>
+              <span className="block text-xs font-medium leading-tight text-ink">
+                {tour.invite}
+              </span>
             </span>
-            <span className="block text-sm font-medium leading-tight text-ink">
-              {tour.invite}
-            </span>
-          </span>
-        </button>
+          </button>
+          <button
+            type="button"
+            onClick={dismiss}
+            aria-label="Dismiss Vorpy"
+            title="Dismiss Vorpy"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-full text-ink-faint transition-colors hover:bg-foreground/10 hover:text-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        </div>
       </div>
     );
   }
@@ -222,141 +255,99 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
           aria-hidden="true"
           className="pointer-events-none fixed z-40 rounded-stem ring-2 ring-primary transition-all duration-300 motion-reduce:transition-none"
           style={{
-            top: Math.max(6, rect.top - 8),
-            left: Math.max(6, rect.left - 8),
-            width: rect.width + 16,
-            height: rect.height + 16,
-            boxShadow: '0 0 0 9999px hsl(222 25% 11% / 0.26)',
+            top: Math.max(6, rect.top - 6),
+            left: Math.max(6, rect.left - 6),
+            width: rect.width + 12,
+            height: rect.height + 12,
+            boxShadow: '0 0 0 9999px hsl(222 25% 11% / 0.42)',
           }}
         >
           <div className="absolute -inset-1 rounded-[inherit] ring-4 ring-primary/20 motion-reduce:hidden" />
         </div>
       )}
 
-      {/*
-        Vorpy the pet hovers beside the step's element, thinking the copy in a
-        thought cloud. `vorpy-anchor` carries the position JS measures; the group
-        is the pet and the cloud, and `data-side` flips the pet to whichever side
-        of the target there was room for.
-      */}
       <div
-        className="vorpy-anchor"
-        style={{
-          left: anchor?.left ?? 0,
-          top: anchor?.top ?? 0,
-          opacity: anchor ? 1 : 0,
-        }}
+        ref={panelRef}
+        role="dialog"
+        aria-modal="false"
+        aria-labelledby={titleId}
+        aria-describedby={bodyId}
+        tabIndex={-1}
+        className={cn(
+          'fixed z-50 overflow-hidden rounded-2xl border border-line/80 bg-surface/95 shadow-[0_16px_48px_rgba(0,0,0,0.3)] backdrop-blur-2xl focus:outline-none sm:w-[380px]',
+          placement === 'bottom-left'
+            ? 'bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-auto'
+            : 'bottom-4 left-4 right-4 sm:bottom-6 sm:left-auto sm:right-6',
+        )}
       >
-        <div
-          ref={groupRef}
-          className="vorpy-group"
-          data-side={anchor?.side ?? 'right'}
-        >
-          <div className="vorpy-pet" aria-hidden="true">
-            <span className="vorpy-trail">
-              <i />
-              <i />
-            </span>
-            <div className="vorpy-pet-float">
-              <VorpyMascot embedded size={84} animation={step.animation} />
-            </div>
-          </div>
-
+        <div className="h-1 w-full bg-line" aria-hidden="true">
           <div
-            ref={panelRef}
-            role="dialog"
-            aria-modal="false"
-            aria-labelledby={titleId}
-            aria-describedby={bodyId}
-            tabIndex={-1}
-            className="vorpy-cloud focus:outline-none"
+            className="h-full bg-primary transition-[width] duration-300 motion-reduce:transition-none"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+
+        <div className="flex items-start gap-3.5 p-5">
+          <VorpyMascot embedded size={60} animation={step.animation} />
+          <div className="min-w-0 flex-1" aria-live="polite">
+            <p className="flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-primary">
+              <span>{step.eyebrow}</span>
+              <span className="text-ink-faint font-semibold">
+                {index + 1} / {total}
+              </span>
+            </p>
+            <h2
+              id={titleId}
+              className="mt-1 text-base font-semibold leading-tight text-ink"
+            >
+              {step.title}
+            </h2>
+            <p
+              id={bodyId}
+              className="mt-1.5 text-xs sm:text-sm leading-relaxed text-ink-dim"
+            >
+              {step.body}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => close()}
+            aria-label="Close the tour"
+            className="-mr-1.5 -mt-1.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-ink-faint transition-colors hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <svg
-              className="vorpy-cloud-skin"
-              viewBox="0 0 200 200"
-              preserveAspectRatio="none"
-              aria-hidden="true"
+            <X className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-line/60 px-5 py-3.5 bg-surface/50">
+          <button
+            type="button"
+            onClick={() => close(true)}
+            className="text-xs text-ink-faint underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Skip tour
+          </button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={back}
+              disabled={index === 0}
+              className="rounded-lg text-xs"
             >
-              <rect x="10" y="18" width="180" height="164" rx="70" />
-              <circle cx="48" cy="34" r="28" />
-              <circle cx="102" cy="30" r="30" />
-              <circle cx="154" cy="36" r="26" />
-              <circle cx="20" cy="72" r="20" />
-              <circle cx="180" cy="74" r="20" />
-            </svg>
-
-            <div className="relative px-6 pb-4 pt-5">
-              <div aria-live="polite">
-                <p className="flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.12em] text-primary">
-                  <span>{step.eyebrow}</span>
-                  <span className="text-ink-faint">
-                    {index + 1} / {total}
-                  </span>
-                </p>
-                <h2
-                  id={titleId}
-                  className="mt-1 pr-6 text-base font-semibold leading-tight text-ink"
-                >
-                  {step.title}
-                </h2>
-                <p
-                  id={bodyId}
-                  className="mt-1.5 text-sm leading-relaxed text-ink-dim"
-                >
-                  {step.body}
-                </p>
-              </div>
-
-              <div className="mt-4 flex items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => close(true)}
-                  className="text-xs text-ink-faint underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  Skip
-                </button>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={back}
-                    disabled={index === 0}
-                  >
-                    <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-                    Back
-                  </Button>
-                  {index < total - 1 ? (
-                    <Button size="sm" onClick={next}>
-                      Next
-                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                  ) : (
-                    <Button size="sm" onClick={() => close(true)}>
-                      Done
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <div
-                className="mt-3 h-1 w-full overflow-hidden rounded-full bg-line"
-                aria-hidden="true"
-              >
-                <div
-                  className="h-full rounded-full bg-primary transition-[width] duration-300 motion-reduce:transition-none"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => close()}
-              aria-label="Close the tour"
-              className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-stem text-ink-faint transition-colors hover:bg-raised hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-            </button>
+              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              Back
+            </Button>
+            {index < total - 1 ? (
+              <Button size="sm" onClick={next} className="rounded-lg text-xs">
+                Next
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+              </Button>
+            ) : (
+              <Button size="sm" onClick={() => close(true)} className="rounded-lg text-xs">
+                Done
+              </Button>
+            )}
           </div>
         </div>
       </div>

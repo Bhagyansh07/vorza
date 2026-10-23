@@ -37,7 +37,7 @@ export function CommentLayer({
     setBody("");
     setAnchored(draft);
     requestAnimationFrame(() => inputRef.current?.focus());
-  }, [draft?.anchorId]);
+  }, [draft]);
 
   const submit = () => {
     if (!body.trim() || !anchored) return;

@@ -74,11 +74,15 @@ interface Props {
 function MetricCell({ metric, active }: { metric: Metric; active: boolean }) {
   const shown = useCountUp(metric.value, active);
   return (
-    <div className="bg-surface px-5 py-5">
-      <p className="font-mono text-3xl font-medium tabular tracking-[-0.02em] text-ink">
-        {shown.toLocaleString("en-US")}
-      </p>
-      <p className="mt-1 text-xs font-medium uppercase tracking-[0.08em] text-ink-faint">
+    <div className="relative group overflow-hidden rounded-3xl border border-line/70 bg-surface/70 p-7 backdrop-blur-2xl shadow-xl transition-all duration-300 hover:border-primary/50 hover:shadow-[0_12px_40px_hsl(var(--primary)/0.15)] hover:-translate-y-1">
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-4xl sm:text-5xl font-extrabold tabular tracking-tight text-ink">
+          {shown.toLocaleString("en-US")}
+        </p>
+        <span className="flex h-2 w-2 rounded-full bg-primary/70 animate-pulse" />
+      </div>
+      <p className="mt-3 text-xs font-semibold uppercase tracking-wider text-primary font-mono">
         {metric.label}
       </p>
       <p className="mt-1 text-xs leading-relaxed text-ink-dim">{metric.note}</p>
@@ -92,7 +96,7 @@ export function Metrics({ metrics }: Props) {
   return (
     <div
       ref={ref}
-      className="grid grid-cols-1 gap-px overflow-hidden rounded-stem border border-line bg-line sm:grid-cols-3"
+      className="grid grid-cols-1 gap-5 sm:grid-cols-3"
     >
       {metrics.map((m) => (
         <MetricCell key={m.label} metric={m} active={inView} />

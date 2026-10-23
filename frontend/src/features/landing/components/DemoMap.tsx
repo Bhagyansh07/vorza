@@ -1,5 +1,6 @@
 import * as d3 from "d3-force";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { ZoomIn, ZoomOut, RotateCcw, Sparkles, ShieldAlert, ShieldCheck, AlertTriangle } from "lucide-react";
 
 import type { FileNode, GraphLink } from "@/features/graph/types";
 import {
@@ -8,29 +9,14 @@ import {
   nodeRadius,
 } from "@/features/graph/lib/encoding";
 
-/**
- * Compact force-directed map for the landing page. Uses the same simulation
- * parameters and the same `encoding.ts` colour rules as the product's map, but
- * stays small enough to ship inside the landing bundle. Rendered as "demo"
- * everywhere it appears (see MapFrame captions).
- *
- * The d3 lesson from ForceDirectedGraph applies here too: these SVG elements
- * are React-owned and carry no d3 datum, so tick updates read
- * `data-node-id` / `data-link-id` from the DOM instead of a bound `d`.
- */
-
 interface Props {
   files: FileNode[];
   links: GraphLink[];
   height?: number;
-  /** Deterministic starting layout (see demoSeedPositions), used by the
-   * scroll-story so its zoom keyframes land on the same regions every load. */
   positions?: Record<string, { x: number; y: number }>;
-  /** Highlight everything that imports the hovered node (reverse edges). */
   blastRadius?: boolean;
   selectedPath?: string | null;
   onSelect?: (path: string) => void;
-  /** Scroll-story control: centre (cx, cy) and zoom k applied to the world. */
   externalZoom?: { cx: number; cy: number; k: number };
   className?: string;
 }
@@ -51,11 +37,11 @@ export function DemoMap({
   const simRef = useRef<d3.Simulation<SimNode, SimLink> | null>(null);
   const fittedRef = useRef(false);
   const fitRef = useRef<{ x: number; y: number; k: number } | null>(null);
-  // When the story drives the zoom, the auto-fit must not fight it. The
-  // assignment lives in the effect below so it never runs during render.
   const externalRef = useRef<Props["externalZoom"] | null>();
   const [hovered, setHovered] = useState<string | null>(null);
+  const [healthFilter, setHealthFilter] = useState<'all' | 'bad' | 'warn' | 'good'>('all');
   const gridId = useId().replace(/:/g, "");
+  const glossId = useId().replace(/:/g, "");
 
   interface SimNode extends FileNode {
     id: string;
@@ -69,7 +55,6 @@ export function DemoMap({
     target: SimNode | string;
   }
 
-  // Reverse-edge index for the blast-radius demo: path -> files that import it.
   const dependents = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const f of files) {
@@ -118,16 +103,15 @@ export function DemoMap({
           .distance((d) => {
             const s = d.source as SimNode;
             const t = d.target as SimNode;
-            return 26 + s.r + t.r;
+            return 28 + s.r + t.r;
           })
           .strength(0.45),
       )
       .force("charge", d3.forceManyBody<SimNode>().strength(chargeStrength).distanceMax(800))
-      .force("collide", d3.forceCollide<SimNode>().radius((n) => n.r + 1.5).strength(0.9).iterations(2))
+      .force("collide", d3.forceCollide<SimNode>().radius((n) => n.r + 2).strength(0.92))
       .force("x", d3.forceX<SimNode>(0).strength(0.04))
       .force("y", d3.forceY<SimNode>(0).strength(0.04))
       .velocityDecay(0.36)
-      // Never fully freezes: a slow drift keeps the map feeling alive.
       .alphaMin(0.02)
       .alphaDecay(0.06);
     simRef.current = sim;
@@ -156,8 +140,6 @@ export function DemoMap({
         el.setAttribute("x2", `${t.x}`);
         el.setAttribute("y2", `${t.y}`);
       }
-      // Fit once the layout has mostly settled (never while the story drives
-      // the transform itself).
       if (!fittedRef.current && sim.alpha() < 0.2 && !externalRef.current) {
         fittedRef.current = true;
         const { width, height: h } = svg.getBoundingClientRect();
@@ -186,7 +168,6 @@ export function DemoMap({
     };
   }, [files, links, positions]);
 
-  // External zoom (scroll story) wins over the fitted transform.
   useEffect(() => {
     externalRef.current = externalZoom;
     const world = worldRef.current;
@@ -205,127 +186,331 @@ export function DemoMap({
     }
   }, [externalZoom]);
 
+  const handleZoom = (factor: number) => {
+    const world = worldRef.current;
+    if (!world || !fitRef.current) return;
+    fitRef.current.k *= factor;
+    world.setAttribute(
+      "transform",
+      `translate(${fitRef.current.x},${fitRef.current.y}) scale(${fitRef.current.k})`,
+    );
+  };
+
+  const handleResetZoom = () => {
+    const world = worldRef.current;
+    if (!world || !fitRef.current) return;
+    fitRef.current.k = 1;
+    world.setAttribute(
+      "transform",
+      `translate(${fitRef.current.x},${fitRef.current.y}) scale(1)`,
+    );
+  };
+
   const hoveredCount = hovered ? (dependents.get(hovered)?.length ?? 0) : 0;
+  const hoveredNode = hovered ? files.find((f) => f.path === hovered) : null;
 
   return (
-    <svg
-      ref={svgRef}
-      role={blastRadius ? "group" : "img"}
-      aria-label={
-        blastRadius
-          ? "Demo map of a codebase. Hover a file to see what imports it."
-          : `Demo map of a codebase: ${files.length} files as nodes sized by complexity and coloured by health, linked by import edges.`
-      }
-      className={`h-full w-full touch-none select-none ${className}`}
-      style={{ height }}
-    >
-      <defs>
-        <pattern id={gridId} width="32" height="32" patternUnits="userSpaceOnUse">
-          <path d="M 32 0 L 0 0 0 32" fill="none" stroke="hsl(var(--line) / 0.35)" strokeWidth="1" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="hsl(var(--background))" />
-      <rect width="100%" height="100%" fill={`url(#${gridId})`} aria-hidden="true" />
+    <div className={`relative group/map w-full overflow-hidden rounded-2xl bg-background ${className}`}>
+      {/* Top Floating Controls Bar */}
+      <div className="absolute top-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+        {/* Health Filter Pills */}
+        <div className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-line/60 bg-surface/85 px-2.5 py-1 shadow-md backdrop-blur-md">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-ink-faint mr-1 hidden sm:inline">
+            Filter:
+          </span>
+          <button
+            type="button"
+            onClick={() => setHealthFilter('all')}
+            className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-all ${
+              healthFilter === 'all'
+                ? 'bg-primary text-primary-foreground font-semibold shadow-xs'
+                : 'text-ink-dim hover:text-ink hover:bg-raised'
+            }`}
+          >
+            All ({files.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setHealthFilter('bad')}
+            className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-all ${
+              healthFilter === 'bad'
+                ? 'bg-signal-bad text-white font-semibold shadow-xs'
+                : 'text-signal-bad hover:bg-signal-bad/10'
+            }`}
+          >
+            <ShieldAlert className="h-2.5 w-2.5" />
+            <span>Risk (&lt;45)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setHealthFilter('warn')}
+            className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-all ${
+              healthFilter === 'warn'
+                ? 'bg-signal-warn text-white font-semibold shadow-xs'
+                : 'text-signal-warn hover:bg-signal-warn/10'
+            }`}
+          >
+            <AlertTriangle className="h-2.5 w-2.5" />
+            <span>Warn (45-69)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setHealthFilter('good')}
+            className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-all ${
+              healthFilter === 'good'
+                ? 'bg-signal-good text-white font-semibold shadow-xs'
+                : 'text-signal-good hover:bg-signal-good/10'
+            }`}
+          >
+            <ShieldCheck className="h-2.5 w-2.5" />
+            <span>Healthy (≥70)</span>
+          </button>
+        </div>
 
-      <g ref={worldRef}>
-        {links.map((l) => {
-          const key = stamp(l.source, l.target);
-          const active = blastRadius && hovered != null && (hovered === l.source || hovered === l.target);
-          return (
-            <line
-              key={key}
-              data-link-id={key}
-              x1={0}
-              y1={0}
-              x2={0}
-              y2={0}
-              stroke={active ? "hsl(var(--ink-dim))" : "hsl(var(--line) / 0.7)"}
-              strokeWidth={active ? 1.2 : 0.75}
-              opacity={active ? 0.9 : 0.5}
-            />
-          );
-        })}
+        {/* Zoom Controls */}
+        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-line/60 bg-surface/85 p-1 shadow-md backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() => handleZoom(1.2)}
+            title="Zoom In"
+            aria-label="Zoom In"
+            className="rounded-full p-1 text-ink-dim hover:bg-raised hover:text-ink transition-colors"
+          >
+            <ZoomIn className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => handleZoom(0.8)}
+            title="Zoom Out"
+            aria-label="Zoom Out"
+            className="rounded-full p-1 text-ink-dim hover:bg-raised hover:text-ink transition-colors"
+          >
+            <ZoomOut className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            onClick={handleResetZoom}
+            title="Reset View"
+            aria-label="Reset View"
+            className="rounded-full p-1 text-ink-dim hover:bg-raised hover:text-ink transition-colors"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
 
-        {files.map((f) => {
-          const r = nodeRadius(f.complexity_score, f.loc);
-          const isHovered = f.path === hovered;
-          const isSelected = f.path === selectedPath;
-          const isDependent = hovered != null && (dependents.get(hovered) ?? []).includes(f.path);
-          const showLabel = isHovered || isSelected;
+      <svg
+        ref={svgRef}
+        role={blastRadius ? "group" : "img"}
+        aria-label={
+          blastRadius
+            ? "Demo map of a codebase. Hover a file to see what imports it."
+            : `Demo map of a codebase: ${files.length} files as nodes sized by complexity and coloured by health, linked by import edges.`
+        }
+        className="h-full w-full touch-none select-none"
+        style={{ height }}
+      >
+        <defs>
+          <pattern id={gridId} width="28" height="28" patternUnits="userSpaceOnUse">
+            <circle cx="1.5" cy="1.5" r="0.9" fill="hsl(var(--line) / 0.4)" />
+          </pattern>
+          <radialGradient id={glossId} cx="30%" cy="28%" r="65%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.45" />
+            <stop offset="50%" stopColor="#ffffff" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="#000000" stopOpacity="0.25" />
+          </radialGradient>
+          <filter id="laserGlow" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="2.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <rect width="100%" height="100%" fill="hsl(var(--background))" />
+        <rect width="100%" height="100%" fill={`url(#${gridId})`} aria-hidden="true" />
 
-          return (
-            <g
-              key={f.path}
-              data-node-id={f.path}
-              data-node
-              role={blastRadius ? "button" : undefined}
-              tabIndex={blastRadius ? 0 : undefined}
-              aria-label={
-                blastRadius
-                  ? `${f.path}, ${healthLabel(f.health_score)} health, ${dependents.get(f.path)?.length ?? 0} dependents`
-                  : undefined
-              }
-              className={blastRadius ? "cursor-pointer outline-none" : "cursor-default"}
-              onClick={blastRadius && onSelect ? () => onSelect(f.path) : undefined}
-              onKeyDown={
-                blastRadius
-                  ? (e) => {
-                      if ((e.key === "Enter" || e.key === " ") && onSelect) {
-                        e.preventDefault();
-                        onSelect(f.path);
-                      }
-                    }
-                  : undefined
-              }
-              onMouseEnter={() => setHovered(f.path)}
-              onMouseLeave={() => setHovered(null)}
-              onFocus={blastRadius ? () => setHovered(f.path) : undefined}
-              onBlur={blastRadius ? () => setHovered(null) : undefined}
-            >
-              <circle r={Math.max(r + 3, 8)} fill="transparent" pointerEvents="all" />
-              <circle
-                r={r}
-                fill={healthFill(f.health_score)}
-                opacity={isHovered || isSelected || isDependent ? 1 : 0.9}
-                stroke={
-                  isSelected
-                    ? "hsl(var(--primary))"
-                    : isHovered
-                      ? "hsl(var(--ink-faint))"
-                      : hovered != null && isDependent
-                        ? "hsl(var(--ink-dim))"
-                        : "none"
-                }
-                strokeWidth={isSelected ? 2 : isHovered ? 1.5 : hovered != null && isDependent ? 1.2 : 0}
-                pointerEvents="none"
+        <g ref={worldRef}>
+          {links.map((l) => {
+            const key = stamp(l.source, l.target);
+            const active = blastRadius && hovered != null && (hovered === l.source || hovered === l.target);
+            return (
+              <line
+                key={key}
+                data-link-id={key}
+                x1={0}
+                y1={0}
+                x2={0}
+                y2={0}
+                stroke={active ? "hsl(var(--primary))" : "hsl(var(--line) / 0.65)"}
+                strokeWidth={active ? 2 : 0.85}
+                filter={active ? "url(#laserGlow)" : undefined}
+                opacity={active ? 1 : 0.6}
               />
-              {showLabel ? (
-                <text
-                  data-label
-                  textAnchor="middle"
-                  dy={-r - 6}
-                  fontSize={9}
-                  fill="hsl(var(--ink))"
-                  className="pointer-events-none font-mono"
+            );
+          })}
+
+          {files.map((f) => {
+            const r = nodeRadius(f.complexity_score, f.loc);
+            const isHovered = f.path === hovered;
+            const isSelected = f.path === selectedPath;
+            const isDependent = hovered != null && (dependents.get(hovered) ?? []).includes(f.path);
+            const showLabel = isHovered || isSelected;
+
+            const matchesFilter =
+              healthFilter === 'all' ||
+              (healthFilter === 'good' && f.health_score >= 70) ||
+              (healthFilter === 'warn' && f.health_score >= 45 && f.health_score < 70) ||
+              (healthFilter === 'bad' && f.health_score < 45);
+
+            const nodeOpacity = !matchesFilter
+              ? 0.15
+              : isHovered || isSelected || isDependent
+                ? 1
+                : 0.92;
+
+            return (
+              <g
+                key={f.path}
+                data-node-id={f.path}
+                data-node
+                role={blastRadius ? "button" : undefined}
+                tabIndex={blastRadius ? 0 : undefined}
+                aria-label={
+                  blastRadius
+                    ? `${f.path}, ${healthLabel(f.health_score)} health, ${dependents.get(f.path)?.length ?? 0} dependents`
+                    : undefined
+                }
+                className={blastRadius ? "cursor-pointer outline-none transition-transform" : "cursor-default"}
+                onClick={blastRadius && onSelect ? () => onSelect(f.path) : undefined}
+                onKeyDown={
+                  blastRadius
+                    ? (e) => {
+                        if ((e.key === "Enter" || e.key === " ") && onSelect) {
+                          e.preventDefault();
+                          onSelect(f.path);
+                        }
+                      }
+                    : undefined
+                }
+                onMouseEnter={() => setHovered(f.path)}
+                onMouseLeave={() => setHovered(null)}
+                onFocus={blastRadius ? () => setHovered(f.path) : undefined}
+                onBlur={blastRadius ? () => setHovered(null) : undefined}
+                style={{ opacity: nodeOpacity, transition: 'opacity 0.25s ease' }}
+              >
+                <circle r={Math.max(r + 4, 10)} fill="transparent" pointerEvents="all" />
+
+                {(isHovered || isSelected || isDependent) && (
+                  <circle
+                    r={r + 4}
+                    fill="none"
+                    stroke={isSelected ? "hsl(var(--primary))" : "hsl(var(--ink-dim))"}
+                    strokeWidth={1.4}
+                    strokeDasharray={isSelected ? "2 2" : undefined}
+                    pointerEvents="none"
+                  />
+                )}
+
+                <circle
+                  r={r}
+                  fill={healthFill(f.health_score)}
+                  stroke={
+                    isSelected
+                      ? "hsl(var(--primary))"
+                      : isHovered
+                        ? "hsl(var(--ink-faint))"
+                        : hovered != null && isDependent
+                          ? "hsl(var(--primary) / 0.7)"
+                          : "hsl(var(--surface) / 0.5)"
+                  }
+                  strokeWidth={isSelected ? 2.5 : isHovered ? 1.5 : hovered != null && isDependent ? 1.2 : 0.6}
+                  style={{
+                    filter: isHovered || isSelected ? 'drop-shadow(0 0 10px rgba(255, 255, 255, 0.45))' : undefined,
+                    transition: 'all 0.2s ease',
+                  }}
+                  pointerEvents="none"
+                />
+
+                <circle
+                  r={r}
+                  fill={`url(#${glossId})`}
+                  pointerEvents="none"
+                />
+
+                {showLabel ? (
+                  <text
+                    data-label
+                    textAnchor="middle"
+                    dy={-r - 6}
+                    fontSize={10}
+                    fontWeight={600}
+                    fill="hsl(var(--ink))"
+                    className="pointer-events-none font-mono select-none"
+                  >
+                    {f.path.split("/").at(-1)}
+                  </text>
+                ) : null}
+
+                {blastRadius && isHovered ? (
+                  <text
+                    textAnchor="middle"
+                    dy={r + 14}
+                    fontSize={9}
+                    fill="hsl(var(--ink-dim))"
+                    className="pointer-events-none font-mono"
+                  >
+                    {hoveredCount} {hoveredCount === 1 ? "dependent" : "dependents"}
+                  </text>
+                ) : null}
+              </g>
+            );
+          })}
+        </g>
+      </svg>
+
+      {/* Bottom Floating File Inspector Card */}
+      <div className="absolute bottom-3.5 left-3 right-3 z-10 pointer-events-none">
+        <div className="pointer-events-auto mx-auto max-w-lg rounded-2xl border border-line/80 bg-surface/90 px-4 py-2.5 shadow-2xl backdrop-blur-xl transition-all">
+          {hoveredNode ? (
+            <div className="flex items-center justify-between gap-3 text-xs">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-mono font-medium text-ink">
+                  {hoveredNode.path}
+                </p>
+                <p className="text-[11px] text-ink-dim">
+                  {hoveredNode.loc} lines · {dependents.get(hoveredNode.path)?.length ?? 0} files depend on this
+                </p>
+              </div>
+              <div className="shrink-0 flex items-center gap-1.5">
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                    hoveredNode.health_score >= 70
+                      ? 'bg-signal-good/15 text-signal-good border border-signal-good/30'
+                      : hoveredNode.health_score >= 45
+                        ? 'bg-signal-warn/15 text-signal-warn border border-signal-warn/30'
+                        : 'bg-signal-bad/15 text-signal-bad border border-signal-bad/30'
+                  }`}
                 >
-                  {f.path.split("/").at(-1)}
-                </text>
-              ) : null}
-              {blastRadius && isHovered ? (
-                <text
-                  textAnchor="middle"
-                  dy={r + 14}
-                  fontSize={9}
-                  fill="hsl(var(--ink-dim))"
-                  className="pointer-events-none font-mono"
-                >
-                  {hoveredCount} {hoveredCount === 1 ? "dependent" : "dependents"}
-                </text>
-              ) : null}
-            </g>
-          );
-        })}
-      </g>
-    </svg>
+                  {hoveredNode.health_score >= 70 ? (
+                    <ShieldCheck className="h-3 w-3" />
+                  ) : hoveredNode.health_score >= 45 ? (
+                    <AlertTriangle className="h-3 w-3" />
+                  ) : (
+                    <ShieldAlert className="h-3 w-3" />
+                  )}
+                  {healthLabel(hoveredNode.health_score)} ({hoveredNode.health_score}/100)
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center gap-2 text-[11px] text-ink-dim">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span>Hover or click any node to inspect health score &amp; downstream dependencies</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
