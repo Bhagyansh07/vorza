@@ -300,6 +300,15 @@
     }
   }
 
+  .vorpy-orbit-spin {
+    transform-origin: 0 0;
+    animation: vorpy-orbit-spin 26s linear infinite;
+  }
+  @keyframes vorpy-orbit-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
   /* -------------------------------------------------------------------------
    * Vorpy Mascot SVG and Animation Rules (contract asserted by tests)
    * ----------------------------------------------------------------------- */

@@ -71,18 +71,21 @@ export function Dashboard() {
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6">
       <div
-        className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line/60 bg-surface/60 p-6 backdrop-blur-xl shadow-xs"
+        className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-line/70 bg-surface/75 p-6 backdrop-blur-2xl shadow-xl transition-all"
         data-tour="dash-header"
       >
         <div>
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-primary font-semibold">
-            Repository Workspace
-          </span>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2 w-2 rounded-full bg-signal-good shadow-xs" />
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-primary font-bold">
+              Repository Workspace · Codebase Radar
+            </span>
+          </div>
+          <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
             Connected repositories
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-ink-dim">
-            Pick a repo to open its live force-directed map and health analytics.
+            Pick a repository to open its live force-directed map and health analytics.
           </p>
         </div>
         <div data-tour="dash-connect">

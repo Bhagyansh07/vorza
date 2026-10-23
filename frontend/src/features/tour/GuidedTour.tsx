@@ -214,20 +214,29 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
     if (dismissed) return null;
     return (
       <div className="fixed bottom-4 right-4 z-30 sm:bottom-6 sm:right-6 max-w-[calc(100vw-32px)]">
-        <div className="group/pill pointer-events-auto flex items-center gap-1.5 rounded-2xl border border-line/80 bg-surface/90 py-1.5 pl-2 pr-2 text-left shadow-[0_8px_30px_rgb(0_0_0/0.12)] backdrop-blur-xl transition-all hover:scale-[1.02] hover:border-primary/40 active:scale-[0.98] max-w-full">
+        <div className="group/pill pointer-events-auto relative flex items-center gap-2 rounded-2xl border border-line/80 bg-surface/90 p-1.5 shadow-[0_12px_36px_rgba(0,0,0,0.2)] backdrop-blur-2xl transition-all duration-300 hover:scale-[1.03] hover:border-primary/50 hover:shadow-[0_0_24px_hsl(var(--primary)/0.25)] active:scale-[0.98] max-w-full">
+          {/* Live copilot telemetry beacon */}
+          <span className="pointer-events-none absolute -top-1 -right-1 flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-signal-good opacity-75" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-signal-good border-2 border-surface" />
+          </span>
+
           <button
             ref={inviteRef}
             type="button"
             onClick={start}
             aria-label="Start the Vorpy guided tour"
-            className="flex items-center gap-2.5 rounded-xl pr-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex items-center gap-3 rounded-xl pr-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <VorpyMascot embedded size={46} animation={hasSeen ? 'idle' : 'excited'} />
+            <div className="relative flex items-center justify-center rounded-xl bg-primary/10 border border-primary/20 p-1 shadow-inner">
+              <VorpyMascot embedded size={44} animation={hasSeen ? 'idle' : 'excited'} />
+            </div>
             <span className="pr-1">
-              <span className="block font-mono text-[10px] uppercase tracking-[0.14em] text-primary font-semibold">
-                {tour.label}
+              <span className="flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.16em] text-primary font-bold">
+                <span className="h-1.5 w-1.5 rounded-full bg-signal-good" />
+                <span>{tour.label}</span>
               </span>
-              <span className="block text-xs font-medium leading-tight text-ink">
+              <span className="block text-xs font-semibold leading-tight text-ink mt-0.5">
                 {tour.invite}
               </span>
             </span>
@@ -259,7 +268,7 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
             left: Math.max(6, rect.left - 6),
             width: rect.width + 12,
             height: rect.height + 12,
-            boxShadow: '0 0 0 9999px hsl(222 25% 11% / 0.42)',
+            boxShadow: '0 0 0 9999px hsl(222 25% 11% / 0.52)',
           }}
         >
           <div className="absolute -inset-1 rounded-[inherit] ring-4 ring-primary/20 motion-reduce:hidden" />
@@ -274,37 +283,53 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
         aria-describedby={bodyId}
         tabIndex={-1}
         className={cn(
-          'fixed z-50 overflow-hidden rounded-2xl border border-line/80 bg-surface/95 shadow-[0_16px_48px_rgba(0,0,0,0.3)] backdrop-blur-2xl focus:outline-none sm:w-[380px]',
+          'fixed z-50 overflow-hidden rounded-3xl border border-line/80 bg-surface/95 shadow-[0_24px_64px_rgba(0,0,0,0.35)] backdrop-blur-2xl focus:outline-none sm:w-[400px]',
           placement === 'bottom-left'
             ? 'bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-auto'
             : 'bottom-4 left-4 right-4 sm:bottom-6 sm:left-auto sm:right-6',
         )}
       >
-        <div className="h-1 w-full bg-line" aria-hidden="true">
+        {/* Luminous Multi-Spectrum Progress Bar */}
+        <div className="h-1.5 w-full bg-line/60" aria-hidden="true">
           <div
-            className="h-full bg-primary transition-[width] duration-300 motion-reduce:transition-none"
+            className="h-full bg-gradient-to-r from-primary via-emerald-400 to-cyan-400 transition-[width] duration-300 motion-reduce:transition-none shadow-xs"
             style={{ width: `${pct}%` }}
           />
         </div>
 
-        <div className="flex items-start gap-3.5 p-5">
-          <VorpyMascot embedded size={60} animation={step.animation} />
+        {/* Studio Window Chrome Banner */}
+        <div className="flex items-center justify-between border-b border-line/60 bg-surface/60 px-5 py-2 text-[10px] font-mono backdrop-blur-md">
+          <div className="flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-signal-good animate-pulse" />
+            <span className="font-semibold uppercase tracking-wider text-ink-dim">
+              Vorza Copilot Telemetry
+            </span>
+          </div>
+          <span className="rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-primary font-bold">
+            Active
+          </span>
+        </div>
+
+        <div className="flex items-start gap-4 p-5">
+          <div className="relative shrink-0 flex items-center justify-center rounded-2xl bg-surface/80 border border-line/70 p-1.5 shadow-sm">
+            <VorpyMascot embedded size={64} animation={step.animation} />
+          </div>
           <div className="min-w-0 flex-1" aria-live="polite">
-            <p className="flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-primary">
+            <div className="flex items-baseline justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.14em] text-primary font-bold">
               <span>{step.eyebrow}</span>
               <span className="text-ink-faint font-semibold">
                 {index + 1} / {total}
               </span>
-            </p>
+            </div>
             <h2
               id={titleId}
-              className="mt-1 text-base font-semibold leading-tight text-ink"
+              className="mt-1 text-base font-bold leading-tight text-ink"
             >
               {step.title}
             </h2>
             <p
               id={bodyId}
-              className="mt-1.5 text-xs sm:text-sm leading-relaxed text-ink-dim"
+              className="mt-2 text-xs sm:text-sm leading-relaxed text-ink-dim"
             >
               {step.body}
             </p>
@@ -333,18 +358,18 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
               size="sm"
               onClick={back}
               disabled={index === 0}
-              className="rounded-lg text-xs"
+              className="rounded-xl text-xs shadow-xs font-medium"
             >
-              <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+              <ArrowLeft className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
               Back
             </Button>
             {index < total - 1 ? (
-              <Button size="sm" onClick={next} className="rounded-lg text-xs">
+              <Button size="sm" onClick={next} className="rounded-xl text-xs font-semibold shadow-xs">
                 Next
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                <ArrowRight className="h-3.5 w-3.5 ml-1" aria-hidden="true" />
               </Button>
             ) : (
-              <Button size="sm" onClick={() => close(true)} className="rounded-lg text-xs">
+              <Button size="sm" onClick={() => close(true)} className="rounded-xl text-xs font-semibold shadow-xs">
                 Done
               </Button>
             )}

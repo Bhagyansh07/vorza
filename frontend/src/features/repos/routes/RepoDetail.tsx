@@ -77,7 +77,7 @@ export function RepoDetail() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
       <div
-        className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-line/60 bg-surface/60 p-5 backdrop-blur-xl shadow-xs"
+        className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-line/70 bg-surface/75 p-6 backdrop-blur-2xl shadow-xl transition-all"
         data-tour="repo-header"
       >
         <div>

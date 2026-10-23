@@ -234,6 +234,36 @@ export function VorpyMascot({
           </g>
         )}
 
+        {/* Cybernetic Orbital Tech Ring (MNC AI Copilot HUD) */}
+        <g className="vorpy-hud-ring pointer-events-none" opacity="0.6">
+          <circle
+            cx="0"
+            cy="0"
+            r="134"
+            fill="none"
+            stroke="var(--vorpy-body)"
+            strokeWidth="1.2"
+            strokeDasharray="6 8"
+            opacity="0.38"
+            className="vorpy-orbit-spin"
+          />
+          <circle
+            cx="0"
+            cy="0"
+            r="142"
+            fill="none"
+            stroke="var(--vorpy-body)"
+            strokeWidth="0.8"
+            strokeDasharray="2 18"
+            opacity="0.25"
+          />
+          {/* Telemetry Corner Crosshair Pips */}
+          <line x1="-144" y1="0" x2="-138" y2="0" stroke="var(--vorpy-body)" strokeWidth="1.5" opacity="0.6" />
+          <line x1="138" y1="0" x2="144" y2="0" stroke="var(--vorpy-body)" strokeWidth="1.5" opacity="0.6" />
+          <line x1="0" y1="-144" x2="0" y2="-138" stroke="var(--vorpy-body)" strokeWidth="1.5" opacity="0.6" />
+          <line x1="0" y1="138" x2="0" y2="144" stroke="var(--vorpy-body)" strokeWidth="1.5" opacity="0.6" />
+        </g>
+
         {/* Cute Glowing Antenna (from Saksham Gupta's reel and user screenshots) */}
         <g className="vorpy-antenna">
           <path
@@ -276,6 +306,12 @@ export function VorpyMascot({
             <ellipse cx="-38" cy="-52" rx="90" ry="76" fill={`url(#${glossId})`} />
             {/* Subtle bottom rim reflection */}
             <ellipse cx="0" cy="110" rx="100" ry="32" fill={`url(#${rimId})`} />
+            {/* Cybernetic Visor Horizon Scanline */}
+            <path
+              d="M -120 -2 Q 0 -18 120 -2 Q 0 8 -120 -2 Z"
+              fill="#ffffff"
+              opacity="0.14"
+            />
           </g>
         </g>
 
