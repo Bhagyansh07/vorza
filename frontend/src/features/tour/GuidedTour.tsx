@@ -30,7 +30,7 @@ import {
 } from 'react';
 import { ArrowLeft, ArrowRight, Sparkles, X } from 'lucide-react';
 
-import { VorpyMascot } from '@/components/mascot/VorpyMascot';
+import { VorpyMascot, type AnimationKey } from '@/components/mascot/VorpyMascot';
 import { Button } from '@/components/ui/button';
 
 import { computeAnchor, type Anchor, type TargetRect } from './placement';
@@ -74,10 +74,10 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const [hasSeen, setHasSeen] = useState(true);
   const [dismissed, setDismissed] = useState(false);
-  const [pokeMood, setPokeMood] = useState<any>(null);
+  const [pokeMood, setPokeMood] = useState<AnimationKey | null>(null);
 
   const handlePoke = useCallback(() => {
-    const moods = ['celebrate', 'excited', 'proud', 'happy', 'laughing'];
+    const moods: readonly AnimationKey[] = ['celebrate', 'excited', 'proud', 'happy', 'laughing'];
     const nextMood = moods[Math.floor(Math.random() * moods.length)];
     setPokeMood(nextMood);
     window.setTimeout(() => setPokeMood(null), 1800);
@@ -149,11 +149,6 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
 
     const el = e.currentTarget;
     const box = el.getBoundingClientRect();
-    try {
-      el.setPointerCapture(e.pointerId);
-    } catch {
-      // Ignored if capture unsupported
-    }
     dragStartRef.current = {
       startX: box.left,
       startY: box.top,
@@ -161,7 +156,6 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
       mouseY: e.clientY,
       moved: false,
     };
-    setIsDragging(true);
   }, []);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
@@ -169,9 +163,16 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
     const { startX, startY, mouseX, mouseY } = dragStartRef.current;
     const dx = e.clientX - mouseX;
     const dy = e.clientY - mouseY;
-    if (Math.hypot(dx, dy) > 5) {
+    if (!dragStartRef.current.moved && Math.hypot(dx, dy) > 5) {
       dragStartRef.current.moved = true;
+      setIsDragging(true);
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // Ignored if capture unsupported
+      }
     }
+    if (!dragStartRef.current.moved) return;
     const maxW = typeof window !== 'undefined' ? window.innerWidth : 1200;
     const maxH = typeof window !== 'undefined' ? window.innerHeight : 800;
     const clampedX = Math.max(16, Math.min(maxW - 320, startX + dx));
@@ -182,19 +183,17 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (!dragStartRef.current) return;
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      // Ignored
+    if (dragStartRef.current.moved) {
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // Ignored
+      }
     }
-    const moved = dragStartRef.current.moved;
     dragStartRef.current = null;
     setIsDragging(false);
     setDragVelocity({ vx: 0, vy: 0 });
-    if (!moved) {
-      start();
-    }
-  }, [start]);
+  }, []);
 
   // Screen double click / tap: Vorpy flies to the clicked spot!
   useEffect(() => {
@@ -311,7 +310,6 @@ export function GuidedTour({ tour }: { tour: TourDefinition }) {
             transform: isDragging
               ? `rotate(${Math.max(-18, Math.min(18, dragVelocity.vx * 0.75))}deg)`
               : undefined,
-            animation: !isDragging && !reduceMotion ? 'vorpy-free-roam 8s ease-in-out infinite' : undefined,
           }}
         >
           {/* Ambient Lighting Glow Behind Pill */}
