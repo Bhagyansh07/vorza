@@ -82,5 +82,9 @@
   },
   "allowScripts": {
     "esbuild@0.25.12": true
+  },
+  "overrides": {
+    "follow-redirects": "^1.15.11",
+    "@vitest/mocker": "^5.0.0"
   }
 }
